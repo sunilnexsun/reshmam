@@ -1,0 +1,129 @@
+/**
+ * Central business settings. Everything customer-facing that the business
+ * may need to change (contact details, hours, delivery rules, social links,
+ * video URLs) lives here so it is edited in one place.
+ */
+export const site = {
+  name: "RESHMAM",
+  subBrand: "Natural Goodness",
+  tagline: "Pure Oils. Brighter Days.",
+  description:
+    "Traditionally extracted, chemical-free cold pressed oils for a healthier tomorrow.",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  copyright: "Copyright © 2026 Reshmam. All Rights Reserved.",
+  /** Brand line from the logo, shown in the footer brand section. */
+  brandLine: "PURE. TRADITIONAL. TRUSTED.",
+  credit: "Designed & Developed by Nexsun Tech Solutionz",
+
+  phone: { display: "+91 98765 43210", tel: "+919876543210" },
+  emails: {
+    info: "info@reshmam.com",
+    orders: "orders@reshmam.com",
+  },
+  /** Editable business setting – shown on the Contact page */
+  responseTimeCopy: "We typically respond within 24 hours.",
+
+  address: {
+    company: "P.KALIAPPAN AND SONS",
+    lines: ["6/104, MAIN ROAD, LAKSHMIPURAM,", "KOVILPATTI - 628 502, TAMILNADU"],
+    mobile: { display: "96008 22272", tel: "+919600822272" },
+    street: "6/104, Main Road, Lakshmipuram",
+    locality: "Kovilpatti",
+    region: "Tamil Nadu",
+    postalCode: "628502",
+    country: "IN",
+  },
+
+  hours: {
+    weekdays: "Monday–Saturday: 9:00 AM–6:00 PM",
+    short: "Mon – Sat, 9:00 AM – 6:00 PM",
+    sunday: "Sunday: Closed",
+  },
+
+  map: {
+    lat: 9.1750078,
+    lng: 77.8893356,
+    directionsUrl:
+      "https://www.google.com/maps/place/9%C2%B010'30.0%22N+77%C2%B053'21.6%22E/@9.1750078,77.8880481,18z/data=!4m4!3m3!8m2!3d9.1750078!4d77.8893356",
+    embedUrl: "https://maps.google.com/maps?q=9.1750078,77.8893356&z=17&output=embed",
+  },
+
+  /**
+   * WhatsApp Support number (digits only, with country code). Used by the
+   * footer and the chat assistant. Change it if WhatsApp uses another number.
+   */
+  whatsapp: { number: "919876543210", display: "+91 98765 43210" },
+
+  /** Replace "#" with the real profile URLs. Links still set to "#" show as "coming soon". */
+  social: {
+    instagram: "#",
+    facebook: "#",
+    youtube: "#",
+  },
+
+  /**
+   * Current offers shown by the chat assistant. Only list offers that are
+   * actually running — the assistant never invents discounts or coupon codes.
+   */
+  offers: [
+    { title: "Free delivery", text: "Free delivery across Tamil Nadu on orders above ₹999." },
+    {
+      title: "Bulk & wholesale pricing",
+      text: "Special rates for bulk orders and retail partnerships — send a bulk enquiry from the Contact page.",
+    },
+  ] as { title: string; text: string }[],
+
+  /**
+   * Video URLs for the Our Story page. Leave null to show a clearly
+   * labelled placeholder. Accepts an .mp4/.webm URL or a YouTube embed URL.
+   */
+  videos: {
+    process: null as string | null,
+    story: null as string | null,
+  },
+
+  /** Delivery rules – amounts in rupees. Provisional, set by the business. */
+  shipping: {
+    freeThreshold: 999,
+    tamilNaduFee: 60,
+    restOfIndiaFee: 120,
+    homeState: "Tamil Nadu",
+  },
+} as const;
+
+export const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/products", label: "Products" },
+  { href: "/our-story", label: "Our Story" },
+  { href: "/health-benefits", label: "Health Benefits" },
+  { href: "/blog", label: "Blog" },
+  { href: "/contact", label: "Contact" },
+] as const;
+
+export const footerQuickLinks = [
+  { href: "/", label: "Home" },
+  { href: "/our-story", label: "About Us" },
+  { href: "/products", label: "Shop" },
+  { href: "/new-arrivals", label: "New Arrivals" },
+  { href: "/contact", label: "Contact Us" },
+] as const;
+
+export const customerSupportLinks = [
+  { href: "/track-order", label: "Track Order" },
+  { href: "/shipping-delivery", label: "Shipping & Delivery" },
+  { href: "/returns-refund-policy", label: "Returns & Refund Policy" },
+  { href: "/faq", label: "FAQ" },
+] as const;
+
+export const policyLinks = [
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/terms-conditions", label: "Terms & Conditions" },
+  { href: "/cancellation-policy", label: "Cancellation Policy" },
+] as const;
+
+export const whatsappUrl = (text?: string) =>
+  `https://wa.me/${site.whatsapp.number}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+
+export function absoluteUrl(path = "/") {
+  return new URL(path, site.url).toString();
+}

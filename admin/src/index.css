@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-primary: #064e3b;
+  --color-primary-dark: #043b2c;
+  --color-primary-light: #0b6b52;
+  --color-accent: #16a34a;
+  --color-accent-soft: #dcfce7;
+  --color-surface: #f5f7f6;
+  --color-ink: #202b27;
+  --color-muted: #64716c;
+  --color-line: #e3e8e6;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-surface text-ink antialiased; font-size: 14px; }
+  button, [role="button"] { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  ::selection { background: #bbf7d0; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-line bg-white shadow-[0_1px_2px_rgba(16,24,20,0.04)]; }
+  .input {
+    @apply h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none transition
+      placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:bg-surface disabled:text-muted;
+  }
+  textarea.input { @apply h-auto py-2; }
+  .input-error { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+  .label { @apply mb-1.5 block text-[13px] font-medium text-ink; }
+  .th { @apply whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted; }
+  .td { @apply px-4 py-3 align-middle; }
+}
+
+.scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 6px; }
+.recharts-wrapper:focus, .recharts-surface:focus { outline: none; }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+.animate-toast { animation: toast-in .18s ease-out; }
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+.animate-fade { animation: fade-in .15s ease-out; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
