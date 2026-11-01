@@ -1,0 +1,135 @@
+@import "tailwindcss";
+/* The admin panel has its own stylesheet (src/app/admin/admin.css). */
+@source not "../admin";
+
+/* ------------------------------------------------------------------
+   RESHMAM design tokens
+   Matched to the supplied reference screenshots. Adjust here only.
+------------------------------------------------------------------- */
+@theme {
+  --color-forest-950: #00301c;
+  --color-forest-900: #003b22; /* dark green – footer, announcement bar */
+  --color-forest-800: #064b2b; /* deep forest – buttons, headings */
+  --color-forest-700: #0d5c37;
+  --color-leaf-600: #467e33; /* leaf green (darkened slightly for 4.5:1 text contrast) */
+  --color-leaf-100: #e7f0dc;
+  --color-cream: #fff9ea; /* warm cream page background */
+  --color-cream-50: #fffdf6;
+  --color-beige: #f4ebd8; /* soft beige panels */
+  --color-beige-300: #e6d8ba;
+  --color-gold: #c99543; /* natural gold – decorative */
+  --color-gold-700: #915d1b; /* gold for text (4.5:1 on cream, beige and white) */
+  --color-rust: #a2571f; /* eyebrow labels (4.5:1 on cream) */
+  --color-ink: #202820; /* body text */
+  --color-ink-soft: #4a524a;
+
+  --font-serif: "Playfair Display Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(32 40 32 / 0.05), 0 4px 16px -6px rgb(32 40 32 / 0.12);
+  --shadow-card-hover: 0 2px 4px rgb(32 40 32 / 0.06), 0 12px 28px -10px rgb(32 40 32 / 0.22);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-leaf-100);
+  color: var(--color-forest-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Subtle paper texture used on cream sections */
+.bg-paper {
+  background-color: var(--color-cream);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgb(201 149 67 / 0.06), transparent 40%),
+    radial-gradient(circle at 85% 70%, rgb(77 138 56 / 0.05), transparent 45%);
+}
+
+/* Hero fade so text stays legible over photography */
+.hero-fade {
+  background: linear-gradient(90deg, var(--color-cream) 0%, rgb(255 249 234 / 0.7) 10%, rgb(255 249 234 / 0) 28%);
+}
+@media (max-width: 1023px) {
+  .hero-fade {
+    background: linear-gradient(180deg, rgb(255 249 234 / 0) 0%, rgb(255 249 234 / 0) 70%, var(--color-cream) 100%);
+  }
+}
+
+.prose-reshmam p {
+  margin: 0 0 1rem;
+  line-height: 1.75;
+}
+.prose-reshmam h2 {
+  font-size: 1.5rem;
+  color: var(--color-forest-800);
+  margin: 2rem 0 0.75rem;
+  font-weight: 700;
+}
+.prose-reshmam ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0 0 1rem;
+}
+.prose-reshmam h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-forest-900);
+  margin: 1.25rem 0 0.5rem;
+  font-family: var(--font-sans);
+}
+.prose-reshmam ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+  margin: 0 0 1rem;
+}
+.prose-reshmam > :first-child {
+  margin-top: 0;
+}
+.prose-reshmam a {
+  color: var(--color-forest-800);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.prose-reshmam li {
+  margin: 0.35rem 0;
+  line-height: 1.7;
+}

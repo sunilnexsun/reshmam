@@ -6,51 +6,54 @@ Online store and back-office for **RESHMAM**, a maker of traditional cold-presse
 gingelly (sesame), groundnut, coconut and castor oil, family packs, gift combos and gingelly oil cake
 for cattle feed — sold through two branches: **Velum Mayilum** and **Reshmam**.
 
-This repository holds two independent apps:
+This repository is a single **Next.js 16** app (React 19, Tailwind 4) with two parts:
 
-| App | Folder | What it is | Stack | Status |
+| Part | URL | Code | What it is | Status |
 |---|---|---|---|---|
-| **Storefront** | [`website/`](website/) | Customer-facing ecommerce site | Next.js 16 · React 19 · TypeScript · Tailwind 4 · Supabase · Razorpay · Resend | Fully browsable without keys; orders, payments, accounts and enquiries go live once credentials are added |
-| **Admin panel** | [`admin/`](admin/) | Internal dashboard for staff | Vite 8 · React 19 · JavaScript · Tailwind 4 · Recharts | Complete frontend running on sample data saved in the browser; backend not connected yet |
+| **Storefront** | `/` | `src/app/(storefront)/` | Customer-facing ecommerce site (TypeScript · Supabase · Razorpay · Resend) | Fully browsable without keys; orders, payments, accounts and enquiries go live once credentials are added |
+| **Admin panel** | `/admin` | `src/app/admin/` | Internal dashboard for staff (JavaScript · Recharts) | Complete frontend running on sample data saved in the browser; backend not connected yet |
 
 ---
 
 ## Quick start
 
-Requires **Node.js ≥ 20.9** and npm. Each app has its own `package.json` and is installed separately.
-
-**Storefront**: http://localhost:3000
+Requires **Node.js ≥ 20.9** and npm (Node 22 is used in CI; see `.nvmrc`). `npm run db:seed:generate` needs
+Node ≥ 22.18, which runs TypeScript files directly.
 
 ```bash
-cd website
 npm install
 cp .env.example .env.local   # optional, the site runs without any keys
 npm run dev
 ```
 
-**Admin panel**: http://localhost:5173
+- Storefront: http://localhost:3000
+- Admin panel: http://localhost:3000/admin
 
-```bash
-cd admin
-npm install
-npm run dev
-```
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` / `npm start` | Production build and serve |
+| `npm run lint` | ESLint |
+| `npm test` | Unit and database tests (Vitest; the database tests run every migration on an in-memory Postgres) |
+| `npm run db:seed:generate` | Rebuild `supabase/seed.sql` from the product catalogue |
 
 The admin login screen lists the demo accounts (Admin, Manager and Staff roles). They are sample
 credentials for the local demo only.
 
 ---
 
-## Storefront (`website/`)
+## Storefront (`/`)
 
 A responsive shop built on the Next.js App Router.
 
 - **Catalogue**: products with size variants, category filters, search, product pages, wishlist and
   a cart that survives a page reload.
 - **Checkout**: prices are recalculated on the server from variant IDs. Cash-on-delivery orders and
-  Razorpay online payments are supported, with signature and amount verification plus a webhook.
+  Razorpay online payments are supported, with signature and amount verification plus a webhook. Payments that
+  can't be matched to an open order are kept in a `payment_issues` table for staff.
 - **Orders**: a confirmation page and order tracking by order number and email.
-- **Accounts**: Supabase magic-link sign-in.
+- **Accounts**: Supabase magic-link sign-in, order history, and a cart and wishlist saved to the account so
+  they follow the customer across devices (guests keep them in the browser).
 - **Enquiries**: contact and bulk-order forms with validation, a honeypot field, a timing check and
   rate limiting. Submissions are stored in Supabase and/or emailed via Resend.
 - **Content**: Our Story, Health Benefits, blog, FAQ and a help centre with the shipping, returns,
@@ -62,25 +65,20 @@ A responsive shop built on the Next.js App Router.
 Without credentials, features that need a backend show an honest "not connected yet" message instead
 of pretending to work.
 
-**Backend:** a Supabase Postgres schema in `website/supabase/migrations/` has 13 tables, all with
+**Backend:** a Supabase Postgres schema in `supabase/migrations/` has 13 tables, all with
 row-level security: categories, products, product variants, inventory movements, customers, addresses,
-orders, order items, wishlists, carts, contact and bulk enquiries, and blog articles. Stock is reduced
-by an idempotent `commit_order_stock()` function. `supabase/seed.sql` is generated from
-`src/lib/products.ts` by `npm run db:seed:generate`.
+orders, order items, wishlists, carts, contact and bulk enquiries, and blog articles. Orders are
+written by database functions that run in one transaction (`place_order`, `mark_order_paid`, `mark_order_failed`), and
+`commit_order_stock()` refuses to sell more than is in stock. `supabase/seed.sql` is generated from
+`src/app/(storefront)/_lib/products.ts` by `npm run db:seed:generate`.
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Development server |
-| `npm run build` / `npm start` | Production build and serve |
-| `npm run lint` | ESLint |
-| `npm run db:seed:generate` | Rebuild `supabase/seed.sql` from the product catalogue |
-
-→ See [`website/README.md`](website/README.md) for setup of Supabase, Razorpay and Resend, the
+→ See [`docs/storefront.md`](docs/storefront.md) for setup of Supabase, Razorpay and Resend, the
 security model, where to edit content, and the list of placeholder assets.
 
-## Admin panel (`admin/`)
+## Admin panel (`/admin`)
 
-A single-page dashboard (HashRouter) for running the store. It has these modules:
+A dashboard for running the store, served by the same Next.js app under `/admin` with its own
+layout and stylesheet. Its pages are client components, because its data lives in the browser for now. It has these modules:
 
 - **Dashboard**: KPIs, sales trends, top products and branch performance, filterable by date range.
 - **Products**: catalogue management with images, variants and price-change history.
@@ -102,65 +100,77 @@ Changes are saved to `localStorage`. **Settings → Danger zone → Reset demo d
 original data. Any feature that would call an outside service (WhatsApp, AI, Razorpay refunds or
 email) is clearly labelled as simulated.
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Development server |
-| `npm run build` | Static production build in `dist/` |
-| `SINGLE_FILE=1 npm run build` | One self-contained `dist/index.html` for sharing a preview |
-| `npm run preview` | Serve the production build |
-| `npm run lint` | oxlint |
-
-→ See [`admin/README.md`](admin/README.md) for the data model and the backend plan, and
-[`admin/CONVENTIONS.md`](admin/CONVENTIONS.md) for the UI kit and the rules for building pages.
+→ See [`docs/admin.md`](docs/admin.md) for the data model and the backend plan, and
+[`docs/admin-conventions.md`](docs/admin-conventions.md) for the UI kit and the rules for building pages.
 
 ---
 
-## How the two apps relate
+## How the storefront and admin relate
 
 ```
-                  ┌──────────────────────────┐
-  Customers ────▶ │  website/  (Next.js)     │ ──▶ Razorpay (payments)
-                  │  storefront + API routes │ ──▶ Resend (enquiry emails)
-                  └────────────┬─────────────┘
-                               │
-                               ▼
-                       Supabase (Postgres + Auth)
-                               ▲
-                               ┆  planned (not wired up yet)
-                  ┌────────────┴─────────────┐
-  Staff ────────▶ │  admin/  (Vite + React)  │   today: sample data in localStorage
-                  └──────────────────────────┘
+                  ┌───────────── Next.js app ─────────────┐
+  Customers ────▶ │  /         storefront + /api routes   │ ──▶ Razorpay (payments)
+                  │                                       │ ──▶ Resend (enquiry emails)
+  Staff ────────▶ │  /admin    admin panel                │   today: sample data in localStorage
+                  └───────────────────┬───────────────────┘
+                                      │  storefront today, admin planned
+                                      ▼
+                          Supabase (Postgres + Auth)
 ```
 
-The two apps **do not share any code or data yet**. The storefront talks to Supabase when it is
-configured. The admin panel keeps all of its reads and writes in `admin/src/services/store.js`, so
-connecting it means replacing those action bodies with API calls to the same Supabase project.
+Both parts are deployed together, but they **do not share data yet**. The storefront talks to
+Supabase when it is configured. The admin panel keeps all of its reads and writes in
+`src/app/admin/_lib/store.js`, so connecting it means replacing those action bodies with calls to
+the same Supabase project, through server code in this app (route handlers or server actions)
+wherever a secret is needed.
 
-Both apps model prices and stock **per variant** (product × size, and per branch in the admin). That
-data model will need to be lined up when the admin panel is connected.
+Both parts model prices and stock **per variant** (product × size, and per branch in the admin).
+That data model will need to be lined up when the admin panel is connected.
 
 ## Repository layout
 
+Each part lives in one folder, and each page's code sits next to its URL:
+
 ```
 reshmam/
-├── website/                 Storefront (Next.js)
-│   ├── src/app/             pages and API routes (checkout, payments, orders, contact)
-│   ├── src/components/      layout, products, cart, chat, sections, ui
-│   ├── src/lib/             catalogue, site config, pricing, validation, server integrations
-│   ├── supabase/            migrations and the generated seed
-│   └── scripts/             seed generator
-└── admin/                   Admin panel (Vite + React)
-    ├── src/pages/           one folder per module
-    ├── src/components/      layout, UI kit, chart styling
-    ├── src/services/        store (data layer), selectors, auth
-    ├── src/data/seed.js     sample data generator
-    └── src/utils/           formatting, date ranges, exports, image resizing
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx            shared <html> shell
+│   │   ├── not-found.tsx  robots.ts  sitemap.ts
+│   │   │
+│   │   ├── (storefront)/         EVERYTHING for the customer site, served at /
+│   │   │   ├── layout.tsx  page.tsx  globals.css
+│   │   │   ├── products/  cart/  checkout/  blog/  contact/  …   one folder per page
+│   │   │   ├── api/              checkout, payments, orders, contact  → /api/…
+│   │   │   ├── _components/      shared storefront UI: layout, products, cart, chat, sections, ui
+│   │   │   └── _lib/             catalogue, site config, pricing, validation, server integrations
+│   │   │
+│   │   └── admin/                EVERYTHING for the staff panel, served at /admin
+│   │       ├── layout.tsx  page.tsx  Dashboard.jsx  admin.css
+│   │       ├── login/
+│   │       ├── products/         page.tsx + ProductList, ProductForm, ProductDetails, … side by side
+│   │       ├── orders/  inventory/  reports/  settings/  …   one folder per module
+│   │       ├── _components/      admin layout, UI kit, charts, AdminApp
+│   │       ├── _lib/             data store, auth, seed data, selectors, utils, navigation
+│   │       └── _assets/          logos and sample product images
+│   │
+│   └── proxy.ts                  returns a real 404 for unknown product and blog URLs
+├── public/                       storefront images; admin favicon in public/admin/
+├── supabase/                     migrations and the generated seed
+├── scripts/                      seed generator
+└── docs/                         storefront and admin guides
 ```
+
+- `(storefront)` has brackets so it is served at `/` rather than `/storefront`.
+- Folders starting with `_` hold shared code. Next.js never turns them into pages.
+- Imports use `@storefront/…` and `@admin/…`, for example
+  `import { useDb } from '@admin/_lib/store'`.
 
 ## Configuration
 
-Only the storefront reads environment variables. Copy `website/.env.example` to
-`website/.env.local` and fill in:
+The storefront reads these environment variables, and `ENABLE_ADMIN_DEMO` decides whether a production server
+shows the admin demo. Set them **before** `npm run build`: the `NEXT_PUBLIC_*` values and the security headers
+are fixed at build time. Copy `.env.example` to `.env.local` and fill in:
 
 | Variable | Used for |
 |---|---|
@@ -175,11 +185,13 @@ Never commit `.env.local` or any real secret.
 ## Before launch
 
 - [ ] Create the Supabase project, apply the migrations and run the seed
-- [ ] Add the Razorpay keys and webhook (test first, then live)
+- [ ] Add the Razorpay keys and webhook — events `payment.captured`, `order.paid`, `payment.failed` (test first, then live)
+- [ ] Set every variable from `.env.example` **before** `npm run build` (the `NEXT_PUBLIC_*` values and the security headers are fixed at build time)
+- [ ] Decide whether the public site should hide the admin demo (`DISABLE_ADMIN_DEMO=1` answers `/admin` with a 404); it is served by default
 - [ ] Set up Resend with a verified sending domain
-- [ ] Replace the provisional images in `website/public/images/` with real, licensed photos
+- [ ] Replace the provisional images in `public/images/` with real, licensed photos
 - [ ] Replace the sample testimonials and blog posts, and confirm the placeholder prices and stock
-- [ ] Add real social media links and the WhatsApp number in `website/src/lib/site.ts`
+- [ ] Add real social media links and the WhatsApp number in `src/app/(storefront)/_lib/site.ts`
 - [ ] Connect the admin panel to Supabase, using Supabase Auth and roles instead of the demo users
 - [ ] Move the WhatsApp, AI and refund integrations behind server-side endpoints
 
@@ -198,4 +210,4 @@ Branch off `master` and name the branch `<type>/<short-description>`:
 | `perf/` | Performance |
 | `ci/` | CI / workflows |
 
-Run the app's linter (`npm run lint`) and build before opening a pull request into `master`.
+Run `npm run lint`, `npm test` and `npm run build` before opening a pull request into `master`.
