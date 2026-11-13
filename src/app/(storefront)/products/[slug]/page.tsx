@@ -146,9 +146,7 @@ export default async function ProductPage({
                   <IconBadge size="sm">
                     <Cog className="h-4 w-4" />
                   </IconBadge>{" "}
-                  {product.category === "cattle-feed"
-                    ? "Rotary oil cake"
-                    : "Wooden chekku pressed"}
+                  Wooden chekku pressed
                 </li>
                 <li className="flex items-center gap-2">
                   <IconBadge size="sm">

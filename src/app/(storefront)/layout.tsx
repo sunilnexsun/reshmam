@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | RESHMAM Natural Goodness",
   },
   description:
-    "Traditionally extracted, chemical-free cold pressed gingelly, groundnut, coconut and castor oils from RESHMAM. Free delivery across Tamil Nadu on orders above ₹999.",
+    "Traditionally extracted, chemical-free cold pressed gingelly, groundnut and coconut oils from RESHMAM. Free delivery across Tamil Nadu on orders above ₹1,499.",
   applicationName: "RESHMAM",
   openGraph: {
     type: "website",

@@ -19,10 +19,13 @@ import { PageHero, Gold } from "./_components/sections/PageHero";
 import { TrustStrip } from "./_components/sections/FeatureGrid";
 import { ProductGrid } from "./_components/products/ProductCatalog";
 import { BlogCard, Testimonials } from "./_components/sections/Misc";
+import { AvailableOn } from "./_components/sections/AvailableOn";
 import { ButtonLink, Container, Eyebrow, IconBadge, SectionHeading, LeafFlourish } from "./_components/ui/primitives";
 import { LeafOutline, LeafSprig } from "./_components/ui/decor";
 import { categories, getProduct, type Product } from "./_lib/products";
 import { posts } from "./_lib/blog";
+import { formatINR } from "./_lib/pricing";
+import { site } from "./_lib/site";
 
 const bestsellers = ["gingelly-oil", "groundnut-oil", "coconut-oil", "combo-oil-gift-pack"]
   .map(getProduct)
@@ -69,7 +72,7 @@ export default function HomePage() {
           { icon: Cog, title: "Traditional", text: "Wooden chekku extraction" },
           { icon: Heart, title: "Rich in Nutrition", text: "Naturally good" },
           { icon: ShieldCheck, title: "Quality Assurance", text: "You can trust" },
-          { icon: Truck, title: "Free Delivery", text: "Across Tamil Nadu above ₹999" },
+          { icon: Truck, title: "Free Delivery", text: `Across Tamil Nadu above ${formatINR(site.shipping.freeThreshold)}` },
         ]}
       />
 
@@ -77,7 +80,7 @@ export default function HomePage() {
       <section aria-labelledby="cat-heading" className="bg-paper py-16">
         <Container>
           <SectionHeading eyebrow="Our Products" title={<span id="cat-heading">Shop by Category</span>} />
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {categories.map((c) => (
               <li key={c.slug}>
                 <Link
@@ -178,6 +181,8 @@ export default function HomePage() {
           </div>
         </Container>
       </section>
+
+      <AvailableOn />
 
       {/* Health preview */}
       <section aria-labelledby="health-heading" className="relative overflow-hidden bg-leaf-100/60">

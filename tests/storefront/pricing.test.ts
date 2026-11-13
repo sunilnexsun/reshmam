@@ -4,7 +4,7 @@ import { products } from "@storefront/_lib/products";
 import { site } from "@storefront/_lib/site";
 
 // Any variant with a little stock (more than 2, fewer than the cap) — the tests don't depend on which.
-const inStock = products.flatMap((p) => p.variants).find((v) => v.stock > 2 && v.stock < MAX_UNITS_PER_VARIANT)!;
+const inStock = products.flatMap((p) => p.variants).find((v) => v.stock > 2 && v.stock < MAX_UNITS_PER_VARIANT - 1)!;
 
 describe("priceCart", () => {
   it("has a suitable catalogue variant to test with", () => {
@@ -74,7 +74,7 @@ describe("priceCart with live database values", () => {
   });
   it("checks the database stock, not the catalogue's", () => {
     expect(priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, { live: live({ stock: 1 }) }).ok).toBe(false);
-    expect(priceCart([{ variantId: inStock.id, quantity: inStock.stock + 5 }], undefined, { live: live({ stock: 40 }) }).ok).toBe(true);
+    expect(priceCart([{ variantId: inStock.id, quantity: inStock.stock + 1 }], undefined, { live: live({ stock: inStock.stock + 1 }) }).ok).toBe(true);
   });
   it("treats inactive or missing variants as unavailable", () => {
     expect(priceCart([{ variantId: inStock.id, quantity: 1 }], undefined, { live: live({ active: false }) }).ok).toBe(false);
