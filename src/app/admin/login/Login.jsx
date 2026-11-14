@@ -6,7 +6,6 @@ import { Eye, EyeOff, Leaf, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@admin/_lib/auth'
 import { Button, Checkbox, Field, Input, Modal, useToast } from '@admin/_components/ui'
 import hero from '@admin/_assets/login-hero.webp'
-import logoWhite from '@admin/_assets/logo-white.png'
 
 const DEMO = [
   { role: 'Admin', email: 'admin@reshmam.com', password: 'Admin@123' },
@@ -44,7 +43,7 @@ export default function Login() {
       <div className="relative hidden w-[46%] overflow-hidden bg-primary text-white lg:flex lg:flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(22,163,74,0.35),transparent_55%)]" aria-hidden />
         <div className="relative flex items-center gap-3 px-12 pt-10">
-          <img src={logoWhite.src} alt="" className="h-12 w-auto" />
+          <img src="/images/logo-mark.png" alt="" className="h-14 w-14" />
           <div className="leading-none"><p className="font-serif text-2xl font-bold tracking-wide">RESHMAM</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">Natural Goodness</p></div>
         </div>
         <div className="relative px-12 pt-16">
@@ -64,7 +63,7 @@ export default function Login() {
       <div className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary"><img src={logoWhite.src} alt="" className="h-8" /></span>
+            <img src="/images/logo-mark.png" alt="" className="h-12 w-12" />
             <div className="leading-none"><p className="font-serif text-2xl font-bold text-primary">RESHMAM</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Admin Panel</p></div>
           </div>
           <div className="card p-7 sm:p-9">

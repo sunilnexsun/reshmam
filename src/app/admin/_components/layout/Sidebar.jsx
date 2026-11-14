@@ -2,7 +2,6 @@ import { NavLink } from '@admin/_lib/navigation'
 import { ChevronsLeft, ChevronsRight, LogOut, X } from 'lucide-react'
 import { cn } from '@admin/_lib/format'
 import { useAuth } from '@admin/_lib/auth'
-import logoWhite from '@admin/_assets/logo-white.png'
 import { NAV } from './navigation'
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }) {
@@ -20,7 +19,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }) {
         )}
       >
         <div className={cn('flex h-16 shrink-0 items-center gap-2.5 border-b border-white/10', collapsed ? 'lg:justify-center lg:px-0' : '', 'px-5')}>
-          <img src={logoWhite.src} alt="" className="h-9 w-auto" />
+          <img src="/images/logo-mark.png" alt="" className="h-10 w-10" />
           <div className={cn('leading-none', collapsed && 'lg:hidden')}>
             <p className="font-serif text-xl font-bold tracking-wide">RESHMAM</p>
             <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/70">Admin Panel</p>

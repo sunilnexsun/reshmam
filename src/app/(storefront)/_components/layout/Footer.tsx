@@ -66,7 +66,7 @@ export function Footer() {
         {/* 1. Brand */}
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <Link href="/" aria-label="Reshmam home" className="inline-flex items-center gap-3">
-            <Image src="/images/logo-mark-white.png" alt="" width={52} height={47} className="h-12 w-auto" />
+            <Image src="/images/logo-mark.png" alt="" width={64} height={64} className="h-16 w-16" />
             <span className="font-serif text-[30px] font-bold leading-none tracking-wide">RESHMAM</span>
           </Link>
           <p className="mt-3 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.24em] text-gold">

@@ -153,7 +153,7 @@ All images in `public/images/` are **provisional crops taken from the supplied d
 
 | File | Used for | Needed |
 |---|---|---|
-| `logo.png`, `logo-mark.png`, `logo-mark-white.png` | Header, footer, favicon | Vector (SVG) logo + favicon set |
+| `logo.png` (chef + wordmark), `logo-mark.png` (chef only) | Header; footer, admin and favicon | Vector (SVG) logo + favicon set |
 | `product-{gingelly,groundnut,coconut}.webp` | Product cards, categories, PDP | Real product photos, ~1200×830, plain/cream background |
 | `pack-{gingelly,groundnut,coconut,combo}.webp` | Family packs, gift combo | Real pack photos |
 | `home-hero.webp`, `hero-products.webp`, `health-hero.webp`, `contact-hero.webp` | Page heroes | ~2000×1000 lifestyle shots |
