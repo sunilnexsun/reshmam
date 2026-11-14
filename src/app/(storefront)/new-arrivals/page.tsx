@@ -6,7 +6,7 @@ import { products } from "@storefront/_lib/products";
 
 export const metadata: Metadata = {
   title: "New Arrivals",
-  description: "The latest additions to the Reshmam range of traditional oils and oil cake cattle feed.",
+  description: "The latest additions to the Reshmam range of traditional cold pressed oils.",
   alternates: { canonical: "/new-arrivals" },
 };
 

@@ -46,6 +46,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Products removed from the catalogue (Nov 2026) send old links and search results to the shop page.
+  async redirects() {
+    return ["castor-oil", "mayil-rotary-gingelly-oil-cake", "jothi-rotary-gingelly-oil-cake"].map((slug) => ({
+      source: `/products/${slug}`,
+      destination: "/products",
+      permanent: true,
+    }));
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

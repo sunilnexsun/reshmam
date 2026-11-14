@@ -2,7 +2,7 @@
  * Product catalogue — the single source of truth for the storefront.
  *
  * PROVISIONAL SEED DATA: price ranges and sizes are taken from the supplied
- * reference screenshots (e.g. Gingelly ₹350–₹950 across 500 ml / 1 L / 5 L).
+ * reference screenshots (e.g. Gingelly ₹350–₹600 across 500 ml / 1 L).
  * Middle-size prices and stock figures are placeholders and MUST be confirmed
  * by the business. The same data is mirrored into Supabase by
  * `supabase/seed.sql`; if you edit prices here, update the seed too
@@ -12,9 +12,7 @@
 export type CategorySlug =
   | "gingelly-oil"
   | "groundnut-oil"
-  | "coconut-oil"
-  | "castor-oil"
-  | "cattle-feed";
+  | "coconut-oil";
 
 /** The two RESHMAM branches products are sold under. */
 export type BranchSlug = "velum-mayilum" | "reshmam";
@@ -52,7 +50,7 @@ export type Product = {
   summary: string;
   description: string[];
   uses: string[];
-  /** Shown prominently, e.g. castor oil is for external use. */
+  /** Shown prominently, e.g. a safety or usage note. */
   notice?: string;
   /** Short label shown on cards, e.g. "External use only". */
   useLabel?: string;
@@ -87,20 +85,6 @@ export const categories: Category[] = [
     description: "Natural goodness in every drop.",
     image: "/images/product-coconut.webp",
   },
-  {
-    slug: "castor-oil",
-    name: "Castor Oil",
-    shortName: "Castor Oil",
-    description: "Traditional oil for external wellness care.",
-    image: "/images/product-castor.webp",
-  },
-  {
-    slug: "cattle-feed",
-    name: "Gingelly Oil Cake (Cattle Feed)",
-    shortName: "Cattle Feed",
-    description: "Rotary gingelly oil cake, nutritious feed for cattle.",
-    image: "/images/mayil-oil-cake.webp",
-  },
 ];
 
 export const products: Product[] = [
@@ -128,7 +112,6 @@ export const products: Product[] = [
     variants: [
       { id: "GIN-500ML", label: "500 ml", price: 350, stock: 120 },
       { id: "GIN-1L", label: "1 L", price: 600, stock: 90 },
-      { id: "GIN-5L", label: "5 L", price: 950, stock: 25 },
     ],
   },
   {
@@ -153,7 +136,6 @@ export const products: Product[] = [
     variants: [
       { id: "GRN-500ML", label: "500 ml", price: 300, stock: 140 },
       { id: "GRN-1L", label: "1 L", price: 550, stock: 100 },
-      { id: "GRN-5L", label: "5 L", price: 850, stock: 30 },
     ],
   },
   {
@@ -177,33 +159,6 @@ export const products: Product[] = [
     variants: [
       { id: "COC-500ML", label: "500 ml", price: 320, stock: 110 },
       { id: "COC-1L", label: "1 L", price: 580, stock: 80 },
-      { id: "COC-5L", label: "5 L", price: 900, stock: 20 },
-    ],
-  },
-  {
-    slug: "castor-oil",
-    name: "Traditional Cold Pressed Castor Oil",
-    shortName: "Castor Oil",
-    category: "castor-oil",
-    kind: "single",
-    branch: "reshmam",
-    image: "/images/product-castor.webp",
-    imageAlt:
-      "Bottle of RESHMAM cold pressed castor oil with castor seeds and leaves",
-    summary: "Thick, traditional castor oil for external wellness use.",
-    description: [
-      "Cold pressed castor oil used traditionally for massage, hair and skin care.",
-      "This is not a cooking oil.",
-    ],
-    uses: ["Massage and external wellness care", "Hair and skin care routines"],
-    notice:
-      "For external use only. Not a cooking oil. Do not ingest or use it to treat any condition without guidance from a qualified medical professional.",
-    useLabel: "External use only",
-    edible: false,
-    variants: [
-      { id: "CAS-500ML", label: "500 ml", price: 280, stock: 60 },
-      { id: "CAS-1L", label: "1 L", price: 450, stock: 40 },
-      { id: "CAS-5L", label: "5 L", price: 700, stock: 0 },
     ],
   },
   {
@@ -223,7 +178,6 @@ export const products: Product[] = [
     edible: true,
     variants: [
       { id: "GIN-FP-1Lx2", label: "1 L x 2", price: 650, stock: 50 },
-      { id: "GIN-FP-5L", label: "5 L", price: 1800, stock: 15 },
     ],
   },
   {
@@ -243,7 +197,6 @@ export const products: Product[] = [
     edible: true,
     variants: [
       { id: "GRN-FP-1Lx2", label: "1 L x 2", price: 600, stock: 50 },
-      { id: "GRN-FP-5L", label: "5 L", price: 1650, stock: 15 },
     ],
   },
   {
@@ -263,7 +216,6 @@ export const products: Product[] = [
     edible: true,
     variants: [
       { id: "COC-FP-1Lx2", label: "1 L x 2", price: 650, stock: 40 },
-      { id: "COC-FP-5L", label: "5 L", price: 1750, stock: 12 },
     ],
   },
   {
@@ -274,20 +226,17 @@ export const products: Product[] = [
     kind: "combo",
     branch: "reshmam",
     image: "/images/pack-combo.webp",
-    imageAlt: "Four RESHMAM oil bottles beside a gift box with a red ribbon",
-    summary:
-      "Gingelly, groundnut, coconut and castor oil together in a gift pack.",
+    imageAlt: "RESHMAM oil bottles beside a gift box with a red ribbon",
+    summary: "Gingelly, groundnut and coconut oil together in a gift pack.",
     description: [
-      "A thoughtful gift of all four RESHMAM oils: gingelly, groundnut, coconut and castor.",
-      "Castor oil in this pack is for external use only.",
+      "A thoughtful gift of three RESHMAM cooking oils: gingelly, groundnut and coconut.",
     ],
     uses: ["Gifting for festivals and family occasions"],
-    notice:
-      "Contains castor oil, which is for external use only and is not a cooking oil.",
     edible: true,
+    // PROVISIONAL: prices scaled from the earlier four-oil pack; confirm with the business.
     variants: [
-      { id: "COMBO-500MLx4", label: "500 ml x 4", price: 1200, stock: 30 },
-      { id: "COMBO-1Lx4", label: "1 L x 4", price: 2300, stock: 20 },
+      { id: "COMBO-500MLx3", label: "500 ml x 3", price: 900, stock: 30 },
+      { id: "COMBO-1Lx3", label: "1 L x 3", price: 1725, stock: 20 },
     ],
   },
 
@@ -374,54 +323,6 @@ export const products: Product[] = [
     uses: ["Everyday cooking", "Deep frying"],
     edible: true,
     variants: [{ id: "VM-GRN-500ML", label: "500 ml", price: 120, stock: 100 }],
-  },
-  {
-    slug: "mayil-rotary-gingelly-oil-cake",
-    newArrival: true,
-    name: "Mayil Rotary Gingelly Oil Cake Cattle Feed",
-    shortName: "Mayil Oil Cake Cattle Feed",
-    category: "cattle-feed",
-    kind: "single",
-    branch: "velum-mayilum",
-    image: "/images/mayil-oil-cake.webp",
-    imageFit: "contain",
-    imageAlt: "Mayil Brand logo with a peacock",
-    summary:
-      "High-quality Mayil brand rotary gingelly oil cake cattle feed. Only available in 50 kg sacks.",
-    description: [
-      "High-quality Mayil brand rotary gingelly oil cake for cattle feed.",
-      "Only available in 50 kg sacks.",
-    ],
-    uses: ["Cattle feed"],
-    notice:
-      "Animal feed — not for human consumption. Sold only in 50 kg sacks.",
-    useLabel: "Cattle feed · 50 kg sack",
-    edible: false,
-    variants: [{ id: "VM-MAYIL-50KG", label: "50 kg", price: 1800, stock: 40 }],
-  },
-  {
-    slug: "jothi-rotary-gingelly-oil-cake",
-    newArrival: true,
-    name: "Jothi Rotary Gingelly Oil Cake Cattle Feed",
-    shortName: "Jothi Oil Cake Cattle Feed",
-    category: "cattle-feed",
-    kind: "single",
-    branch: "velum-mayilum",
-    image: "/images/jothi-oil-cake.webp",
-    imageFit: "contain",
-    imageAlt: "Jothi Brand logo with an oil lamp",
-    summary:
-      "Premium Jothi brand rotary gingelly oil cake cattle feed. Only available in 50 kg sacks.",
-    description: [
-      "Premium Jothi brand rotary gingelly oil cake for cattle feed.",
-      "Only available in 50 kg sacks.",
-    ],
-    uses: ["Cattle feed"],
-    notice:
-      "Animal feed — not for human consumption. Sold only in 50 kg sacks.",
-    useLabel: "Cattle feed · 50 kg sack",
-    edible: false,
-    variants: [{ id: "VM-JOTHI-50KG", label: "50 kg", price: 1850, stock: 40 }],
   },
 ];
 

@@ -3,8 +3,7 @@
 *Pure Oils. Brighter Days.*
 
 Online store and back-office for **RESHMAM**, a maker of traditional cold-pressed (chekku) oils —
-gingelly (sesame), groundnut, coconut and castor oil, family packs, gift combos and gingelly oil cake
-for cattle feed — sold through two branches: **Velum Mayilum** and **Reshmam**.
+gingelly (sesame), groundnut and coconut oil, family packs and gift combos — sold through two branches: **Velum Mayilum** and **Reshmam**.
 
 This repository is a single **Next.js 16** app (React 19, Tailwind 4) with two parts:
 
@@ -191,7 +190,7 @@ Never commit `.env.local` or any real secret.
 - [ ] Set up Resend with a verified sending domain
 - [ ] Replace the provisional images in `public/images/` with real, licensed photos
 - [ ] Replace the sample testimonials and blog posts, and confirm the placeholder prices and stock
-- [ ] Add real social media links and the WhatsApp number in `src/app/(storefront)/_lib/site.ts`
+- [ ] Add the real Instagram/Facebook links and marketplace listing URLs in `src/app/(storefront)/_lib/site.ts`
 - [ ] Connect the admin panel to Supabase, using Supabase Auth and roles instead of the demo users
 - [ ] Move the WhatsApp, AI and refund integrations behind server-side endpoints
 

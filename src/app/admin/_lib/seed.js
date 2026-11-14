@@ -54,7 +54,7 @@ export function buildSeed(now = Date.now()) {
   // ---------- branches ----------
   const branches = [
     { id: 'br_vm', name: 'Velum Mayilum – Main Branch', code: 'VM001', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'velummayilum@reshmam.com', manager: 'Murugan K', status: 'Active', createdAt: iso(ago(720)) },
-    { id: 'br_rs', name: 'Reshmam – Sub Branch', code: 'RS001', address: 'Main Bazaar Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628501', phone: '+91 96008 22272', email: 'reshmam@reshmam.com', manager: 'Lakshmi P', status: 'Active', createdAt: iso(ago(540)) },
+    { id: 'br_rs', name: 'Reshmam – Sub Branch', code: 'RS001', address: 'Main Bazaar Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628501', phone: '+91 97877 22272', email: 'reshmam@reshmam.com', manager: 'Lakshmi P', status: 'Active', createdAt: iso(ago(540)) },
     { id: 'br_cf', name: 'Cattle Feed Branch', code: 'CF001', address: 'Ettayapuram Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'cattlefeed@reshmam.com', manager: 'Selvam R', status: 'Active', createdAt: iso(ago(400)) },
   ]
 
@@ -183,7 +183,7 @@ export function buildSeed(now = Date.now()) {
     }
     const subtotal = items.reduce((s, x) => s + x.total, 0)
     const inTN = cust.address.state === 'Tamil Nadu'
-    const shipping = subtotal >= 999 ? 0 : inTN ? 60 : 120
+    const shipping = subtotal >= 1499 ? 0 : inTN ? 60 : 120
     const discount = rand() < 0.18 ? Math.round(subtotal * pick([0.05, 0.1])) : 0
     const total = subtotal + shipping - discount
     const tax = orderGst({ items, subtotal, discount })
@@ -299,13 +299,13 @@ export function buildSeed(now = Date.now()) {
       { id: 'f_price', name: 'Price & Availability', question: 'What is the price of 1 L coconut oil?', response: 'Prices depend on size and branch. I will fetch the latest price and stock for {{product_name}} from the catalogue.', buttons: ['Buy Now', 'Talk to Support'], keywords: ['price', 'cost', 'rate', 'available', 'stock'], next: ['f_payment'], enabled: true, x: 620, y: 40 },
       { id: 'f_tracking', name: 'Order Tracking', question: 'Where is my order?', response: 'Please share your Order ID (e.g. RSH-10234). I will check its current status.', buttons: ['Shipping Info', 'Talk to Support'], keywords: ['track', 'order', 'status', 'where'], next: ['f_shipping'], enabled: true, x: 330, y: 200 },
       { id: 'f_payment', name: 'Payment Assistance', question: 'My payment failed', response: 'If money was debited but the order is not confirmed, it is usually auto-reversed by your bank in 5–7 working days. Share your Order ID and we will check.', buttons: ['Talk to Support'], keywords: ['payment', 'upi', 'failed', 'debited', 'refund status'], next: ['f_human'], enabled: true, x: 910, y: 40 },
-      { id: 'f_shipping', name: 'Shipping Info', question: 'How long does delivery take?', response: 'Orders are dispatched within 1–2 working days. Free delivery on orders above ₹999.', buttons: ['Return & Refund'], keywords: ['delivery', 'shipping', 'courier', 'days'], next: ['f_returns'], enabled: true, x: 620, y: 200 },
+      { id: 'f_shipping', name: 'Shipping Info', question: 'How long does delivery take?', response: 'Orders are dispatched within 1–2 working days. Free delivery on orders above ₹1,499.', buttons: ['Return & Refund'], keywords: ['delivery', 'shipping', 'courier', 'days'], next: ['f_returns'], enabled: true, x: 620, y: 200 },
       { id: 'f_returns', name: 'Return & Refund', question: 'I received a damaged bottle', response: 'Sorry about that! Please share photos and your Order ID within 48 hours of delivery. Our team will arrange a replacement or refund as per our Returns policy.', buttons: ['Talk to Support'], keywords: ['return', 'refund', 'damaged', 'leak', 'replace'], next: ['f_human'], enabled: true, x: 910, y: 200 },
       { id: 'f_human', name: 'Human Support', question: 'I want to talk to someone', response: 'Connecting you to our support team. They will reply shortly during working hours.', buttons: [], keywords: ['agent', 'human', 'support', 'call', 'complaint'], next: [], enabled: true, x: 620, y: 370 },
     ],
     knowledge: [
       { id: 'kb_1', type: 'FAQ', question: 'What is cold-pressed oil?', answer: 'Oil extracted mechanically at low temperature in a wooden (chekku) or rotary press, without chemical solvents or refining.', fileName: '', size: 0, createdAt: iso(ago(50)) },
-      { id: 'kb_2', type: 'FAQ', question: 'Do you offer free delivery?', answer: 'Yes, delivery is free on orders above ₹999. Below that, ₹60 within Tamil Nadu and ₹120 for the rest of India.', fileName: '', size: 0, createdAt: iso(ago(50)) },
+      { id: 'kb_2', type: 'FAQ', question: 'Do you offer free delivery?', answer: 'Yes, delivery is free on orders above ₹1,499. Below that, ₹60 within Tamil Nadu and ₹120 for the rest of India.', fileName: '', size: 0, createdAt: iso(ago(50)) },
       { id: 'kb_3', type: 'FAQ', question: 'How should I store the oil?', answer: 'Store in a cool, dry place away from direct sunlight and keep the cap tightly closed.', fileName: '', size: 0, createdAt: iso(ago(48)) },
       { id: 'kb_4', type: 'Product Info', question: 'Mayil Rotary Gingelly Oil Cake', answer: 'Cattle feed in 50 kg bags, available at the Cattle Feed Branch and Velum Mayilum – Main Branch.', fileName: '', size: 0, createdAt: iso(ago(40)) },
       { id: 'kb_5', type: 'Document', question: 'Shipping & Returns policy', answer: '', fileName: 'shipping-returns-policy.pdf', size: 184320, createdAt: iso(ago(35)) },
@@ -313,7 +313,7 @@ export function buildSeed(now = Date.now()) {
     conversations: customers.slice(0, 9).map((c, i) => {
       const t = ago(i * 1.3 + 0.1)
       const status = ['Open', 'Resolved', 'Handed over', 'Resolved', 'Pending', 'Resolved', 'Resolved', 'Handed over', 'Resolved'][i]
-      const qs = [['What is the price of 1 L coconut oil?', 'Pure Coconut Oil 1 L is ₹270 at Velum Mayilum – Main Branch and in stock.'], ['Where is my order RSH-10340?', 'Your order RSH-10340 has been shipped via ST Courier.'], ['I received a leaking bottle', 'Sorry about that! Please share photos and your Order ID within 48 hours of delivery.'], ['Do you deliver to Bengaluru?', 'Yes, we deliver across India. Shipping is ₹120 outside Tamil Nadu, free above ₹999.'], ['Payment debited but order not confirmed', 'Please share your Order ID and we will check.'], ['Is gingelly oil cake available?', 'Yes, Mayil and Jothi rotary oil cakes are available in 50 kg bags.'], ['How to store the oil?', 'Store in a cool, dry place away from direct sunlight.'], ['I want to place a bulk order', 'Connecting you to our support team.'], ['Hi', 'Vanakkam! 🙏 Welcome to RESHMAM. What would you like help with?']][i]
+      const qs = [['What is the price of 1 L coconut oil?', 'Pure Coconut Oil 1 L is ₹270 at Velum Mayilum – Main Branch and in stock.'], ['Where is my order RSH-10340?', 'Your order RSH-10340 has been shipped via ST Courier.'], ['I received a leaking bottle', 'Sorry about that! Please share photos and your Order ID within 48 hours of delivery.'], ['Do you deliver to Bengaluru?', 'Yes, we deliver across India. Shipping is ₹120 outside Tamil Nadu, free above ₹1,499 within Tamil Nadu.'], ['Payment debited but order not confirmed', 'Please share your Order ID and we will check.'], ['Is gingelly oil cake available?', 'Yes, Mayil and Jothi rotary oil cakes are available in 50 kg bags.'], ['How to store the oil?', 'Store in a cool, dry place away from direct sunlight.'], ['I want to place a bulk order', 'Connecting you to our support team.'], ['Hi', 'Vanakkam! 🙏 Welcome to RESHMAM. What would you like help with?']][i]
       const messages = [
         { from: 'user', text: qs[0], at: iso(t) },
         { from: 'bot', text: qs[1], at: iso(t + 20000) },
@@ -328,11 +328,11 @@ export function buildSeed(now = Date.now()) {
   const allPerms = (v) => Object.fromEntries(PERMISSION_MODULES.map((m) => [m, v]))
   const settings = {
     general: { storeName: 'RESHMAM Natural Goodness', storeUrl: 'https://reshmam.com', timezone: 'Asia/Kolkata', currency: 'INR', dateFormat: 'DD MMM YYYY', orderPrefix: 'RSH-', lowStockEmail: true, maintenance: false },
-    company: { legalName: 'P. Kaliappan and Sons', brand: 'RESHMAM', tagline: 'Pure. Traditional. Trusted.', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', mobile: '96008 22272', email: 'info@reshmam.com', gstin: '', fssai: '', logo: '' },
+    company: { legalName: 'P. Kaliappan and Sons', brand: 'RESHMAM', tagline: 'Pure. Traditional. Trusted.', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 97877 22272', mobile: '97877 22272', email: 'info@reshmam.com', gstin: '', fssai: '', logo: '' },
     notifications: { newOrder: true, lowStock: true, outOfStock: true, newCustomer: false, paymentFailed: true, refundRequest: true, dailySummary: false, channels: { email: true, whatsapp: false, inApp: true } },
     tax: { gstEnabled: true, defaultGst: 5, gstin: '', placeOfSupply: 'Tamil Nadu', invoicePrefix: 'INV-', hsnOnInvoice: true },
     payment: { razorpayEnabled: false, razorpayKeyId: '', razorpayMode: 'Test', webhookSecretSet: false, codEnabled: true, codMaxOrder: 5000, upiId: '' },
-    shipping: { freeThreshold: 999, tamilNaduFee: 60, restOfIndiaFee: 120, dispatchDays: '1–2 working days', couriers: 'Professional Couriers, ST Courier, India Post, DTDC', pickupAvailable: true },
+    shipping: { freeThreshold: 1499, tamilNaduFee: 60, restOfIndiaFee: 120, dispatchDays: '1–2 working days', couriers: 'Professional Couriers, ST Courier, India Post, DTDC', pickupAvailable: true },
     users: [
       { id: 'u_1', name: 'Reshmam Admin', email: 'admin@reshmam.com', password: 'Admin@123', role: 'Admin', branchId: 'all', phone: '+91 98765 43210', status: 'Active', lastLogin: '', avatar: '' },
       { id: 'u_2', name: 'Murugan K', email: 'manager@reshmam.com', password: 'Manager@123', role: 'Manager', branchId: 'br_vm', phone: '', status: 'Active', lastLogin: iso(ago(1)), avatar: '' },

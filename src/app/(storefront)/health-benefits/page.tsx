@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
   ChefHat,
   ClipboardCheck,
@@ -26,14 +25,13 @@ import {
   Container,
   IconBadge,
   SectionHeading,
-  cn,
 } from "@storefront/_components/ui/primitives";
 import { LeafSprig } from "@storefront/_components/ui/decor";
 
 export const metadata: Metadata = {
   title: "Health Benefits",
   description:
-    "Why families choose cold pressed oils: natural nutrients, no chemical solvents and traditional extraction. Learn how to use gingelly, groundnut, coconut and castor oil.",
+    "Why families choose cold pressed oils: natural nutrients, no chemical solvents and traditional extraction. Learn how to use gingelly, groundnut and coconut oil.",
   alternates: { canonical: "/health-benefits" },
   openGraph: { url: "/health-benefits", images: ["/images/health-hero.webp"] },
 };
@@ -72,18 +70,6 @@ const productBenefits = [
       "Traditionally used for skin and hair care",
     ],
   },
-  {
-    name: "Castor Oil",
-    image: "/images/product-castor.webp",
-    alt: "RESHMAM castor oil with castor seeds",
-    href: "/products/castor-oil",
-    external: true,
-    points: [
-      "Traditionally used for massage",
-      "Used in hair and skin care routines",
-      "For external use only — not a cooking oil",
-    ],
-  },
 ];
 
 export default function HealthBenefitsPage() {
@@ -104,7 +90,7 @@ export default function HealthBenefitsPage() {
           </p>
         }
         image="/images/health-hero.webp"
-        imageAlt="RESHMAM gingelly, groundnut, coconut and castor oil bottles with seeds and coconut"
+        imageAlt="RESHMAM cold pressed oil bottles with seeds and coconut"
       >
         <ButtonLink href="#benefits">
           Explore Health Benefits <ArrowRight className="h-4 w-4" aria-hidden />
@@ -148,14 +134,11 @@ export default function HealthBenefitsPage() {
             title={<span id="bp-heading">Benefits by Our Products</span>}
             subtitle="Each oil has its own natural character and traditional uses."
           />
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {productBenefits.map((p) => (
               <li
                 key={p.name}
-                className={cn(
-                  "flex flex-col overflow-hidden rounded-xl border bg-cream-50 shadow-card",
-                  p.external ? "border-rust/40" : "border-beige-300/80",
-                )}
+                className="flex flex-col overflow-hidden rounded-xl border border-beige-300/80 bg-cream-50 shadow-card"
               >
                 <Image
                   src={p.image}
@@ -168,16 +151,6 @@ export default function HealthBenefitsPage() {
                   <h3 className="font-serif text-xl font-bold text-forest-800">
                     {p.name}
                   </h3>
-                  {p.external && (
-                    <p className="mt-2 flex items-start gap-2 rounded-md bg-rust/10 px-2.5 py-2 text-xs font-semibold text-rust">
-                      <AlertTriangle
-                        className="mt-px h-4 w-4 shrink-0"
-                        aria-hidden
-                      />
-                      External use only. Do not ingest or use as a treatment
-                      without qualified medical guidance.
-                    </p>
-                  )}
                   <ul className="mt-3 space-y-1.5 text-sm text-ink-soft">
                     {p.points.map((pt) => (
                       <li key={pt} className="flex gap-2">
@@ -337,7 +310,7 @@ export default function HealthBenefitsPage() {
                 alt: "Coconut oil in a glass jar beside a split coconut",
                 icon: Sparkles,
                 t: "Skin & Hair Care",
-                d: "Use coconut or castor oil externally for traditional hair oiling and massage. Patch-test first.",
+                d: "Use coconut oil for traditional hair oiling and massage. Patch-test first.",
               },
             ].map(({ image, alt, icon: Icon, t, d }) => (
               <li

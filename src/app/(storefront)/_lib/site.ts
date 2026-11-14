@@ -23,7 +23,7 @@ export const site = {
   brandLine: "PURE. TRADITIONAL. TRUSTED.",
   credit: "Designed & Developed by Nexsun Tech Solutionz",
 
-  phone: { display: "+91 98765 43210", tel: "+919876543210" },
+  phone: { display: "+91 97877 22272", tel: "+919787722272" },
   emails: {
     info: "info@reshmam.com",
     orders: "orders@reshmam.com",
@@ -34,7 +34,7 @@ export const site = {
   address: {
     company: "P.KALIAPPAN AND SONS",
     lines: ["6/104, MAIN ROAD, LAKSHMIPURAM,", "KOVILPATTI - 628 502, TAMILNADU"],
-    mobile: { display: "96008 22272", tel: "+919600822272" },
+    mobile: { display: "97877 22272", tel: "+919787722272" },
     street: "6/104, Main Road, Lakshmipuram",
     locality: "Kovilpatti",
     region: "Tamil Nadu",
@@ -60,21 +60,33 @@ export const site = {
    * WhatsApp Support number (digits only, with country code). Used by the
    * footer and the chat assistant. Change it if WhatsApp uses another number.
    */
-  whatsapp: { number: "919876543210", display: "+91 98765 43210" },
+  whatsapp: { number: "919787722272", display: "+91 97877 22272" },
 
   /** Replace "#" with the real profile URLs. Links still set to "#" show as "coming soon". */
   social: {
     instagram: "#",
     facebook: "#",
-    youtube: "#",
   },
+
+  /**
+   * Marketplaces RESHMAM is also sold on, shown in the "Also available on" section of the home page.
+   * Replace "#" with each store's RESHMAM listing URL; entries still set to "#" are shown without a link.
+   * `logo` takes a path under /public (e.g. "/images/marketplaces/amazon.svg") once the official logo
+   * files are supplied; until then the store name is shown as text.
+   */
+  marketplaces: [
+    { name: "Amazon", url: "#", logo: null },
+    { name: "Zepto", url: "#", logo: null },
+    { name: "Swiggy Instamart", url: "#", logo: null },
+    { name: "JioMart", url: "#", logo: null },
+  ] as { name: string; url: string; logo: string | null }[],
 
   /**
    * Current offers shown by the chat assistant. Only list offers that are
    * actually running — the assistant never invents discounts or coupon codes.
    */
   offers: [
-    { title: "Free delivery", text: "Free delivery across Tamil Nadu on orders above ₹999." },
+    { title: "Free delivery", text: "Free delivery across Tamil Nadu on orders above ₹1,499." },
     {
       title: "Bulk & wholesale pricing",
       text: "Special rates for bulk orders and retail partnerships — send a bulk enquiry from the Contact page.",
@@ -92,7 +104,7 @@ export const site = {
 
   /** Delivery rules – amounts in rupees. Provisional, set by the business. */
   shipping: {
-    freeThreshold: 999,
+    freeThreshold: 1499,
     tamilNaduFee: 60,
     restOfIndiaFee: 120,
     homeState: "Tamil Nadu",

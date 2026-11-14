@@ -11,7 +11,7 @@ import { Container, IconBadge } from "@storefront/_components/ui/primitives";
 export const metadata: Metadata = {
   title: "Shop Cold Pressed Oils",
   description:
-    "Shop RESHMAM traditional cold pressed gingelly, groundnut, coconut and castor oils, family packs and gift combos. Free delivery across Tamil Nadu above ₹999.",
+    "Shop RESHMAM traditional cold pressed gingelly, groundnut and coconut oils, family packs and gift combos. Free delivery across Tamil Nadu above ₹1,499.",
   alternates: { canonical: "/products" },
   openGraph: { ...openGraphBase, type: "website", url: "/products", images: ["/images/hero-products.webp"] },
 };
@@ -34,7 +34,7 @@ export default function ProductsPage() {
           </p>
         }
         image="/images/hero-products.webp"
-        imageAlt="Four RESHMAM oil bottles — gingelly, groundnut, coconut and castor — with seeds and coconut"
+        imageAlt="RESHMAM oil bottles with seeds and coconut"
       >
         <ul className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-5">
           {[

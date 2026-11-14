@@ -64,7 +64,7 @@ invents prices, discounts or order details. To add free-form AI answers later, c
 
 | What | File |
 |---|---|
-| Phone, emails, address, hours, map link, WhatsApp number, socials, offers, delivery fees, video URLs | `src/app/(storefront)/_lib/site.ts` |
+| Phone, emails, address, hours, map link, WhatsApp number, socials, marketplaces, offers, delivery fees, video URLs | `src/app/(storefront)/_lib/site.ts` |
 | FAQ answers (FAQ page and chat assistant) | `src/app/(storefront)/_lib/faqs.ts` |
 | Products, variants, starting prices and stock | `src/app/(storefront)/_lib/products.ts` (once Supabase is connected, prices and stock in `product_variants` win — see below) |
 | Blog articles (sample) | `src/app/(storefront)/_lib/blog.ts` |
@@ -144,7 +144,8 @@ The admin panel at `/admin` is a demo with browser-only sign-in until it is conn
 - Supabase project (URL, anon key, service-role key)
 - Razorpay merchant account (key ID, secret, webhook secret)
 - Resend account + verified sending domain (or swap `sendEmail()` for your SMTP provider)
-- Real Instagram, Facebook and YouTube URLs (`site.social`) and the WhatsApp Support number (`site.whatsapp`)
+- Real Instagram and Facebook URLs (`site.social`)
+- Amazon, Zepto, Swiggy Instamart and JioMart listing URLs and official logo files (`site.marketplaces`), shown in the home page's "Also Available On" section
 
 ## Asset manifest
 
@@ -153,7 +154,7 @@ All images in `public/images/` are **provisional crops taken from the supplied d
 | File | Used for | Needed |
 |---|---|---|
 | `logo.png`, `logo-mark.png`, `logo-mark-white.png` | Header, footer, favicon | Vector (SVG) logo + favicon set |
-| `product-{gingelly,groundnut,coconut,castor}.webp` | Product cards, categories, PDP | Real product photos, ~1200×830, plain/cream background |
+| `product-{gingelly,groundnut,coconut}.webp` | Product cards, categories, PDP | Real product photos, ~1200×830, plain/cream background |
 | `pack-{gingelly,groundnut,coconut,combo}.webp` | Family packs, gift combo | Real pack photos |
 | `home-hero.webp`, `hero-products.webp`, `health-hero.webp`, `contact-hero.webp` | Page heroes | ~2000×1000 lifestyle shots |
 | `story-hero.webp` | Our Story hero, home story block | Real chekku photo |
@@ -165,5 +166,5 @@ All images in `public/images/` are **provisional crops taken from the supplied d
 
 - **Testimonials** — labelled “Sample testimonials — not verified customer reviews”. Replace with real reviews (with permission).
 - **Blog** — four sample articles, labelled “Sample”, `noindex`, excluded from the sitemap.
-- **Prices / middle sizes / stock** — range ends match the screenshots; 1 L prices and stock counts are placeholders (e.g. Castor 5 L is seeded out of stock to demonstrate that state).
-- No ratings, certifications or medical claims are invented. Health copy is framed as traditional use / balanced diet with a visible disclaimer; castor oil is marked external-use-only everywhere.
+- **Prices / middle sizes / stock** — range ends match the screenshots; 1 L prices and stock counts are placeholders. Packs come in 500 ml and 1 L only (5 L was dropped in Nov 2026); the three-oil combo's prices are scaled from the old four-oil pack and need confirming.
+- No ratings, certifications or medical claims are invented. Health copy is framed as traditional use / balanced diet with a visible disclaimer; products can carry a `notice` for safety or usage warnings.

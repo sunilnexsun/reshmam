@@ -11,7 +11,7 @@ import { site } from "@storefront/_lib/site";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 98765 43210, email info@reshmam.com or visit us in Kovilpatti, Tamil Nadu.",
+    "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 97877 22272, email info@reshmam.com or visit us in Kovilpatti, Tamil Nadu.",
   alternates: { canonical: "/contact" },
   openGraph: { url: "/contact", images: ["/images/contact-hero.webp"] },
 };

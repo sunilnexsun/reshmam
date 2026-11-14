@@ -80,8 +80,8 @@ const NEEDS: { id: string; label: string; match: (p: ChatProduct) => boolean; no
   {
     id: "hair",
     label: "Hair & skin care",
-    match: (p) => p.kind === "single" && (p.category === "coconut-oil" || p.category === "castor-oil"),
-    note: "Coconut oil and castor oil are traditionally used for hair oiling and massage. Castor oil is for external use only.",
+    match: (p) => p.kind === "single" && p.category === "coconut-oil",
+    note: "Coconut oil is traditionally used for hair oiling and massage.",
   },
   {
     id: "family",
@@ -94,12 +94,6 @@ const NEEDS: { id: string; label: string; match: (p: ChatProduct) => boolean; no
     label: "Gifting",
     match: (p) => p.kind === "combo",
     note: "Our gift pack brings our oils together in one box.",
-  },
-  {
-    id: "cattle",
-    label: "Cattle feed",
-    match: (p) => p.category === "cattle-feed",
-    note: "Rotary gingelly oil cake, sold in 50 kg sacks. Not for human consumption.",
   },
 ];
 
@@ -613,7 +607,7 @@ export function mountChatbot(host: HTMLElement, cfg: ChatConfig) {
   /* ---------- free text ---------- */
   const words = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
   const STOP = new Set(["oil", "the", "a", "i", "want", "need", "me", "show", "for", "of", "and", "is", "to", "do", "you", "have", "price", "buy", "about", "tell", "please", "what", "my", "can", "your"]);
-  const SYN: Record<string, string> = { sesame: "gingelly", til: "gingelly", nallennai: "gingelly", peanut: "groundnut", kadalai: "groundnut", thengai: "coconut", cattle: "cattle-feed", feed: "cattle-feed", cake: "cattle-feed", gift: "combo" };
+  const SYN: Record<string, string> = { sesame: "gingelly", til: "gingelly", nallennai: "gingelly", peanut: "groundnut", kadalai: "groundnut", thengai: "coconut", gift: "combo" };
 
   function answer(text: string) {
     const t = text.toLowerCase();
