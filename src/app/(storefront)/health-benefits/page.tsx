@@ -18,6 +18,7 @@ import {
   Flower2,
 } from "lucide-react";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
+import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { FeatureGrid, TrustStrip } from "@storefront/_components/sections/FeatureGrid";
 import { ClosingBanner } from "@storefront/_components/sections/Misc";
 import {
@@ -75,57 +76,39 @@ const productBenefits = [
 export default function HealthBenefitsPage() {
   return (
     <>
-      {/* Desktop: the designed banner (its heading and button are part of the image, so the real heading is
-          kept for screen readers and search engines, and a link sits over the drawn button). */}
-      <section className="relative hidden bg-cream lg:block">
-        <Image
-          src="/images/health-banner.webp"
-          alt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
-          width={1600}
-          height={535}
-          priority
-          sizes="100vw"
-          className="h-auto w-full"
-        />
-        <div className="sr-only">
-          <p>Health Benefits</p>
-          <h1>Pure Oils for a Healthier You</h1>
-          <p>
-            Our cold-pressed oils are rich in natural nutrients, helping you and your family live a healthier, happier
-            life.
-          </p>
-        </div>
-        <Link
-          href="#benefits"
-          aria-label="Explore Health Benefits"
-          className="absolute rounded-lg focus-visible:outline-offset-4"
-          style={{ left: "4.1%", top: "75.7%", width: "19.6%", height: "9.6%" }}
-        />
-      </section>
-      {/* Mobile and tablet: the banner's text would be too small, so the usual hero with the product side of it. */}
-      <div className="lg:hidden">
-        <PageHero
-          eyebrow="Health Benefits"
-          title={
-            <>
-              Pure Oils <br />
-              <Gold>for a Healthier You</Gold>
-            </>
-          }
-          description={
-            <p>
-              Our cold-pressed oils are rich in natural nutrients, helping you and
-              your family live a healthier, happier life.
-            </p>
-          }
-          image="/images/health-hero.webp"
-          imageAlt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
-        >
-          <ButtonLink href="#benefits">
-            Explore Health Benefits <ArrowRight className="h-4 w-4" aria-hidden />
-          </ButtonLink>
-        </PageHero>
-      </div>
+      <BannerHero
+        src="/images/health-banner.webp"
+        width={1600}
+        height={535}
+        alt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
+        eyebrow="Health Benefits"
+        title="Pure Oils for a Healthier You"
+        description="Our cold-pressed oils are rich in natural nutrients, helping you and your family live a healthier, happier life."
+        cta={{ href: "#benefits", label: "Explore Health Benefits", box: { left: "4.1%", top: "75.7%", width: "19.6%", height: "9.6%" } }}
+        fallback={
+          <PageHero
+            eyebrow="Health Benefits"
+            title={
+              <>
+                Pure Oils <br />
+                <Gold>for a Healthier You</Gold>
+              </>
+            }
+            description={
+              <p>
+                Our cold-pressed oils are rich in natural nutrients, helping you and
+                your family live a healthier, happier life.
+              </p>
+            }
+            image="/images/health-hero.webp"
+            imageAlt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
+          >
+            <ButtonLink href="#benefits">
+              Explore Health Benefits <ArrowRight className="h-4 w-4" aria-hidden />
+            </ButtonLink>
+          </PageHero>
+        }
+      />
 
       <TrustStrip
         items={[
