@@ -7,14 +7,14 @@ import { ContactForm, ContactFormFromUrl } from "@storefront/_components/contact
 import { JsonLd } from "@storefront/_components/sections/Misc";
 import { Container, IconBadge } from "@storefront/_components/ui/primitives";
 import { LeafSprig } from "@storefront/_components/ui/decor";
-import { site } from "@storefront/_lib/site";
+import { openGraphBase, site } from "@storefront/_lib/site";
 
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
     "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 97877 22272, email info@reshmam.com or visit us in Kovilpatti, Tamil Nadu.",
   alternates: { canonical: "/contact" },
-  openGraph: { url: "/contact", images: ["/images/contact-banner.webp"] },
+  openGraph: { ...openGraphBase, url: "/contact", images: ["/images/contact-banner.webp"] },
 };
 
 const storeLd = {
