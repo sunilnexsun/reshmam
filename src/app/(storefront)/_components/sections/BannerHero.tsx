@@ -9,6 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
  *   screen readers and search engines, and an invisible link is placed over the drawn button.
  * - Below lg the banner's text would be too small to read, so `fallback` (usually a PageHero using the
  *   product side of the banner) is shown instead.
+ * - `overlay` adds real, clickable elements on top of the banner (position them absolutely in % of the banner).
  */
 export function BannerHero({
   src,
@@ -19,6 +20,7 @@ export function BannerHero({
   title,
   description,
   cta,
+  overlay,
   fallback,
 }: {
   src: string;
@@ -30,6 +32,7 @@ export function BannerHero({
   description?: string;
   /** Where the drawn button links, and its box as percentages of the banner. */
   cta?: { href: string; label: string; box: Pick<CSSProperties, "left" | "top" | "width" | "height"> };
+  overlay?: ReactNode;
   fallback: ReactNode;
 }) {
   return (
@@ -49,6 +52,7 @@ export function BannerHero({
             style={cta.box}
           />
         )}
+        {overlay}
       </section>
       <div className="lg:hidden">{fallback}</div>
     </>

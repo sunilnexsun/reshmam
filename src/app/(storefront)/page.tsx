@@ -16,6 +16,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { PageHero, Gold } from "./_components/sections/PageHero";
+import { BannerHero } from "./_components/sections/BannerHero";
 import { TrustStrip } from "./_components/sections/FeatureGrid";
 import { ProductGrid } from "./_components/products/ProductCatalog";
 import { BlogCard, Testimonials } from "./_components/sections/Misc";
@@ -36,35 +37,54 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 export default function HomePage() {
   return (
     <>
-      <PageHero
+      <BannerHero
+        src="/images/home-banner.webp"
+        width={1600}
+        height={666}
+        alt="Bottles of RESHMAM groundnut, coconut and gingelly oil on a wooden board with groundnuts, sesame and coconut"
         eyebrow="Traditional | Natural | Pure"
-        title={
-          <>
-            Tradition in <br />
-            <Gold>Every Drop</Gold>
-          </>
+        title="Tradition in Every Drop"
+        description="Pure. Natural. Chemical Free. Traditionally extracted cold-pressed oils for your family's better health and well-being."
+        overlay={
+          // The banner has no drawn button, so a real one sits in the clear space under its icon row.
+          <div className="absolute left-[32.3%] top-[78%] -translate-x-1/2">
+            <ButtonLink href="/products" className="shadow-md">
+              Shop Our Oils <ArrowRight className="h-4 w-4" aria-hidden />
+            </ButtonLink>
+          </div>
         }
-        description={
-          <>
-            <p className="font-serif text-xl font-semibold text-forest-900 sm:text-2xl">Pure. Natural. Chemical Free.</p>
-            <p className="mt-2 text-ink-soft">
-              Traditionally extracted cold-pressed oils for your family&apos;s better health and well-being.
-            </p>
-          </>
+        fallback={
+          <PageHero
+            eyebrow="Traditional | Natural | Pure"
+            title={
+              <>
+                Tradition in <br />
+                <Gold>Every Drop</Gold>
+              </>
+            }
+            description={
+              <>
+                <p className="font-serif text-xl font-semibold text-forest-900 sm:text-2xl">Pure. Natural. Chemical Free.</p>
+                <p className="mt-2 text-ink-soft">
+                  Traditionally extracted cold-pressed oils for your family&apos;s better health and well-being.
+                </p>
+              </>
+            }
+            image="/images/home-banner-mobile.webp"
+            imageAlt="Bottles of RESHMAM groundnut, coconut and gingelly oil on a wooden board with groundnuts, sesame and coconut"
+            size="lg"
+          >
+            <div className="flex flex-wrap gap-3">
+              <ButtonLink href="/products">
+                Shop Our Oils <ArrowRight className="h-4 w-4" aria-hidden />
+              </ButtonLink>
+              <ButtonLink href="/our-story" variant="outline">
+                Explore Our Story
+              </ButtonLink>
+            </div>
+          </PageHero>
         }
-        image="/images/home-hero.webp"
-        imageAlt="Bottles of RESHMAM gingelly, groundnut and coconut oil with seeds, groundnuts and a split coconut"
-        size="lg"
-      >
-        <div className="flex flex-wrap gap-3">
-          <ButtonLink href="/products">
-            Shop Our Oils <ArrowRight className="h-4 w-4" aria-hidden />
-          </ButtonLink>
-          <ButtonLink href="/our-story" variant="outline">
-            Explore Our Story
-          </ButtonLink>
-        </div>
-      </PageHero>
+      />
 
       <TrustStrip
         items={[
