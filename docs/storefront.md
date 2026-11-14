@@ -144,7 +144,7 @@ The admin panel at `/admin` is a demo with browser-only sign-in until it is conn
 - Supabase project (URL, anon key, service-role key)
 - Razorpay merchant account (key ID, secret, webhook secret)
 - Resend account + verified sending domain (or swap `sendEmail()` for your SMTP provider)
-- Real Instagram and Facebook URLs (`site.social`)
+- Real Facebook URL (`site.social`)
 - Amazon, Zepto, Swiggy Instamart and JioMart listing URLs and official logo files (`site.marketplaces`), shown in the home page's "Also Available On" section
 
 ## Asset manifest
