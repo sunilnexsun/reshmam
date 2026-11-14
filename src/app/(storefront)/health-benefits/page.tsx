@@ -28,13 +28,14 @@ import {
   SectionHeading,
 } from "@storefront/_components/ui/primitives";
 import { LeafSprig } from "@storefront/_components/ui/decor";
+import { openGraphBase } from "@storefront/_lib/site";
 
 export const metadata: Metadata = {
   title: "Health Benefits",
   description:
     "Why families choose cold pressed oils: natural nutrients, no chemical solvents and traditional extraction. Learn how to use gingelly, groundnut and coconut oil.",
   alternates: { canonical: "/health-benefits" },
-  openGraph: { url: "/health-benefits", images: ["/images/health-banner.webp"] },
+  openGraph: { ...openGraphBase, url: "/health-benefits", images: ["/images/health-banner.webp"] },
 };
 
 const productBenefits = [

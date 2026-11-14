@@ -1,35 +1,50 @@
 import type { Metadata } from "next";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
+import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { BlogCard, Breadcrumbs } from "@storefront/_components/sections/Misc";
 import { Container, SampleBadge } from "@storefront/_components/ui/primitives";
 import { posts } from "@storefront/_lib/blog";
+import { openGraphBase } from "@storefront/_lib/site";
 
 export const metadata: Metadata = {
   title: "Blog — Recipes, Tips & Wellness",
   description: "Cooking tips, oil education and wellness ideas from RESHMAM Natural Goodness.",
   alternates: { canonical: "/blog" },
+  openGraph: { ...openGraphBase, url: "/blog", images: ["/images/blog-banner.webp"] },
 };
 
 export default function BlogPage() {
   return (
     <>
-      <PageHero
+      <BannerHero
+        src="/images/blog-banner.webp"
+        width={1600}
+        height={533}
+        alt="Cold pressed oil poured from a wooden spoon over a bowl of sautéed vegetables, with groundnuts, sesame and coconut"
         eyebrow="From Our Blog"
-        title={
-          <>
-            Recipes, Tips <br />
-            <Gold>&amp; Wellness</Gold>
-          </>
+        title="Recipes, Tips & Wellness"
+        description="Ideas for cooking with traditional oils, how cold pressing works, and simple wellness habits."
+        cta={{ href: "#posts-heading", label: "Explore Our Blog", box: { left: "6.6%", top: "76.4%", width: "16.8%", height: "9.6%" } }}
+        fallback={
+          <PageHero
+            eyebrow="From Our Blog"
+            title={
+              <>
+                Recipes, Tips <br />
+                <Gold>&amp; Wellness</Gold>
+              </>
+            }
+            description={<p>Ideas for cooking with traditional oils, how cold pressing works, and simple wellness habits.</p>}
+            image="/images/blog-hero.webp"
+            imageAlt="Cold pressed oil poured from a wooden spoon over a bowl of sautéed vegetables"
+          />
         }
-        description={<p>Ideas for cooking with traditional oils, how cold pressing works, and simple wellness habits.</p>}
-        image="/images/health-meal.webp"
-        imageAlt="Cold pressed oil poured over a bowl of sautéed vegetables"
       />
       <section aria-labelledby="posts-heading" className="bg-paper py-12">
         <Container>
           <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "Blog" }]} />
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <h2 id="posts-heading" className="font-serif text-3xl font-bold text-forest-800">
+            <h2 id="posts-heading" className="scroll-mt-28 font-serif text-3xl font-bold text-forest-800">
               Latest Articles
             </h2>
             <SampleBadge>Sample articles — to be replaced with approved content</SampleBadge>
