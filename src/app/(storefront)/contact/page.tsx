@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ArrowRight, Clock, Mail, MapPin, Phone } from "lucide-react";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
+import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { ContactForm, ContactFormFromUrl } from "@storefront/_components/contact/ContactForm";
 import { JsonLd } from "@storefront/_components/sections/Misc";
 import { Container, IconBadge } from "@storefront/_components/ui/primitives";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   description:
     "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 97877 22272, email info@reshmam.com or visit us in Kovilpatti, Tamil Nadu.",
   alternates: { canonical: "/contact" },
-  openGraph: { url: "/contact", images: ["/images/contact-hero.webp"] },
+  openGraph: { url: "/contact", images: ["/images/contact-banner.webp"] },
 };
 
 const storeLd = {
@@ -113,22 +114,34 @@ export default function ContactPage() {
 
   return (
     <>
-      <PageHero
+      <BannerHero
+        src="/images/contact-banner.webp"
+        width={1600}
+        height={533}
+        alt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
         eyebrow="Contact Us"
-        title={
-          <>
-            We&apos;re Here <br />
-            <Gold>for You</Gold>
-          </>
+        title="We're Here for You"
+        description="Have a question about our products, need help with an order, or just want to say hello? We'd love to hear from you."
+        cta={{ href: "#enquiry", label: "Get in Touch", box: { left: "6.6%", top: "74.1%", width: "16.9%", height: "10.7%" } }}
+        fallback={
+          <PageHero
+            eyebrow="Contact Us"
+            title={
+              <>
+                We&apos;re Here <br />
+                <Gold>for You</Gold>
+              </>
+            }
+            description={
+              <p>
+                Have a question about our products, need help with an order, or just want to say hello? We&apos;d love to
+                hear from you.
+              </p>
+            }
+            image="/images/contact-hero.webp"
+            imageAlt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
+          />
         }
-        description={
-          <p>
-            Have a question about our products, need help with an order, or just want to say hello? We&apos;d love to
-            hear from you.
-          </p>
-        }
-        image="/images/contact-hero.webp"
-        imageAlt="RESHMAM oil bottles with seeds, groundnuts and coconut beside a card reading Pure Foods, Brighter Days"
       />
 
       <section aria-label="Contact details" className="relative bg-paper">
