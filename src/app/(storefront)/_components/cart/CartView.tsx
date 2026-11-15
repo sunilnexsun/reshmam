@@ -7,6 +7,7 @@ import { useCartLines } from "./useCartLines";
 import { cart } from "@storefront/_lib/store";
 import { formatINR, shippingFee } from "@storefront/_lib/pricing";
 import { site } from "@storefront/_lib/site";
+import { variantImage } from "@storefront/_lib/products";
 import { ButtonLink } from "@storefront/_components/ui/primitives";
 
 export function OrderSummary({
@@ -73,7 +74,7 @@ export function CartView() {
           {lines.map(({ product, variant, quantity, lineTotal, variantId }) => (
             <li key={variantId} className="flex gap-4 p-4 sm:p-5">
               <Link href={`/products/${product.slug}`} className="shrink-0">
-                <Image src={product.image} alt={product.imageAlt} width={120} height={84} className="h-20 w-28 rounded-lg object-cover" />
+                <Image src={variantImage(product, variant)} alt={`${product.imageAlt}, ${variant.label}`} width={120} height={84} className={product.imageFit === "contain" ? "h-20 w-28 rounded-lg bg-white object-contain" : "h-20 w-28 rounded-lg object-cover"} />
               </Link>
               <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>

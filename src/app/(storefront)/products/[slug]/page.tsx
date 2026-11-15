@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AlertTriangle, Cog, Leaf, Truck } from "lucide-react";
 import { ProductPurchase } from "@storefront/_components/products/ProductPurchase";
+import { ProductImage, SelectedVariantProvider } from "@storefront/_components/products/SelectedVariant";
 import { BranchBadge } from "@storefront/_components/products/ProductCard";
 import { ProductGrid } from "@storefront/_components/products/ProductCatalog";
 import { Breadcrumbs, JsonLd } from "@storefront/_components/sections/Misc";
@@ -103,66 +103,60 @@ export default async function ProductPage({
               { label: product.shortName },
             ]}
           />
-          <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-14">
-            <div className="overflow-hidden rounded-2xl border border-beige-300/80 bg-white shadow-card">
-              <Image
-                src={product.image}
-                alt={product.imageAlt}
-                width={464}
-                height={320}
-                priority
-                sizes="(min-width:1024px) 50vw, 100vw"
-                className={product.imageFit === "contain" ? "aspect-[29/20] w-full object-contain p-6" : "aspect-[29/20] w-full object-cover"}
-              />
-            </div>
-            <div>
-              {category && (
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-rust">
-                  {product.kind === "combo" ? "Gift Pack" : category.shortName}
-                </p>
-              )}
-              <BranchBadge branch={product.branch} className="mt-3" />
-              <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-forest-800 sm:text-4xl">
-                {product.name}
-              </h1>
-              <p className="mt-3 text-lg text-ink-soft">{product.summary}</p>
-              {product.notice && (
-                <p
-                  role="note"
-                  className="mt-4 flex items-start gap-2 rounded-lg border border-rust/30 bg-rust/10 p-3 text-sm font-medium text-rust"
-                >
-                  <AlertTriangle
-                    className="mt-0.5 h-4 w-4 shrink-0"
-                    aria-hidden
-                  />
-                  {product.notice}
-                </p>
-              )}
-              <div className="mt-6">
-                <ProductPurchase product={product} />
+          <SelectedVariantProvider product={product}>
+            <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-14">
+              <div className="overflow-hidden rounded-2xl border border-beige-300/80 bg-white shadow-card">
+                <ProductImage product={product} />
               </div>
-              <ul className="mt-8 grid gap-3 border-t border-beige-300 pt-6 text-sm sm:grid-cols-3">
-                <li className="flex items-center gap-2">
-                  <IconBadge size="sm">
-                    <Cog className="h-4 w-4" />
-                  </IconBadge>{" "}
-                  Wooden chekku pressed
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconBadge size="sm">
-                    <Leaf className="h-4 w-4" />
-                  </IconBadge>{" "}
-                  No chemical solvents
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconBadge size="sm">
-                    <Truck className="h-4 w-4" />
-                  </IconBadge>{" "}
-                  Free TN delivery over {formatINR(site.shipping.freeThreshold)}
-                </li>
-              </ul>
+              <div>
+                {category && (
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-rust">
+                    {product.kind === "combo" ? "Gift Pack" : category.shortName}
+                  </p>
+                )}
+                <BranchBadge branch={product.branch} className="mt-3" />
+                <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-forest-800 sm:text-4xl">
+                  {product.name}
+                </h1>
+                <p className="mt-3 text-lg text-ink-soft">{product.summary}</p>
+                {product.notice && (
+                  <p
+                    role="note"
+                    className="mt-4 flex items-start gap-2 rounded-lg border border-rust/30 bg-rust/10 p-3 text-sm font-medium text-rust"
+                  >
+                    <AlertTriangle
+                      className="mt-0.5 h-4 w-4 shrink-0"
+                      aria-hidden
+                    />
+                    {product.notice}
+                  </p>
+                )}
+                <div className="mt-6">
+                  <ProductPurchase product={product} />
+                </div>
+                <ul className="mt-8 grid gap-3 border-t border-beige-300 pt-6 text-sm sm:grid-cols-3">
+                  <li className="flex items-center gap-2">
+                    <IconBadge size="sm">
+                      <Cog className="h-4 w-4" />
+                    </IconBadge>{" "}
+                    Wooden chekku pressed
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <IconBadge size="sm">
+                      <Leaf className="h-4 w-4" />
+                    </IconBadge>{" "}
+                    No chemical solvents
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <IconBadge size="sm">
+                      <Truck className="h-4 w-4" />
+                    </IconBadge>{" "}
+                    Free TN delivery over {formatINR(site.shipping.freeThreshold)}
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
+          </SelectedVariantProvider>
 
           <div className="mt-12 grid gap-8 rounded-2xl border border-beige-300/80 bg-white p-6 sm:p-8 md:grid-cols-2">
             <div>

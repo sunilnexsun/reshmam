@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
 import type { BranchSlug, Product } from "@storefront/_lib/products";
 import { branchName } from "@storefront/_lib/products";
-import { priceRange } from "@storefront/_lib/products";
+import { priceRange, variantImage } from "@storefront/_lib/products";
 import { formatINR } from "@storefront/_lib/pricing";
 import { cart, useWishlist, wishlist } from "@storefront/_lib/store";
 import { useLiveProduct } from "@storefront/_lib/live-catalogue";
@@ -160,8 +160,8 @@ export function ProductCard({
         aria-hidden
       >
         <Image
-          src={product.image}
-          alt={product.imageAlt}
+          src={variantImage(product, variant)}
+          alt={`${product.imageAlt}, ${variant.label}`}
           width={464}
           height={320}
           sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
