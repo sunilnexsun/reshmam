@@ -12,7 +12,7 @@ import { openGraphBase, site } from "@storefront/_lib/site";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 97877 22272, email info@reshmam.com or visit us in Kovilpatti, Tamil Nadu.",
+    "Questions about RESHMAM cold pressed oils, an order, or bulk and retail partnerships? Call +91 97877 22272, email info.peekaesons@gmail.com or visit us in Kovilpatti, Tamil Nadu.",
   alternates: { canonical: "/contact" },
   openGraph: { ...openGraphBase, url: "/contact", images: ["/images/contact-banner.webp"] },
 };
@@ -81,9 +81,11 @@ export default function ContactPage() {
           <a href={`mailto:${site.emails.info}`} className="block font-semibold text-forest-900 hover:underline">
             {site.emails.info}
           </a>
-          <a href={`mailto:${site.emails.orders}`} className="block font-semibold text-forest-900 hover:underline">
-            {site.emails.orders}
-          </a>
+          {site.emails.orders !== site.emails.info && (
+            <a href={`mailto:${site.emails.orders}`} className="block font-semibold text-forest-900 hover:underline">
+              {site.emails.orders}
+            </a>
+          )}
           <span className="mt-1 block">{site.responseTimeCopy}</span>
         </>
       ),
