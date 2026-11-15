@@ -14,10 +14,9 @@ export type CategorySlug =
   | "groundnut-oil"
   | "coconut-oil";
 
-/** The two RESHMAM branches products are sold under. */
-export type BranchSlug = "velum-mayilum" | "reshmam";
+/** Branches products are sold under. With only one, the storefront hides the branch filter. */
+export type BranchSlug = "reshmam";
 export const branches: { slug: BranchSlug; name: string }[] = [
-  { slug: "velum-mayilum", name: "Velum Mayilum Branch" },
   { slug: "reshmam", name: "Reshmam Branch" },
 ];
 export const branchName = (b: BranchSlug) =>
@@ -263,66 +262,6 @@ export const products: Product[] = [
     variants: [
       { id: "RSH-SES-500ML", label: "500 ml", price: 160, stock: 100 },
     ],
-  },
-  {
-    slug: "premium-gingelly-oil",
-    newArrival: true,
-    name: "Premium Gingelly Oil",
-    shortName: "Premium Gingelly Oil",
-    category: "gingelly-oil",
-    kind: "single",
-    branch: "velum-mayilum",
-    image: "/images/product-gingelly.webp",
-    imageAlt: "Bottle of gingelly oil with sesame seeds",
-    summary:
-      "Cold-pressed sesame oil with rich flavour and nutrients. Perfect for traditional cooking.",
-    description: [
-      "Cold-pressed sesame oil with rich flavour and naturally occurring nutrients.",
-      "Perfect for traditional cooking.",
-    ],
-    uses: ["Traditional cooking", "Tempering"],
-    edible: true,
-    variants: [{ id: "VM-GIN-500ML", label: "500 ml", price: 180, stock: 100 }],
-  },
-  {
-    slug: "pure-coconut-oil",
-    newArrival: true,
-    name: "Pure Coconut Oil",
-    shortName: "Pure Coconut Oil",
-    category: "coconut-oil",
-    kind: "single",
-    branch: "velum-mayilum",
-    image: "/images/product-coconut.webp",
-    imageAlt: "Bottle of coconut oil beside a split coconut",
-    summary:
-      "Traditional extraction method for maximum purity. Ideal for cooking, hair care and skin care.",
-    description: [
-      "Made with the traditional extraction method for maximum purity.",
-      "Ideal for cooking, hair care and skin care.",
-    ],
-    uses: ["Cooking", "Hair and skin care"],
-    edible: true,
-    variants: [{ id: "VM-COC-500ML", label: "500 ml", price: 150, stock: 100 }],
-  },
-  {
-    slug: "velum-mayilum-groundnut-oil",
-    newArrival: true,
-    name: "Groundnut Oil",
-    shortName: "Groundnut Oil (Velum Mayilum)",
-    category: "groundnut-oil",
-    kind: "single",
-    branch: "velum-mayilum",
-    image: "/images/product-groundnut.webp",
-    imageAlt: "Bottle of groundnut oil with groundnuts",
-    summary:
-      "Fresh groundnut oil perfect for all cooking needs. High smoke point for deep frying.",
-    description: [
-      "Fresh groundnut oil, perfect for all cooking needs.",
-      "High smoke point, suited to deep frying.",
-    ],
-    uses: ["Everyday cooking", "Deep frying"],
-    edible: true,
-    variants: [{ id: "VM-GRN-500ML", label: "500 ml", price: 120, stock: 100 }],
   },
 ];
 

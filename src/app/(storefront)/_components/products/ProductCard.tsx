@@ -66,7 +66,7 @@ export function VariantSelector({
   );
 }
 
-/** Branch pill shown on every product (Velum Mayilum Branch / Reshmam Branch). */
+/** Branch pill shown on every product (e.g. "Reshmam Branch"). */
 export function BranchBadge({
   branch,
   className,
@@ -77,10 +77,7 @@ export function BranchBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider",
-        branch === "velum-mayilum"
-          ? "bg-[#f3b04a] text-[#3a2200]"
-          : "bg-forest-800 text-white",
+        "inline-flex items-center rounded-full bg-forest-800 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white",
         className,
       )}
     >

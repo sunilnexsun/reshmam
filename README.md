@@ -3,7 +3,7 @@
 *Pure Oils. Brighter Days.*
 
 Online store and back-office for **RESHMAM**, a maker of traditional cold-pressed (chekku) oils —
-gingelly (sesame), groundnut and coconut oil, family packs and gift combos — sold through two branches: **Velum Mayilum** and **Reshmam**.
+gingelly (sesame), groundnut and coconut oil, family packs and gift combos — sold through the **Reshmam** branch.
 
 This repository is a single **Next.js 16** app (React 19, Tailwind 4) with two parts:
 

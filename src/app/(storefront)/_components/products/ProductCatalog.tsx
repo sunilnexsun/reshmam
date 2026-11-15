@@ -99,9 +99,7 @@ export function BranchFilterBar({
           className={cn(
             "min-h-10 rounded-full border px-5 text-xs font-bold uppercase tracking-wider transition-colors",
             value === o.value
-              ? o.value === "velum-mayilum"
-                ? "border-[#f3b04a] bg-[#f3b04a] text-[#3a2200]"
-                : "border-forest-800 bg-forest-800 text-white"
+              ? "border-forest-800 bg-forest-800 text-white"
               : "border-beige-300 bg-white text-ink-soft hover:border-forest-800 hover:text-forest-800",
           )}
         >
@@ -141,10 +139,13 @@ export function ProductCatalog() {
 
   return (
     <div>
-      <BranchFilterBar
-        value={q ? "all" : branch}
-        onChange={(b) => update(filter, b)}
-      />
+      {/* Only worth showing when products are sold under more than one branch. */}
+      {branches.length > 1 && (
+        <BranchFilterBar
+          value={q ? "all" : branch}
+          onChange={(b) => update(filter, b)}
+        />
+      )}
       <CategoryFilter value={q ? "all" : filter} onChange={setFilter} />
       <div className="mt-6 flex min-h-6 flex-wrap items-center justify-between gap-2 text-sm text-ink-soft">
         <p aria-live="polite">

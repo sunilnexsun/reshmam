@@ -48,7 +48,15 @@ const nextConfig: NextConfig = {
   },
   // Products removed from the catalogue (Nov 2026) send old links and search results to the shop page.
   async redirects() {
-    return ["castor-oil", "mayil-rotary-gingelly-oil-cake", "jothi-rotary-gingelly-oil-cake"].map((slug) => ({
+    return [
+      "castor-oil",
+      "mayil-rotary-gingelly-oil-cake",
+      "jothi-rotary-gingelly-oil-cake",
+      // Velum Mayilum branch products, removed Nov 2026.
+      "premium-gingelly-oil",
+      "pure-coconut-oil",
+      "velum-mayilum-groundnut-oil",
+    ].map((slug) => ({
       source: `/products/${slug}`,
       destination: "/products",
       permanent: true,
