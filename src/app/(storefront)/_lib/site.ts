@@ -66,7 +66,7 @@ export const site = {
   social: {
     instagram: "https://www.instagram.com/reshmam026/",
     facebook: "https://www.facebook.com/profile.php?id=61591568745828",
-  },
+  } as { instagram: string; facebook: string },
 
   /**
    * Marketplaces RESHMAM is also sold on, shown in the "Also available on" section of the home page.
