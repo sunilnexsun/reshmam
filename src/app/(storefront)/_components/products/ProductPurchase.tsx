@@ -6,11 +6,15 @@ import type { Product } from "@storefront/_lib/products";
 import { formatINR } from "@storefront/_lib/pricing";
 import { useLiveProduct } from "@storefront/_lib/live-catalogue";
 import { VariantSelector, WishlistButton, addToCart } from "./ProductCard";
+import { defaultVariantId, useSelectedVariant } from "./SelectedVariant";
 
 export function ProductPurchase({ product: initial }: { product: Product }) {
   const product = useLiveProduct(initial);
-  const first = product.variants.find((v) => v.stock > 0) ?? product.variants[0];
-  const [variantId, setVariantId] = useState(first.id);
+  // On the product page the choice is shared with the photo; elsewhere it is kept here.
+  const shared = useSelectedVariant();
+  const [ownVariantId, setOwnVariantId] = useState(() => defaultVariantId(product));
+  const variantId = shared?.variantId ?? ownVariantId;
+  const setVariantId = shared?.setVariantId ?? setOwnVariantId;
   const [qty, setQty] = useState(1);
   const variant = product.variants.find((v) => v.id === variantId)!;
   const inStock = variant.stock > 0;

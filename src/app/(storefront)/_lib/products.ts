@@ -35,6 +35,8 @@ export type Variant = {
   label: string; // "500 ml", "1 L x 2"
   price: number; // INR, inclusive of taxes
   stock: number; // units available
+  /** Photo of this exact pack (e.g. the 1 L bottle); falls back to the product image. */
+  image?: string;
 };
 
 export type Product = {
@@ -61,6 +63,11 @@ export type Product = {
   newArrival?: boolean;
   variants: Variant[];
 };
+
+/** The photo for a chosen size: the variant's own image when it has one, else the product's. */
+export function variantImage(product: Product, variant?: Pick<Variant, "image">) {
+  return variant?.image ?? product.image;
+}
 
 export const categories: Category[] = [
   {
@@ -94,9 +101,10 @@ export const products: Product[] = [
     category: "gingelly-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/product-gingelly.webp",
+    image: "/images/products/gingelly-500ml.webp",
+    imageFit: "contain",
     imageAlt:
-      "Bottle of RESHMAM cold pressed gingelly oil with sesame seeds and leaves",
+      "Bottle of RESHMAM cold pressed gingelly oil",
     summary: "Wooden chekku pressed sesame oil with a rich, nutty aroma.",
     description: [
       "Pressed slowly from sesame seeds in a traditional wooden chekku, without heat-based refining or chemical solvents.",
@@ -109,8 +117,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "GIN-500ML", label: "500 ml", price: 350, stock: 120 },
-      { id: "GIN-1L", label: "1 L", price: 600, stock: 90 },
+      { id: "GIN-500ML", label: "500 ml", price: 350, stock: 120, image: "/images/products/gingelly-500ml.webp" },
+      { id: "GIN-1L", label: "1 L", price: 600, stock: 90, image: "/images/products/gingelly-1l.webp" },
     ],
   },
   {
@@ -120,9 +128,10 @@ export const products: Product[] = [
     category: "groundnut-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/product-groundnut.webp",
+    image: "/images/products/groundnut-500ml.webp",
+    imageFit: "contain",
     imageAlt:
-      "Bottle of RESHMAM cold pressed groundnut oil with groundnuts and leaves",
+      "Bottle of RESHMAM cold pressed groundnut oil",
     summary:
       "Mild, everyday cooking oil pressed from carefully sourced groundnuts.",
     description: [
@@ -133,8 +142,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "GRN-500ML", label: "500 ml", price: 300, stock: 140 },
-      { id: "GRN-1L", label: "1 L", price: 550, stock: 100 },
+      { id: "GRN-500ML", label: "500 ml", price: 300, stock: 140, image: "/images/products/groundnut-500ml.webp" },
+      { id: "GRN-1L", label: "1 L", price: 550, stock: 100, image: "/images/products/groundnut-1l.webp" },
     ],
   },
   {
@@ -144,9 +153,10 @@ export const products: Product[] = [
     category: "coconut-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/product-coconut.webp",
+    image: "/images/products/coconut-500ml.webp",
+    imageFit: "contain",
     imageAlt:
-      "Bottle of RESHMAM cold pressed coconut oil beside a split coconut",
+      "Bottle of RESHMAM cold pressed coconut oil",
     summary: "Fragrant coconut oil for cooking, baking and hair care.",
     description: [
       "Pressed from dried coconut kernels using the traditional chekku method.",
@@ -156,8 +166,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "COC-500ML", label: "500 ml", price: 320, stock: 110 },
-      { id: "COC-1L", label: "1 L", price: 580, stock: 80 },
+      { id: "COC-500ML", label: "500 ml", price: 320, stock: 110, image: "/images/products/coconut-500ml.webp" },
+      { id: "COC-1L", label: "1 L", price: 580, stock: 80, image: "/images/products/coconut-1l.webp" },
     ],
   },
   {
