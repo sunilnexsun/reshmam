@@ -155,7 +155,7 @@ All images in `public/images/` are **provisional crops taken from the supplied d
 | `logo.png` (chef + wordmark), `logo-mark.png` (chef only) | Header; footer, admin and favicon | Vector (SVG) logo + favicon set |
 | `product-{gingelly,groundnut,coconut}.webp` | Product cards, categories, PDP | Real product photos, ~1200×830, plain/cream background |
 | `pack-{gingelly,groundnut,coconut,combo}.webp` | Family packs, gift combo | Real pack photos |
-| `{home,health,contact,blog}-banner.webp` (desktop banners), `home-banner-mobile.webp`, `{health,contact,blog}-hero.webp` (phone/tablet crops), `hero-products.webp` | Page heroes (see `BannerHero`) | ~2000×1000 lifestyle shots |
+| `{home,products,health,contact,blog}-banner.webp` (desktop banners), `{home,products}-banner-mobile.webp`, `{health,contact,blog}-hero.webp` (phone/tablet crops) | Page heroes (see `BannerHero`) | ~2000×1000 lifestyle shots |
 | `story-hero.webp` | Our Story hero, home story block | Real chekku photo |
 | `video-process.webp`, `video-story.webp` | Video posters | Posters + the actual videos (MP4/YouTube) |
 | `bts-extraction/farm/quality.webp` | Behind the Scenes | Real facility photos |
