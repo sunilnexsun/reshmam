@@ -65,8 +65,8 @@ export const site = {
   /** Replace "#" with the real profile URLs. Links still set to "#" show as "coming soon". */
   social: {
     instagram: "https://www.instagram.com/reshmam026/",
-    facebook: "#",
-  },
+    facebook: "https://www.facebook.com/profile.php?id=61591568745828",
+  } as { instagram: string; facebook: string },
 
   /**
    * Marketplaces RESHMAM is also sold on, shown in the "Also available on" section of the home page.
