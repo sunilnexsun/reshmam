@@ -43,8 +43,7 @@ export default function Login() {
       <div className="relative hidden w-[46%] overflow-hidden bg-primary text-white lg:flex lg:flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(22,163,74,0.35),transparent_55%)]" aria-hidden />
         <div className="relative flex items-center gap-3 px-12 pt-10">
-          <img src="/images/logo-mark.png" alt="" className="h-14 w-14" />
-          <div className="leading-none"><p className="font-serif text-2xl font-bold tracking-wide">RESHMAM</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">Natural Goodness</p></div>
+          <span className="rounded-xl bg-[#fffdf6] px-4 py-2.5 shadow-sm"><img src="/images/logo.png" alt="RESHMAM" className="h-14 w-auto" /></span>
         </div>
         <div className="relative px-12 pt-16">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium"><Leaf className="h-3.5 w-3.5" />Premium Products</p>
@@ -63,8 +62,8 @@ export default function Login() {
       <div className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <img src="/images/logo-mark.png" alt="" className="h-12 w-12" />
-            <div className="leading-none"><p className="font-serif text-2xl font-bold text-primary">RESHMAM</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Admin Panel</p></div>
+            <img src="/images/logo.png" alt="RESHMAM" className="h-14 w-auto" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Admin Panel</p>
           </div>
           <div className="card p-7 sm:p-9">
             <h2 className="text-2xl font-bold tracking-tight">Welcome Back</h2>

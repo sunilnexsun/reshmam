@@ -65,9 +65,9 @@ export function Footer() {
       <div className="relative mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-4 pb-14 pt-16 sm:gap-x-8 sm:px-6 md:grid-cols-3 lg:grid-cols-[1.5fr_0.8fr_1fr_0.9fr_1.5fr] lg:px-8">
         {/* 1. Brand */}
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
-          <Link href="/" aria-label="Reshmam home" className="inline-flex items-center gap-3">
-            <Image src="/images/logo-mark.png" alt="" width={64} height={64} className="h-16 w-16" />
-            <span className="font-serif text-[30px] font-bold leading-none tracking-wide">RESHMAM</span>
+          {/* The full logo's green lettering needs a light background to read on the dark footer. */}
+          <Link href="/" aria-label="Reshmam home" className="inline-flex rounded-xl bg-cream px-4 py-2.5 shadow-sm">
+            <Image src="/images/logo.png" alt="RESHMAM" width={150} height={80} className="h-16 w-auto" />
           </Link>
           <p className="mt-3 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.24em] text-gold">
             {site.brandLine}

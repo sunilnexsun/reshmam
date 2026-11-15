@@ -19,11 +19,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }) {
         )}
       >
         <div className={cn('flex h-16 shrink-0 items-center gap-2.5 border-b border-white/10', collapsed ? 'lg:justify-center lg:px-0' : '', 'px-5')}>
-          <img src="/images/logo-mark.png" alt="" className="h-10 w-10" />
-          <div className={cn('leading-none', collapsed && 'lg:hidden')}>
-            <p className="font-serif text-xl font-bold tracking-wide">RESHMAM</p>
-            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/70">Admin Panel</p>
-          </div>
+          {/* Full logo on a light badge (its green lettering doesn't read on the dark sidebar); chef only when collapsed. */}
+          <span className={cn('rounded-lg bg-[#fffdf6] px-2 py-1', collapsed && 'lg:hidden')}>
+            <img src="/images/logo.png" alt="RESHMAM" className="h-9 w-auto" />
+          </span>
+          <img src="/images/logo-mark.png" alt="RESHMAM" className={cn('hidden h-10 w-10', collapsed && 'lg:block')} />
+          <p className={cn('text-[9px] font-semibold uppercase leading-tight tracking-[0.2em] text-white/70', collapsed && 'lg:hidden')}>Admin<br />Panel</p>
           <button type="button" onClick={onCloseMobile} aria-label="Close menu" className="ml-auto rounded-lg p-1.5 text-white/80 hover:bg-white/10 lg:hidden"><X className="h-5 w-5" /></button>
         </div>
 
