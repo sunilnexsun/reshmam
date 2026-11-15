@@ -67,7 +67,7 @@ export default async function ProductPage({
     description: product.summary,
     brand: {
       "@type": "Brand",
-      name: product.branch === "reshmam" ? "RESHMAM" : "Velum Mayilum",
+      name: "RESHMAM",
     },
     category: category?.name,
     offers: product.variants.map((v) => ({

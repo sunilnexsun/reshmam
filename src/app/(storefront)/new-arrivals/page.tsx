@@ -17,7 +17,7 @@ export default function NewArrivalsPage() {
       <PageBanner
         eyebrow="Just added"
         title="New Arrivals"
-        intro="The latest additions to our range from the Velum Mayilum and Reshmam branches."
+        intro="The latest additions to the RESHMAM range of cold pressed oils."
         crumbs={[{ href: "/", label: "Home" }, { href: "/products", label: "Shop" }, { label: "New Arrivals" }]}
       />
       <section className="bg-paper py-10">
