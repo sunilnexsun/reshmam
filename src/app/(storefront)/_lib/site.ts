@@ -25,8 +25,8 @@ export const site = {
 
   phone: { display: "+91 97877 22272", tel: "+919787722272" },
   emails: {
-    info: "info@reshmam.com",
-    orders: "orders@reshmam.com",
+    info: "info.peekaesons@gmail.com",
+    orders: "info.peekaesons@gmail.com",
   },
   /** Editable business setting – shown on the Contact page */
   responseTimeCopy: "We typically respond within 24 hours.",

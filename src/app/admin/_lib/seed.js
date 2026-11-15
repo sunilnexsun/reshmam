@@ -53,9 +53,9 @@ export function buildSeed(now = Date.now()) {
 
   // ---------- branches ----------
   const branches = [
-    { id: 'br_vm', name: 'Velum Mayilum – Main Branch', code: 'VM001', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'velummayilum@reshmam.com', manager: 'Murugan K', status: 'Active', createdAt: iso(ago(720)) },
-    { id: 'br_rs', name: 'Reshmam – Sub Branch', code: 'RS001', address: 'Main Bazaar Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628501', phone: '+91 97877 22272', email: 'reshmam@reshmam.com', manager: 'Lakshmi P', status: 'Active', createdAt: iso(ago(540)) },
-    { id: 'br_cf', name: 'Cattle Feed Branch', code: 'CF001', address: 'Ettayapuram Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'cattlefeed@reshmam.com', manager: 'Selvam R', status: 'Active', createdAt: iso(ago(400)) },
+    { id: 'br_vm', name: 'Velum Mayilum – Main Branch', code: 'VM001', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'info.peekaesons@gmail.com', manager: 'Murugan K', status: 'Active', createdAt: iso(ago(720)) },
+    { id: 'br_rs', name: 'Reshmam – Sub Branch', code: 'RS001', address: 'Main Bazaar Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628501', phone: '+91 97877 22272', email: 'info.peekaesons@gmail.com', manager: 'Lakshmi P', status: 'Active', createdAt: iso(ago(540)) },
+    { id: 'br_cf', name: 'Cattle Feed Branch', code: 'CF001', address: 'Ettayapuram Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'info.peekaesons@gmail.com', manager: 'Selvam R', status: 'Active', createdAt: iso(ago(400)) },
   ]
 
   // ---------- products + branch-wise variants ----------
@@ -328,7 +328,7 @@ export function buildSeed(now = Date.now()) {
   const allPerms = (v) => Object.fromEntries(PERMISSION_MODULES.map((m) => [m, v]))
   const settings = {
     general: { storeName: 'RESHMAM Natural Goodness', storeUrl: 'https://reshmam.com', timezone: 'Asia/Kolkata', currency: 'INR', dateFormat: 'DD MMM YYYY', orderPrefix: 'RSH-', lowStockEmail: true, maintenance: false },
-    company: { legalName: 'P. Kaliappan and Sons', brand: 'RESHMAM', tagline: 'Pure. Traditional. Trusted.', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 97877 22272', mobile: '97877 22272', email: 'info@reshmam.com', gstin: '', fssai: '', logo: '' },
+    company: { legalName: 'P. Kaliappan and Sons', brand: 'RESHMAM', tagline: 'Pure. Traditional. Trusted.', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 97877 22272', mobile: '97877 22272', email: 'info.peekaesons@gmail.com', gstin: '', fssai: '', logo: '' },
     notifications: { newOrder: true, lowStock: true, outOfStock: true, newCustomer: false, paymentFailed: true, refundRequest: true, dailySummary: false, channels: { email: true, whatsapp: false, inApp: true } },
     tax: { gstEnabled: true, defaultGst: 5, gstin: '', placeOfSupply: 'Tamil Nadu', invoicePrefix: 'INV-', hsnOnInvoice: true },
     payment: { razorpayEnabled: false, razorpayKeyId: '', razorpayMode: 'Test', webhookSecretSet: false, codEnabled: true, codMaxOrder: 5000, upiId: '' },
