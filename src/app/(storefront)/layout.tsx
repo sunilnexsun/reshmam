@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     ...openGraphBase,
-    images: [{ url: "/images/hero-products.webp", width: 488, height: 307, alt: "RESHMAM cold pressed oils" }],
+    images: [{ url: "/images/home-banner.webp", width: 1600, height: 666, alt: "RESHMAM cold pressed oils — Tradition in Every Drop" }],
   },
   twitter: { card: "summary_large_image" },
   icons: { icon: "/images/logo-mark.png" },
