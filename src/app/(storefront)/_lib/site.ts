@@ -65,7 +65,7 @@ export const site = {
   /** Replace "#" with the real profile URLs. Links still set to "#" show as "coming soon". */
   social: {
     instagram: "https://www.instagram.com/reshmam026/",
-    facebook: "#",
+    facebook: "https://www.facebook.com/profile.php?id=61591568745828",
   },
 
   /**
