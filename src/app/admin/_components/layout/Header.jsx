@@ -8,6 +8,7 @@ import { notifications as deriveNotifications } from '@admin/_lib/selectors'
 import { Avatar, Badge, Dropdown } from '@admin/_components/ui'
 
 function GlobalSearch() {
+  
   const db = useDb()
   const { can } = useAuth()
   const navigate = useNavigate()
