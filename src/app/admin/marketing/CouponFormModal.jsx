@@ -15,10 +15,12 @@ const n = (v) => (v === '' || v == null ? NaN : Number(v))
 export default function CouponFormModal({ open, onClose, coupon }) {
   const toast = useToast()
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm({ defaultValues: blank() })
+  const couponId = coupon?.id || null
   useEffect(() => {
     if (!open) return
     reset(coupon ? { ...blank(), ...coupon, status: coupon.status === 'Inactive' ? 'Inactive' : 'Active', maxDiscount: coupon.type === 'Flat' ? '' : coupon.maxDiscount ?? '' } : blank())
-  }, [open, coupon, reset])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, couponId, reset])
 
   const [type, value, minOrder, maxDiscount] = useWatch({ control, name: ['type', 'value', 'minOrder', 'maxDiscount'] })
   const preview = Number(value) > 0

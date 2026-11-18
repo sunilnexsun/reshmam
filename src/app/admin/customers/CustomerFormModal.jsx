@@ -10,20 +10,44 @@ const empty = { name: '', phone: '', email: '', line1: '', line2: '', city: '', 
 export default function CustomerFormModal({ open, onClose, customer, onSaved }) {
   const toast = useToast()
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ defaultValues: empty })
+  const customerId = customer?.id || null
   useEffect(() => {
     if (!open) return
-    reset(customer ? { ...empty, ...customer, ...customer.address, tags: (customer.tags || []).join(', ') } : empty)
-  }, [open, customer, reset])
+    const addr = customer?.address || {}
+    reset(
+      customer
+        ? {
+            ...empty,
+            ...customer,
+            ...addr,
+            line1: addr.line1 || addr.street || '',
+            line2: addr.line2 || '',
+            city: addr.city || '',
+            state: addr.state || 'Tamil Nadu',
+            pincode: addr.pincode || '',
+            tags: (customer.tags || []).join(', '),
+          }
+        : empty
+    )
+    // Only reset when modal opens or switches to a different customer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, customerId, reset])
 
   const onSubmit = (v) => {
-    const phoneDigits = v.phone.replace(/\D/g, '').slice(-10)
-    const dup = getState().customers.find((c) => c.id !== customer?.id && (c.phone.replace(/\D/g, '').slice(-10) === phoneDigits || (v.email && c.email.toLowerCase() === v.email.toLowerCase())))
+    const phoneDigits = (v.phone || '').replace(/\D/g, '').slice(-10)
+    const dup = getState().customers.find(
+      (c) =>
+        c.id !== customer?.id &&
+        ((c.phone || '').replace(/\D/g, '').slice(-10) === phoneDigits ||
+          (v.email && (c.email || '').toLowerCase() === v.email.trim().toLowerCase()))
+    )
     if (dup) return toast.error(`A customer with this phone or email already exists (${dup.name}).`)
+    const line1 = (v.line1 || '').trim()
     const data = {
-      name: v.name.trim(), phone: `+91 ${phoneDigits.slice(0, 5)} ${phoneDigits.slice(5)}`, email: v.email.trim(),
-      address: { line1: v.line1.trim(), line2: v.line2.trim(), city: v.city.trim(), state: v.state, pincode: v.pincode.trim() },
-      status: v.status, notes: v.notes.trim(), whatsappOptIn: !!v.whatsappOptIn,
-      tags: v.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      name: v.name.trim(), phone: `+91 ${phoneDigits.slice(0, 5)} ${phoneDigits.slice(5)}`, email: (v.email || '').trim(),
+      address: { line1, street: line1, line2: (v.line2 || '').trim(), city: (v.city || '').trim(), state: v.state || 'Tamil Nadu', pincode: (v.pincode || '').trim() },
+      status: v.status, notes: (v.notes || '').trim(), whatsappOptIn: !!v.whatsappOptIn,
+      tags: (v.tags || '').split(',').map((t) => t.trim()).filter(Boolean),
     }
     let saved
     if (customer) { updateItem('customers', customer.id, data); saved = { ...customer, ...data }; logActivity('customer', `Customer updated: ${data.name}`) }

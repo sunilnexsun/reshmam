@@ -7,7 +7,6 @@ import { useDb } from '@admin/_lib/store'
 import { deleteProducts, setProductsStatus } from '@admin/_lib/productActions'
 import { productRows } from '@admin/_lib/selectors'
 import { useAuth } from '@admin/_lib/auth'
-import { CATEGORIES } from '@admin/_lib/seed'
 import { inr, num } from '@admin/_lib/format'
 import { exportCSV } from '@admin/_lib/export'
 import { priceRange } from './productUtils'
@@ -37,6 +36,12 @@ export default function ProductList() {
     return productRows({ ...db, variants: db.variants.filter((v) => v.branchId === branch) }).filter((r) => r.variants.length)
   }, [db, branch])
   const allRows = useMemo(() => (branch === 'all' ? rows : productRows(db)), [db, rows, branch])
+
+  const categoryOptions = useMemo(() => {
+    const fromDb = (db.categories || []).filter((c) => c.status !== 'Inactive').map((c) => c.name)
+    if (fromDb.length > 0) return fromDb
+    return Array.from(new Set(db.products.map((p) => p.category).filter(Boolean)))
+  }, [db.categories, db.products])
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -146,7 +151,7 @@ export default function ProductList() {
         <div className="flex flex-col gap-3 border-b border-line p-4 lg:flex-row lg:items-center">
           <SearchInput value={q} onChange={(v) => setParam('q', v)} placeholder="Search product name or SKU" className="lg:w-72" />
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:ml-auto">
-            <FilterSelect label="Category" value={category} onChange={(v) => setParam('category', v)} allLabel="All Categories" options={CATEGORIES} className="w-full sm:w-auto" />
+            <FilterSelect label="Category" value={category} onChange={(v) => setParam('category', v)} allLabel="All Categories" options={categoryOptions} className="w-full sm:w-auto" />
             <FilterSelect label="Branch" value={branch} onChange={(v) => setParam('branch', v)} allLabel="All Branches" options={db.branches.map((b) => ({ value: b.id, label: b.name }))} className="w-full sm:w-auto" />
             <FilterSelect label="Status" value={status} onChange={(v) => setParam('status', v)} allLabel="All Status" options={['Active', 'Inactive']} className="w-full sm:w-auto" />
             <FilterSelect label="Stock status" value={stock} onChange={(v) => setParam('stock', v)} allLabel="All Stock" options={STOCK_FILTERS} className="w-full sm:w-auto" />

@@ -13,7 +13,7 @@ import mayil from '@admin/_assets/products/mayil.webp'
 import jothi from '@admin/_assets/products/jothi.webp'
 import sesame from '@admin/_assets/products/reshmam-sesame.webp'
 
-export const SEED_VERSION = 4
+export const SEED_VERSION = 5
 // Static image imports resolve to { src, width, height }; the store keeps plain URL strings.
 export const productImages = Object.fromEntries(
   Object.entries({ coconut, gingelly, groundnut, castor, combo, mayil, jothi, sesame }).map(([k, img]) => [k, img.src]),
@@ -26,7 +26,7 @@ export const ORDER_STATUSES = ['Pending', 'Processing', 'Shipped', 'Delivered', 
 export const PAYMENT_STATUSES = ['Paid', 'Pending', 'Failed', 'Refunded', 'Partially Refunded']
 export const PAYMENT_METHODS = ['UPI (Razorpay)', 'Card (Razorpay)', 'Net Banking (Razorpay)', 'Cash on Delivery']
 export const STOCK_MOVEMENT_TYPES = ['Stock In', 'Stock Out', 'Purchase Entry', 'Adjustment', 'Damaged', 'Transfer In', 'Transfer Out', 'Order', 'Return']
-export const PERMISSION_MODULES = ['dashboard', 'products', 'orders', 'prices', 'inventory', 'branches', 'customers', 'marketing', 'whatsapp', 'chatbot', 'reports', 'settings']
+export const PERMISSION_MODULES = ['dashboard', 'products', 'categories', 'brands', 'orders', 'prices', 'inventory', 'branches', 'customers', 'marketing', 'whatsapp', 'chatbot', 'reports', 'settings']
 
 // ---------- deterministic random ----------
 function mulberry32(a) {
@@ -56,6 +56,23 @@ export function buildSeed(now = Date.now()) {
     { id: 'br_vm', name: 'Velum Mayilum – Main Branch', code: 'VM001', address: '6/104 Main Road, Lakshmipuram', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'info.peekaesons@gmail.com', manager: 'Murugan K', status: 'Active', createdAt: iso(ago(720)) },
     { id: 'br_rs', name: 'Reshmam – Sub Branch', code: 'RS001', address: 'Main Bazaar Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628501', phone: '+91 97877 22272', email: 'info.peekaesons@gmail.com', manager: 'Lakshmi P', status: 'Active', createdAt: iso(ago(540)) },
     { id: 'br_cf', name: 'Cattle Feed Branch', code: 'CF001', address: 'Ettayapuram Road', city: 'Kovilpatti', state: 'Tamil Nadu', pincode: '628502', phone: '+91 98765 43210', email: 'info.peekaesons@gmail.com', manager: 'Selvam R', status: 'Active', createdAt: iso(ago(400)) },
+  ]
+
+  // ---------- categories & brands ----------
+  const categories = [
+    { id: 'cat_gin', name: 'Gingelly Oil', slug: 'gingelly-oil', description: 'Traditional chekku-pressed sesame oil', status: 'Active', order: 1, createdAt: iso(ago(700)) },
+    { id: 'cat_coc', name: 'Coconut Oil', slug: 'coconut-oil', description: 'Wood-pressed coconut oil from sun-dried copra', status: 'Active', order: 2, createdAt: iso(ago(700)) },
+    { id: 'cat_grn', name: 'Groundnut Oil', slug: 'groundnut-oil', description: 'Cold-pressed peanut oil with natural aroma', status: 'Active', order: 3, createdAt: iso(ago(700)) },
+    { id: 'cat_cas', name: 'Castor Oil', slug: 'castor-oil', description: 'Pure cold-pressed castor oil', status: 'Active', order: 4, createdAt: iso(ago(700)) },
+    { id: 'cat_cmb', name: 'Combo Packs', slug: 'combo-packs', description: 'Value packs & festival gift boxes', status: 'Active', order: 5, createdAt: iso(ago(700)) },
+    { id: 'cat_cf', name: 'Cattle Feed', slug: 'cattle-feed', description: 'Rotary gingelly oil cake for cattle nutrition', status: 'Active', order: 6, createdAt: iso(ago(700)) },
+  ]
+
+  const brands = [
+    { id: 'brd_vm', name: 'Velum Mayilum', slug: 'velum-mayilum', description: 'Our heritage brand since 1968', status: 'Active', order: 1, createdAt: iso(ago(720)) },
+    { id: 'brd_rs', name: 'Reshmam', slug: 'reshmam', description: 'Premium cold pressed oils', status: 'Active', order: 2, createdAt: iso(ago(540)) },
+    { id: 'brd_my', name: 'Mayil', slug: 'mayil', description: 'Standard quality oils & oil cakes', status: 'Active', order: 3, createdAt: iso(ago(600)) },
+    { id: 'brd_jt', name: 'Jothi', slug: 'jothi', description: 'Special rotary sesame cake', status: 'Active', order: 4, createdAt: iso(ago(600)) },
   ]
 
   // ---------- products + branch-wise variants ----------
@@ -357,7 +374,7 @@ export function buildSeed(now = Date.now()) {
 
   return withIssuedInvoices({
     meta: { version: SEED_VERSION, seededAt: iso(now) },
-    branches, products, variants, customers, orders, stockMovements, priceHistory,
+    branches, products, variants, categories, brands, customers, orders, stockMovements, priceHistory,
     coupons, campaigns, banners, whatsapp, chatbot, settings, activities,
     readNotifications: [],
   })

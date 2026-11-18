@@ -6,7 +6,6 @@ import { Badge, Button, Card, DataTable, FilterSelect, IconButton, PageHeader, S
 import { updateVariant, useDb } from '@admin/_lib/store'
 import { byId, inventoryRows, lowStock } from '@admin/_lib/selectors'
 import { useAuth } from '@admin/_lib/auth'
-import { CATEGORIES } from '@admin/_lib/seed'
 import { cn, inr, inrShort, num, timeAgo } from '@admin/_lib/format'
 import { exportCSV } from '@admin/_lib/export'
 import { MOVE_TONE, STOCK_FILTERS, matchStockFilter, signed } from './inventoryUtils'
@@ -40,6 +39,12 @@ export default function Inventory() {
     db.stockMovements.forEach((x) => { if (!m[x.variantId] || x.date > m[x.variantId].date) m[x.variantId] = x })
     return m
   }, [db.stockMovements])
+  const categoryOptions = useMemo(() => {
+    const fromDb = (db.categories || []).filter((c) => c.status !== 'Inactive').map((c) => c.name)
+    if (fromDb.length > 0) return fromDb
+    return Array.from(new Set(db.products.map((p) => p.category).filter(Boolean)))
+  }, [db.categories, db.products])
+
   const inBranch = useMemo(() => rows.filter((r) => branch === 'all' || r.branchId === branch), [rows, branch])
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -131,7 +136,7 @@ export default function Inventory() {
             <SearchInput value={q} onChange={(v) => setParam('q', v)} placeholder="Search product, SKU or size" className="xl:w-72" />
             <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
               <FilterSelect label="Branch" value={branch} onChange={(v) => setParam('branch', v)} allLabel="All Branches" options={db.branches.map((b) => ({ value: b.id, label: b.name }))} />
-              <FilterSelect label="Category" value={category} onChange={(v) => setParam('category', v)} allLabel="All Categories" options={CATEGORIES} />
+              <FilterSelect label="Category" value={category} onChange={(v) => setParam('category', v)} allLabel="All Categories" options={categoryOptions} />
               <FilterSelect label="Stock status" value={status} onChange={(v) => setParam('status', v)} allLabel="All Stock Status" options={STOCK_FILTERS} className={status !== 'all' ? 'border-amber-300 bg-amber-50' : ''} />
               {(q || branch !== 'all' || category !== 'all' || status !== 'all') && <Button variant="ghost" size="sm" icon={X} className="h-9" onClick={() => setParams((p) => { ['q', 'branch', 'category', 'status'].forEach((k) => p.delete(k)); return p }, { replace: true })}>Clear</Button>}
               <Button variant="outline" size="sm" className="h-9" onClick={onExport} disabled={!filtered.length}>Export CSV</Button>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDownRight, ArrowUpDown, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ImagePlus, Inbox, Star, Trash2 } from 'lucide-react'
+import { ArrowDownRight, ArrowUpDown, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ImagePlus, Inbox, Loader2, Star, Trash2 } from 'lucide-react'
 import { cn } from '@admin/_lib/format'
 import { fileToDataUrl } from '@admin/_lib/image'
+import { uploadProductImage } from '@admin/_lib/firebase'
 import { RANGE_PRESETS } from '@admin/_lib/dateRange'
 import { EmptyState, FilterSelect } from './basic'
 
@@ -43,23 +44,24 @@ const PageBtn = ({ p, page, onChange }) => (
  * Sorting + pagination are built in; pass already-filtered `rows`. Resets to page 1 when rows change length.
  * selectable + selected/onSelect for bulk actions.
  */
-export function DataTable({ columns, rows, rowKey = 'id', pageSize: initialSize = 10, onRowClick, empty, initialSort, selectable, selected = [], onSelect, className, dense, footer }) {
+export function DataTable({ columns = [], rows, data, rowKey = 'id', pageSize: initialSize = 10, onRowClick, empty, initialSort, selectable, selected = [], onSelect, className, dense, footer }) {
+  const rowList = rows ?? data ?? []
   const [sort, setSort] = useState(initialSort || null) // { key, dir }
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(initialSize)
-  const lastLen = useRef(rows.length)
-  useEffect(() => { if (lastLen.current !== rows.length) { lastLen.current = rows.length; setPage(1) } }, [rows.length])
+  const lastLen = useRef(rowList.length)
+  useEffect(() => { if (lastLen.current !== rowList.length) { lastLen.current = rowList.length; setPage(1) } }, [rowList.length])
 
   const sorted = useMemo(() => {
-    if (!sort) return rows
-    const col = columns.find((c) => c.key === sort.key)
+    if (!sort) return rowList
+    const col = columns?.find((c) => c.key === sort.key)
     const get = col?.sortValue || ((r) => r[sort.key])
-    return [...rows].sort((a, b) => {
+    return [...rowList].sort((a, b) => {
       const x = get(a), y = get(b)
       const r = typeof x === 'number' && typeof y === 'number' ? x - y : String(x ?? '').localeCompare(String(y ?? ''), 'en', { numeric: true })
       return sort.dir === 'asc' ? r : -r
     })
-  }, [rows, sort, columns])
+  }, [rowList, sort, columns])
   const pageCount = Math.max(1, Math.ceil(sorted.length / size))
   const cur = Math.min(page, pageCount)
   const pageRows = sorted.slice((cur - 1) * size, cur * size)
@@ -102,7 +104,7 @@ export function DataTable({ columns, rows, rowKey = 'id', pageSize: initialSize 
           {footer}
         </table>
       </div>
-      {rows.length === 0 && (empty || <EmptyState icon={Inbox} title="No records found" text="Try changing the search or filters." />)}
+      {rowList.length === 0 && (empty || <EmptyState icon={Inbox} title="No records found" text="Try changing the search or filters." />)}
       <Pagination page={cur} pageCount={pageCount} onChange={setPage} total={sorted.length} pageSize={size} onPageSize={(n) => { setSize(n); setPage(1) }} />
     </div>
   )
@@ -150,48 +152,122 @@ export function StatCard({ label, value, change, changeLabel = 'vs previous peri
 }
 
 // ---------------------------------------------------------------- ImageUploader
-/** images: string[] (URLs / data URLs); primary: index. Uploads are compressed to data URLs. */
-export function ImageUploader({ images = [], onChange, primary = 0, onPrimary, max = 6, onError }) {
+/** images: string[] (URLs / Firebase Storage URLs); primary: index. Max 4 images, size limit enforced. */
+export function ImageUploader({
+  images = [],
+  onChange,
+  primary = 0,
+  onPrimary,
+  max = 4,
+  maxSizeMB = 2,
+  storagePath = 'products',
+  onError,
+}) {
   const input = useRef(null)
   const [busy, setBusy] = useState(false)
   const [drag, setDrag] = useState(false)
+  const [statusText, setStatusText] = useState('')
+
   const add = async (files) => {
-    const list = [...files].slice(0, max - images.length)
-    if (!list.length) return onError?.(`You can upload up to ${max} images.`)
+    const fileArray = Array.from(files || [])
+    if (!fileArray.length) return
+
+    if (images.length >= max) {
+      return onError?.(`Maximum ${max} image${max > 1 ? 's' : ''} allowed. Please remove an existing image first.`)
+    }
+
+    const availableSlots = max - images.length
+    const list = fileArray.slice(0, availableSlots)
+    if (fileArray.length > availableSlots) {
+      onError?.(`Only ${availableSlots} more image${availableSlots > 1 ? 's' : ''} can be added (max ${max}).`)
+    }
+
+    // Strict size verification
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    for (const f of list) {
+      if (!f.type.startsWith('image/')) {
+        return onError?.(`"${f.name}" is not an image file. Please choose JPG, PNG, or WebP.`)
+      }
+      if (f.size > maxSizeBytes) {
+        return onError?.(`"${f.name}" exceeds the ${maxSizeMB} MB size limit (${(f.size / (1024 * 1024)).toFixed(1)} MB). Please select an image under ${maxSizeMB} MB.`)
+      }
+    }
+
     setBusy(true)
+    setStatusText('Uploading…')
     try {
       const urls = []
-      for (const f of list) urls.push(await fileToDataUrl(f))
+      for (const f of list) {
+        try {
+          const downloadUrl = await uploadProductImage(f, { pathPrefix: storagePath, maxSizeMB })
+          urls.push(downloadUrl)
+        } catch (storageErr) {
+          console.warn('Firebase Storage upload notice, falling back to optimized data URL:', storageErr)
+          const localUrl = await fileToDataUrl(f, 900, 0.82)
+          urls.push(localUrl)
+        }
+      }
       onChange([...images, ...urls])
-    } catch (e) { onError?.(e.message) } finally { setBusy(false); if (input.current) input.current.value = '' }
+    } catch (e) {
+      onError?.(e.message || 'Error processing image')
+    } finally {
+      setBusy(false)
+      setStatusText('')
+      if (input.current) input.current.value = ''
+    }
   }
+
   const remove = (i) => {
     onChange(images.filter((_, j) => j !== i))
     if (onPrimary) onPrimary(i === primary ? 0 : i < primary ? primary - 1 : primary)
   }
+
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {images.map((src, i) => (
-          <div key={i} className={cn('group relative aspect-square overflow-hidden rounded-xl border-2 bg-surface', i === primary ? 'border-accent' : 'border-line')}>
-            <img src={src} alt={`Product image ${i + 1}`} className="h-full w-full object-contain" />
-            {i === primary && <span className="absolute left-1.5 top-1.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">Primary</span>}
-            <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/50 to-transparent p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-              {onPrimary && i !== primary && <button type="button" onClick={() => onPrimary(i)} aria-label={`Set image ${i + 1} as primary`} title="Set as primary" className="rounded bg-white/90 p-1 text-amber-600"><Star className="h-3.5 w-3.5" /></button>}
-              <button type="button" onClick={() => remove(i)} aria-label={`Remove image ${i + 1}`} title="Remove" className="rounded bg-white/90 p-1 text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+          <div key={i} className={cn('group relative aspect-square overflow-hidden rounded-xl border-2 bg-surface', i === primary ? 'border-accent shadow-sm' : 'border-line')}>
+            <img src={src} alt={`Product image ${i + 1}`} className="h-full w-full object-contain p-1" />
+            {i === primary && (
+              <span className="absolute left-1.5 top-1.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
+                Primary
+              </span>
+            )}
+            <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
+              {onPrimary && i !== primary && (
+                <button type="button" onClick={() => onPrimary(i)} aria-label={`Set image ${i + 1} as primary`} title="Set as primary" className="rounded bg-white/90 p-1 text-amber-600 hover:bg-white">
+                  <Star className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <button type="button" onClick={() => remove(i)} aria-label={`Remove image ${i + 1}`} title="Remove" className="rounded bg-white/90 p-1 text-red-600 hover:bg-white">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         ))}
         {images.length < max && (
-          <button type="button" onClick={() => input.current?.click()} disabled={busy}
-            onDragOver={(e) => { e.preventDefault(); setDrag(true) }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); add(e.dataTransfer.files) }}
-            className={cn('flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed text-xs text-muted transition hover:border-accent hover:text-primary', drag ? 'border-accent bg-accent-soft' : 'border-line')}>
-            <ImagePlus className="h-6 w-6" />{busy ? 'Uploading…' : 'Add image'}
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            disabled={busy}
+            onDragOver={(e) => { e.preventDefault(); setDrag(true) }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); add(e.dataTransfer.files) }}
+            className={cn(
+              'flex aspect-square flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed text-xs text-muted transition hover:border-accent hover:text-primary',
+              drag ? 'border-accent bg-accent-soft' : 'border-line',
+              busy ? 'cursor-not-allowed opacity-75' : ''
+            )}
+          >
+            {busy ? <Loader2 className="h-6 w-6 animate-spin text-accent" /> : <ImagePlus className="h-6 w-6" />}
+            <span className="font-medium">{busy ? (statusText || 'Uploading…') : `Add Image (${images.length}/${max})`}</span>
           </button>
         )}
       </div>
       <input ref={input} type="file" accept="image/*" multiple hidden onChange={(e) => add(e.target.files)} />
-      <p className="mt-2 text-xs text-muted">JPG, PNG or WebP · up to {max} images · drag & drop supported. Images are resized in the browser.</p>
+      <p className="mt-2 text-xs text-muted">
+        JPG, PNG or WebP · Max <b>{max} images</b> · Up to <b>{maxSizeMB} MB</b> each · Uploads to Firebase Storage.
+      </p>
     </div>
   )
 }

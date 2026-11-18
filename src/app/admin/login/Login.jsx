@@ -1,17 +1,42 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from '@admin/_lib/navigation'
-import { Eye, EyeOff, Leaf, Lock, Mail, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Leaf, Lock, Mail } from 'lucide-react'
 import { useAuth } from '@admin/_lib/auth'
 import { Button, Checkbox, Field, Input, Modal, useToast } from '@admin/_components/ui'
 import hero from '@admin/_assets/login-hero.webp'
 
-const DEMO = [
-  { role: 'Admin', email: 'admin@reshmam.com', password: 'Admin@123' },
-  { role: 'Manager', email: 'manager@reshmam.com', password: 'Manager@123' },
-  { role: 'Staff', email: 'staff@reshmam.com', password: 'Staff@123' },
-]
+const REMEMBER_KEY = 'reshmam-admin-remember'
+
+function loadRemembered() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && parsed.email) {
+      return {
+        email: String(parsed.email || ''),
+        password: String(parsed.password || ''),
+        remember: true,
+      }
+    }
+  } catch {}
+  return null
+}
+
+function saveRemembered(remember, email, password) {
+  try {
+    if (remember) {
+      localStorage.setItem(
+        REMEMBER_KEY,
+        JSON.stringify({ email: String(email || '').trim(), password: String(password || ''), remember: true })
+      )
+    } else {
+      localStorage.removeItem(REMEMBER_KEY)
+    }
+  } catch {}
+}
 
 export default function Login() {
   const { user, login } = useAuth()
@@ -23,19 +48,37 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [forgot, setForgot] = useState(false)
   const [error, setError] = useState('')
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm({ defaultValues: { email: '', password: '', remember: true } })
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: { email: '', password: '', remember: true },
+  })
+
+  // Restore remembered email & password on client mount
+  useEffect(() => {
+    const saved = loadRemembered()
+    if (saved) {
+      reset(saved)
+    }
+  }, [reset])
 
   if (user) return <Navigate to={next} replace />
 
   const onSubmit = async ({ email, password, remember }) => {
     setError('')
-    await new Promise((r) => setTimeout(r, 350))
     try {
-      const u = login(email, password, remember)
-      toast.success(`Welcome back, ${u.name.split(' ')[0]}!`)
+      const u = await login(email, password, remember)
+      saveRemembered(!!remember, email, password)
+      toast.success(`Welcome back, ${(u.name || 'Admin').split(' ')[0]}!`)
       navigate(next, { replace: true })
     } catch (e) { setError(e.message) }
   }
+
+  const rememberField = register('remember', {
+    onChange: (e) => {
+      if (!e.target.checked) {
+        saveRemembered(false, '', '')
+      }
+    },
+  })
 
   return (
     <div className="flex min-h-screen bg-surface">
@@ -61,9 +104,8 @@ export default function Login() {
       {/* Form */}
       <div className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
+          <div className="mb-8 flex items-center justify-center lg:hidden">
             <img src="/images/logo.png" alt="RESHMAM" className="h-14 w-auto" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Admin Panel</p>
           </div>
           <div className="card p-7 sm:p-9">
             <h2 className="text-2xl font-bold tracking-tight">Welcome Back</h2>
@@ -88,31 +130,17 @@ export default function Login() {
                 </div>
               </Field>
               <div className="flex items-center justify-between">
-                <Checkbox label="Remember Me" {...register('remember')} />
+                <Checkbox label="Remember Me" {...rememberField} />
                 <button type="button" onClick={() => setForgot(true)} className="text-sm font-medium text-accent hover:underline">Forgot Password?</button>
               </div>
               <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>Login</Button>
             </form>
           </div>
-
-          <div className="mt-5 rounded-xl border border-dashed border-line bg-white/60 p-4">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-ink"><ShieldCheck className="h-4 w-4 text-accent" />Demo accounts (sample data, stored in this browser)</p>
-            <div className="mt-2 grid gap-1.5">
-              {DEMO.map((d) => (
-                <button key={d.role} type="button" onClick={() => { setValue('email', d.email, { shouldValidate: true }); setValue('password', d.password, { shouldValidate: true }) }}
-                  className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs hover:bg-surface">
-                  <span><b className="text-ink">{d.role}</b> <span className="text-muted">· {d.email}</span></span>
-                  <span className="font-mono text-muted">{d.password}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
       <Modal open={forgot} onClose={() => setForgot(false)} title="Reset password" size="sm" footer={<Button onClick={() => setForgot(false)}>Got it</Button>}>
-        <p className="text-sm text-ink">Password reset emails need the backend email service, which is not connected in this frontend version.</p>
-        <p className="mt-2 text-sm text-muted">Until then, an Admin can reset any user&apos;s password from <b>Settings → User Management</b>.</p>
+        <p className="text-sm text-ink">Contact an Admin to reset your password from <b>Settings → User Management</b>.</p>
       </Modal>
     </div>
   )

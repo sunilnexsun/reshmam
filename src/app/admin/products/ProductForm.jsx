@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@admin/_lib/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { Info, Plus, Save, ShieldAlert, Sparkles, Trash2, Wand2 } from 'lucide-react'
+import { Info, Plus, Save, ShieldAlert, Sparkles, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Field, IconButton, ImageUploader, Input, PageHeader, Select, StatusBadge, Textarea, Toggle, useConfirm, useToast } from '@admin/_components/ui'
 import { getState, saveProduct, updateVariant, useDb } from '@admin/_lib/store'
 import { stockStatus } from '@admin/_lib/selectors'
 import { useAuth } from '@admin/_lib/auth'
-import { BRANDS, CATEGORIES, UNIT_TYPES } from '@admin/_lib/seed'
+import { UNIT_TYPES } from '@admin/_lib/seed'
 import { cn, inr, num } from '@admin/_lib/format'
 import NotFound from '@admin/_components/NotFound'
 import { discountPct, GST_RATES, normSize, priceRange, suggestSku, variantSku } from './productUtils'
@@ -65,6 +65,18 @@ function ProductFormInner({ product }) {
   const status = watch('status')
   const featured = watch('featured')
   const variants = watch('variants')
+
+  const categoryOptions = useMemo(() => {
+    const fromDb = (db.categories || []).filter((c) => c.status !== 'Inactive').map((c) => c.name)
+    if (fromDb.length > 0) return fromDb
+    return Array.from(new Set(db.products.map((p) => p.category).filter(Boolean)))
+  }, [db.categories, db.products])
+
+  const brandOptions = useMemo(() => {
+    const fromDb = (db.brands || []).filter((b) => b.status !== 'Inactive').map((b) => b.name)
+    if (fromDb.length > 0) return fromDb
+    return Array.from(new Set(db.products.map((p) => p.brand).filter(Boolean)))
+  }, [db.brands, db.products])
 
   const otherSkus = useMemo(() => db.products.filter((p) => p.id !== product?.id).map((p) => p.sku), [db.products, product?.id])
   useEffect(() => {
@@ -160,22 +172,19 @@ function ProductFormInner({ product }) {
                   <Input id="pf-name" placeholder="e.g. Pure Coconut Oil" error={errors.name} {...register('name', { required: 'Product name is required', minLength: { value: 3, message: 'Name is too short' }, maxLength: { value: 120, message: 'Keep the name under 120 characters' } })} />
                 </Field>
                 <Field label="Category" required error={errors.category} htmlFor="pf-category">
-                  <Select id="pf-category" placeholder="Select category" options={CATEGORIES} error={errors.category} {...register('category', { required: 'Choose a category' })} />
+                  <Select id="pf-category" placeholder="Select category" options={categoryOptions} error={errors.category} {...register('category', { required: 'Choose a category' })} />
                 </Field>
                 <Field label="Brand" required error={errors.brand} htmlFor="pf-brand">
-                  <Select id="pf-brand" placeholder="Select brand" options={BRANDS} error={errors.brand} {...register('brand', { required: 'Choose a brand' })} />
+                  <Select id="pf-brand" placeholder="Select brand" options={brandOptions} error={errors.brand} {...register('brand', { required: 'Choose a brand' })} />
                 </Field>
-                <Field label="SKU" required error={errors.sku} htmlFor="pf-sku" hint={skuTouched ? 'Must be unique across products.' : 'Suggested from brand and name — you can edit it.'}>
-                  <div className="flex gap-2">
-                    <Input id="pf-sku" className="uppercase" placeholder="e.g. VM-COC" error={errors.sku}
-                      {...register('sku', {
-                        required: 'SKU is required',
-                        pattern: { value: /^[A-Za-z0-9][A-Za-z0-9-]{1,30}$/, message: 'Use letters, numbers and dashes only' },
-                        validate: (x) => !otherSkus.some((s) => s.toUpperCase() === x.trim().toUpperCase()) || 'Another product already uses this SKU',
-                        onChange: () => setSkuTouched(true),
-                      })} />
-                    <IconButton icon={Wand2} variant="outline" label="Suggest SKU from name" className="h-10 w-10" onClick={() => { setSkuTouched(false); setValue('sku', suggestSku(getValues('name'), getValues('brand'), otherSkus), { shouldDirty: true, shouldValidate: true }) }} />
-                  </div>
+                <Field label="SKU" required error={errors.sku} htmlFor="pf-sku" hint="Must be unique across products.">
+                  <Input id="pf-sku" className="uppercase" placeholder="e.g. VM-COC" error={errors.sku}
+                    {...register('sku', {
+                      required: 'SKU is required',
+                      pattern: { value: /^[A-Za-z0-9][A-Za-z0-9-]{1,30}$/, message: 'Use letters, numbers and dashes only' },
+                      validate: (x) => !otherSkus.some((s) => s.toUpperCase() === x.trim().toUpperCase()) || 'Another product already uses this SKU',
+                      onChange: () => setSkuTouched(true),
+                    })} />
                 </Field>
                 <Field label="HSN Code" error={errors.hsn} htmlFor="pf-hsn" hint="4–8 digit GST HSN code, e.g. 1513">
                   <Input id="pf-hsn" inputMode="numeric" placeholder="1513" error={errors.hsn} {...register('hsn', { pattern: { value: /^\d{4,8}$/, message: 'HSN must be 4–8 digits' } })} />
@@ -263,8 +272,8 @@ function ProductFormInner({ product }) {
           <div className="min-w-0 space-y-6">
             <Card title="Product Images" subtitle="The primary image is used in lists and on the store.">
               {/* Narrow side column at xl: use 3 larger tiles instead of the uploader's 6-up grid. */}
-              <div className="xl:[&_.grid]:grid-cols-3!">
-              <ImageUploader images={images} primary={primaryImage} max={6}
+              <div className="xl:[&_.grid]:grid-cols-2!">
+              <ImageUploader images={images} primary={primaryImage} max={4} maxSizeMB={2} storagePath="products"
                 onChange={(list) => setValue('images', list, { shouldDirty: true })}
                 onPrimary={(i) => setValue('primaryImage', i, { shouldDirty: true })}
                 onError={(m) => toast.error(m)} />

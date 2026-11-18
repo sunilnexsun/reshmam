@@ -10,7 +10,7 @@ import { CopyButton, SecretInput } from '@admin/settings/common'
 import PasswordStrength from '@admin/settings/PasswordStrength'
 import { generatePassword, validatePassword } from '@admin/settings/passwordRules'
 
-const MODULE_LABELS = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', prices: 'Price Management', inventory: 'Inventory', branches: 'Branches', customers: 'Customers', marketing: 'Marketing', whatsapp: 'WhatsApp Automation', chatbot: 'AI Chatbot', reports: 'Reports', settings: 'Settings' }
+const MODULE_LABELS = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', prices: 'Price Management', inventory: 'Inventory', branches: 'Branches', customers: 'Customers', marketing: 'Coupons', whatsapp: 'WhatsApp Automation', chatbot: 'AI Chatbot', reports: 'Reports', settings: 'Settings' }
 const LEVELS = [{ value: 'none', label: 'None' }, { value: 'view', label: 'View' }, { value: 'manage', label: 'Manage' }]
 const emptyUser = (role) => ({ name: '', email: '', phone: '', role, branchId: 'all', status: 'Active', password: '' })
 const activeAdmins = (users, exceptId) => users.filter((u) => u.role === 'Admin' && u.status === 'Active' && u.id !== exceptId).length

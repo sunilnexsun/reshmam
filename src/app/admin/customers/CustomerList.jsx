@@ -26,11 +26,11 @@ export default function CustomerList() {
 
   const stats = useMemo(() => customerStats(db), [db])
   const rows = useMemo(() => db.customers.map((c) => ({ ...c, orders: stats[c.id]?.orders || 0, spent: stats[c.id]?.spent || 0, lastOrder: stats[c.id]?.last })), [db.customers, stats])
-  const cities = useMemo(() => [...new Set(db.customers.map((c) => c.address.city))].sort(), [db.customers])
+  const cities = useMemo(() => [...new Set(db.customers.map((c) => c.address?.city).filter(Boolean))].sort(), [db.customers])
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
-    return rows.filter((c) => (status === 'all' || c.status === status) && (city === 'all' || c.address.city === city) &&
-      (!s || `${c.name} ${c.phone} ${c.email} ${c.address.city}`.toLowerCase().includes(s)))
+    return rows.filter((c) => (status === 'all' || c.status === status) && (city === 'all' || c.address?.city === city) &&
+      (!s || `${c.name} ${c.phone} ${c.email} ${c.address?.city || ''}`.toLowerCase().includes(s)))
   }, [rows, q, status, city])
 
   const summary = useMemo(() => {
@@ -53,7 +53,7 @@ export default function CustomerList() {
   const onExport = () => {
     exportCSV(`reshmam-customers-${new Date().toISOString().slice(0, 10)}`, filtered, [
       { label: 'Name', key: 'name' }, { label: 'Phone', key: 'phone' }, { label: 'Email', key: 'email' },
-      { label: 'City', value: (c) => c.address.city }, { label: 'State', value: (c) => c.address.state }, { label: 'Pincode', value: (c) => c.address.pincode },
+      { label: 'City', value: (c) => c.address?.city || '' }, { label: 'State', value: (c) => c.address?.state || '' }, { label: 'Pincode', value: (c) => c.address?.pincode || '' },
       { label: 'Total Orders', key: 'orders' }, { label: 'Total Spent (INR)', key: 'spent' },
       { label: 'Registered', value: (c) => date(c.createdAt) }, { label: 'Status', key: 'status' },
     ])
@@ -68,7 +68,7 @@ export default function CustomerList() {
       </div>
     ) },
     { key: 'phone', label: 'Phone', render: (c) => <span className="whitespace-nowrap">{c.phone}</span> },
-    { key: 'city', label: 'City', sortable: true, sortValue: (c) => c.address.city, render: (c) => c.address.city },
+    { key: 'city', label: 'City', sortable: true, sortValue: (c) => c.address?.city || '', render: (c) => c.address?.city || '—' },
     { key: 'orders', label: 'Total Orders', sortable: true, align: 'right', render: (c) => num(c.orders) },
     { key: 'spent', label: 'Total Spent', sortable: true, align: 'right', render: (c) => <span className="font-medium">{inr(c.spent)}</span> },
     { key: 'createdAt', label: 'Registered', sortable: true, render: (c) => <span className="whitespace-nowrap">{date(c.createdAt)}</span> },

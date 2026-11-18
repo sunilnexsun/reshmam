@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react'
+import { forwardRef, useId, useState } from 'react'
 import { Link } from '@admin/_lib/navigation'
 import { ChevronRight, Loader2, Search, X } from 'lucide-react'
 import { cn, initials } from '@admin/_lib/format'
@@ -199,9 +199,20 @@ export function Avatar({ name, src, size = 36, className }) {
     : <span style={style} className={cn('inline-flex shrink-0 items-center justify-center rounded-full bg-accent-soft font-semibold text-primary', className)}>{initials(name)}</span>
 }
 export function Thumb({ src, alt = '', size = 44, className }) {
+  const [error, setError] = useState(false)
   return (
     <span style={{ width: size, height: size }} className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-surface', className)}>
-      {src ? <img src={src} alt={alt} className="h-full w-full object-contain" loading="lazy" /> : <span className="text-[10px] text-muted">No image</span>}
+      {src && !error ? (
+        <img
+          src={src}
+          alt={alt}
+          className="h-full w-full object-contain"
+          loading="lazy"
+          onError={() => setError(true)}
+        />
+      ) : (
+        <span className="text-[10px] font-medium text-muted">No image</span>
+      )}
     </span>
   )
 }

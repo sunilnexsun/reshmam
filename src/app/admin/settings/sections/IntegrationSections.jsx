@@ -1,7 +1,9 @@
 import { useNavigate } from '@admin/_lib/navigation'
-import { AlertTriangle, ArrowRight, Bot, MessageCircle, RotateCcw } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bot, Database, MessageCircle, RotateCcw, UploadCloud } from 'lucide-react'
 import { Button, Card, DemoNote, InfoList, StatusBadge, useConfirm, useToast } from '@admin/_components/ui'
-import { resetDemoData, useDb } from '@admin/_lib/store'
+import { resetDemoData, syncSeedToFirestore, useDb } from '@admin/_lib/store'
+import { firebaseConfig } from '@admin/_lib/firebase'
+import { useState } from 'react'
 import { dateTime } from '@admin/_lib/format'
 
 function IntegrationCard({ icon: Icon, tone, title, text, status, items, to, cta, note }) {
@@ -40,6 +42,64 @@ export function AiSettings() {
       items={[['Chatbot', s.enabled ? 'Enabled' : 'Disabled'], ['Provider', s.provider || 'Not configured'], ['Model', s.model || '—'], ['API key', configured && s.apiKey ? 'Entered (stored in browser for demo)' : 'Not set'], ['Temperature', String(s.temperature)], ['Human handover', s.handover ? 'On' : 'Off']]}
       note="No AI provider is called from this frontend. Replies use flows and the knowledge base until the backend proxies requests to the provider."
       to="/ai-chatbot?tab=settings" cta="Open AI Chatbot settings" />
+  )
+}
+
+export function FirebaseSettings() {
+  const toast = useToast()
+  const db = useDb()
+  const [syncing, setSyncing] = useState(false)
+
+  const handleSync = async () => {
+    setSyncing(true)
+    try {
+      const ok = await syncSeedToFirestore(db)
+      if (ok) {
+        toast.success('Successfully synchronized all products, categories, brands, orders & customers to Firestore!')
+      } else {
+        toast.error('Could not complete Firestore sync. Check browser console.')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Sync failed')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  return (
+    <Card title="Firebase & Firestore Cloud Database" actions={<StatusBadge status="Connected" />}>
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+          <Database className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-sm font-medium text-ink">Connected to Firebase Project &ldquo;{firebaseConfig.projectId}&rdquo;</p>
+          <p className="text-xs text-muted">Cloud Firestore and Firebase Storage are actively syncing products, orders, categories, and brands.</p>
+        </div>
+      </div>
+
+      <InfoList
+        className="mt-4"
+        items={[
+          ['Project ID', firebaseConfig.projectId],
+          ['Auth Domain', firebaseConfig.authDomain],
+          ['Storage Bucket', firebaseConfig.storageBucket],
+          ['Authentication', 'Email / Password'],
+          ['Database', 'Cloud Firestore (Real-time snapshots)'],
+          ['Storage Limit', 'Max 4 images per product (2 MB max per image)'],
+        ]}
+      />
+
+      <div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-4">
+        <div className="mr-auto">
+          <p className="text-xs font-semibold text-ink">Sync Database to Firestore</p>
+          <p className="text-xs text-muted">Push all local products, categories, brands, orders, and settings to Cloud Firestore.</p>
+        </div>
+        <Button icon={UploadCloud} loading={syncing} onClick={handleSync}>
+          Sync to Firestore Now
+        </Button>
+      </div>
+    </Card>
   )
 }
 

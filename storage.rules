@@ -1,0 +1,61 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Maximum file size: 2 MB
+    function isUnderMaxSize() {
+      return request.resource.size <= 2 * 1024 * 1024;
+    }
+
+    // Must be valid image type
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|gif|svg\\+xml)');
+    }
+
+    // -------------------------------------------------------------
+    // Product Images
+    // -------------------------------------------------------------
+    match /products/{allPaths=**} {
+      // Anyone can view product images (storefront + admin)
+      allow read: if true;
+      // Only authenticated users can upload product images under 2MB
+      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
+      // Only authenticated users can delete product images
+      allow delete: if isAuthenticated();
+    }
+
+    // -------------------------------------------------------------
+    // Categories and Brands Logos/Banners
+    // -------------------------------------------------------------
+    match /categories/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
+      allow delete: if isAuthenticated();
+    }
+
+    match /brands/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
+      allow delete: if isAuthenticated();
+    }
+
+    // -------------------------------------------------------------
+    // Marketing Banners & Avatars
+    // -------------------------------------------------------------
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
+      allow delete: if isAuthenticated();
+    }
+
+    match /avatars/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
+      allow delete: if isAuthenticated();
+    }
+  }
+}

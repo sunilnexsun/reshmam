@@ -21,8 +21,18 @@ const csp = [
   "media-src 'self' https:",
   // The Excel export compresses large files in a Web Worker built from a blob: URL.
   "worker-src 'self' blob:",
-  ["connect-src 'self' https://*.supabase.co", supabase.endsWith(".supabase.co") ? "" : supabase, "https://*.razorpay.com"].filter(Boolean).join(" "),
-  "frame-src https://*.razorpay.com https://maps.google.com https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+  [
+    "connect-src 'self'",
+    "https://*.supabase.co",
+    supabase.endsWith(".supabase.co") ? "" : supabase,
+    "https://*.razorpay.com",
+    "https://*.googleapis.com",
+    "https://*.firebaseio.com",
+    "https://*.firebasestorage.app",
+    "https://*.firebaseapp.com",
+    "wss://*.firebaseio.com",
+  ].filter(Boolean).join(" "),
+  "frame-src https://*.razorpay.com https://*.firebaseapp.com https://maps.google.com https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -43,6 +53,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    agentUpgrade: "security",
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

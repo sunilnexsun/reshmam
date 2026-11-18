@@ -28,8 +28,8 @@ export default function CustomerDetails() {
 
   const paid = orders.filter(isRevenue)
   const spent = paid.reduce((s, o) => s + netRevenue(o), 0)
-  const waNumber = customer.phone.replace(/\D/g, '')
-  const a = customer.address
+  const waNumber = (customer.phone || '').replace(/\D/g, '')
+  const a = customer.address || {}
 
   const onDelete = async () => {
     if (!(await confirm({ title: 'Delete customer?', message: `Delete ${customer.name}? Their ${orders.length} order records will be kept.`, confirmText: 'Delete' }))) return
@@ -74,7 +74,7 @@ export default function CustomerDetails() {
             <ul className="mt-5 space-y-3 text-sm">
               <li className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted" /><a href={`tel:${waNumber}`} className="hover:text-primary">{customer.phone}</a></li>
               <li className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted" />{customer.email ? <a href={`mailto:${customer.email}`} className="truncate hover:text-primary">{customer.email}</a> : '—'}</li>
-              <li className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 text-muted" /><span>{[a.line1, a.line2, a.city, `${a.state} ${a.pincode}`].filter(Boolean).join(', ')}</span></li>
+              <li className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 text-muted" /><span>{[a.line1 || a.street, a.line2, a.city, [a.state, a.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—'}</span></li>
               <li className="flex items-center gap-3"><MessageCircle className="h-4 w-4 text-muted" />WhatsApp updates: {customer.whatsappOptIn ? <Badge tone="green">Opted in</Badge> : <Badge>Not opted in</Badge>}</li>
             </ul>
           </Card>

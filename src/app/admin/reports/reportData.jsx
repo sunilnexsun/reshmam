@@ -4,7 +4,6 @@
 import { Link } from '@admin/_lib/navigation'
 import { Badge, StatusBadge, Thumb } from '@admin/_components/ui'
 import { byId, categorySales, inventoryRows, isRevenue, kpis, netRevenue, revenueShare, stockStatus } from '@admin/_lib/selectors'
-import { CATEGORIES } from '@admin/_lib/seed'
 import { date, inr, num } from '@admin/_lib/format'
 import { rs } from '@admin/_lib/export'
 import { colorFor, SERIES, STATUS_COLORS, STATUS_ORDER, timeSeries, trailingRange, unitFor } from '@admin/_components/charts/chartKit'
@@ -58,7 +57,7 @@ function productAgg(orders) {
   return m
 }
 const scopeProducts = (db, branch) => (branch === 'all' ? db.products : db.products.filter((p) => db.variants.some((v) => v.productId === p.id && v.branchId === branch)))
-export const allCategories = (db) => [...new Set([...CATEGORIES, ...db.products.map((p) => p.category)])]
+export const allCategories = (db) => [...new Set([...(db.categories || []).map((c) => c.name), ...db.products.map((p) => p.category)])]
 
 // ---------------------------------------------------------------- Sales
 export function salesReport({ db, orders, range, branch }) {

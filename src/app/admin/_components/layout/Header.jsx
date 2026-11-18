@@ -123,7 +123,7 @@ export function Header({ onOpenMobile }) {
       <div className="hidden min-w-0 flex-1 sm:block"><GlobalSearch /></div>
       <div className="flex-1 sm:hidden" />
       <button type="button" onClick={() => setMobileSearch((v) => !v)} aria-label="Search" aria-expanded={mobileSearch} className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-surface sm:hidden"><Search className="h-5 w-5" /></button>
-      <Badge tone="amber" className="hidden md:inline-flex" title="All data is sample data stored in this browser">Sample data</Badge>
+      <Badge tone="green" className="hidden md:inline-flex" title="Connected to Firebase Cloud Firestore"><span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />Live DB</Badge>
       <Notifications />
       <Dropdown width="w-56" trigger={(p) => (
         <button type="button" {...p} aria-label="Account menu" className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-surface">

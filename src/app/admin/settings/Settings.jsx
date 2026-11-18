@@ -1,12 +1,12 @@
 'use client'
 import { useSearchParams } from '@admin/_lib/navigation'
-import { AlertTriangle, Bell, Bot, Building, CreditCard, Image, KeyRound, MessageCircle, Receipt, Settings2, ShieldCheck, Truck, UserCircle, Users } from 'lucide-react'
+import { AlertTriangle, Bell, Bot, Building, CreditCard, Database, Image, KeyRound, MessageCircle, Receipt, Settings2, ShieldCheck, Truck, UserCircle, Users } from 'lucide-react'
 import { PageHeader } from '@admin/_components/ui'
 import { useAuth } from '@admin/_lib/auth'
 import { cn } from '@admin/_lib/format'
 import { ProfileSettings, PasswordSettings } from './sections/AccountSections'
 import { PaymentSettings, ShippingSettings, TaxSettings } from './sections/CommerceSections'
-import { AiSettings, DangerZone, WhatsAppApiSettings } from './sections/IntegrationSections'
+import { AiSettings, DangerZone, FirebaseSettings, WhatsAppApiSettings } from './sections/IntegrationSections'
 import { CompanySettings, GeneralSettings, LogoSettings, NotificationSettings } from './sections/StoreSections'
 import { RolesSettings, UsersSettings } from './sections/TeamSections'
 
@@ -31,6 +31,7 @@ const GROUPS = [
     { id: 'shipping', label: 'Shipping', icon: Truck, C: ShippingSettings },
   ] },
   { label: 'Integrations', items: [
+    { id: 'firebase', label: 'Firebase Cloud DB', icon: Database, C: FirebaseSettings },
     { id: 'whatsapp', label: 'WhatsApp API', icon: MessageCircle, C: WhatsAppApiSettings },
     { id: 'ai', label: 'AI Configuration', icon: Bot, C: AiSettings },
   ] },
