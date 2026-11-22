@@ -41,8 +41,8 @@ export const metadata: Metadata = {
 const productBenefits = [
   {
     name: "Gingelly Oil (Sesame Oil)",
-    image: "/images/product-gingelly.webp",
-    alt: "RESHMAM gingelly oil with sesame seeds",
+    image: "/images/products/gingelly-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed gingelly oil",
     href: "/products/gingelly-oil",
     points: [
       "Contains naturally occurring antioxidants such as sesamol",
@@ -52,8 +52,8 @@ const productBenefits = [
   },
   {
     name: "Groundnut Oil (Peanut Oil)",
-    image: "/images/product-groundnut.webp",
-    alt: "RESHMAM groundnut oil with groundnuts",
+    image: "/images/products/groundnut-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed groundnut oil",
     href: "/products/groundnut-oil",
     points: [
       "Contains unsaturated fats",
@@ -63,8 +63,8 @@ const productBenefits = [
   },
   {
     name: "Coconut Oil",
-    image: "/images/product-coconut.webp",
-    alt: "RESHMAM coconut oil with a split coconut",
+    image: "/images/products/coconut-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed coconut oil",
     href: "/products/coconut-oil",
     points: [
       "Suited to cooking and baking",
@@ -159,7 +159,7 @@ export default function HealthBenefitsPage() {
                   alt={p.alt}
                   width={464}
                   height={320}
-                  className="aspect-[29/20] w-full object-cover"
+                  className="aspect-[29/20] w-full bg-white object-contain p-4"
                 />
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="font-serif text-xl font-bold text-forest-800">

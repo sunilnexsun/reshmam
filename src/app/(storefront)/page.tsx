@@ -113,7 +113,7 @@ export default function HomePage() {
                     width={464}
                     height={320}
                     sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
-                    className="aspect-[29/20] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="aspect-[29/20] w-full bg-white object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                   <span className="flex flex-1 flex-col p-5">
                     <span className="font-serif text-xl font-bold text-forest-800">{c.name}</span>
