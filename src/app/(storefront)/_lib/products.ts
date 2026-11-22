@@ -75,21 +75,21 @@ export const categories: Category[] = [
     name: "Gingelly Oil (Sesame Oil)",
     shortName: "Gingelly Oil",
     description: "Rich in flavour, a staple of South Indian kitchens.",
-    image: "/images/product-gingelly.webp",
+    image: "/images/products/gingelly-1l.webp",
   },
   {
     slug: "groundnut-oil",
     name: "Groundnut Oil (Peanut Oil)",
     shortName: "Groundnut Oil",
     description: "Pure taste for your everyday cooking.",
-    image: "/images/product-groundnut.webp",
+    image: "/images/products/groundnut-1l.webp",
   },
   {
     slug: "coconut-oil",
     name: "Coconut Oil",
     shortName: "Coconut Oil",
     description: "Natural goodness in every drop.",
-    image: "/images/product-coconut.webp",
+    image: "/images/products/coconut-1l.webp",
   },
 ];
 

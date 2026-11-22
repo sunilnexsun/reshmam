@@ -153,7 +153,7 @@ All images in `public/images/` are **provisional crops taken from the supplied d
 | File | Used for | Needed |
 |---|---|---|
 | `logo.png` (chef + wordmark), `logo-mark.png` (chef only) | Header; footer, admin and favicon | Vector (SVG) logo + favicon set |
-| `product-{gingelly,groundnut,coconut}.webp` | Product cards, categories, PDP | Real product photos, ~1200×830, plain/cream background |
+| `products/{gingelly,groundnut,coconut}-{500ml,1l}.webp` | Product cards and pages (per size), category cards, Health Benefits | Real product photos, ~1200×830, plain/cream background |
 | `pack-{gingelly,groundnut,coconut,combo}.webp` | Family packs, gift combo | Real pack photos |
 | `{home,products,health,contact,blog}-banner.webp` (desktop banners), `{home,products}-banner-mobile.webp`, `{health,contact,blog}-hero.webp` (phone/tablet crops) | Page heroes (see `BannerHero`) | ~2000×1000 lifestyle shots |
 | `story-hero.webp` | Our Story hero, home story block | Real chekku photo |

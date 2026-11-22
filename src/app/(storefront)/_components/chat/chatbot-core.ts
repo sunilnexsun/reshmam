@@ -157,7 +157,7 @@ const CSS = `
 .rc-chip:hover{background:var(--g8);color:#fff}
 .rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-left:38px}
 .rc-cat{border:1px solid var(--b3);border-radius:12px;background:#fff;overflow:hidden;cursor:pointer;padding:0;font:inherit;text-align:center}
-.rc-cat img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;background:var(--beige)}
+.rc-cat img{width:100%;aspect-ratio:3/2;object-fit:contain;display:block;background:#fff;padding:4px;box-sizing:border-box}
 .rc-cat span{display:block;padding:7px 6px;font-weight:600;font-size:13px;color:var(--g9)}
 .rc-cat:hover{border-color:var(--g8)}
 .rc-list{display:flex;flex-direction:column;gap:8px;margin-left:38px}
