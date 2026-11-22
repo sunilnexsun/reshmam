@@ -101,7 +101,7 @@ export const products: Product[] = [
     category: "gingelly-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/products/gingelly-500ml.webp",
+    image: "/images/products/bottle-gingelly-500ml.webp",
     imageFit: "contain",
     imageAlt:
       "Bottle of RESHMAM cold pressed gingelly oil",
@@ -117,8 +117,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "GIN-500ML", label: "500 ml", price: 350, stock: 120, image: "/images/products/gingelly-500ml.webp" },
-      { id: "GIN-1L", label: "1 L", price: 600, stock: 90, image: "/images/products/gingelly-1l.webp" },
+      { id: "GIN-500ML", label: "500 ml", price: 350, stock: 120, image: "/images/products/bottle-gingelly-500ml.webp" },
+      { id: "GIN-1L", label: "1 L", price: 600, stock: 90, image: "/images/products/bottle-gingelly-1l.webp" },
     ],
   },
   {
@@ -128,7 +128,7 @@ export const products: Product[] = [
     category: "groundnut-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/products/groundnut-500ml.webp",
+    image: "/images/products/bottle-groundnut-500ml.webp",
     imageFit: "contain",
     imageAlt:
       "Bottle of RESHMAM cold pressed groundnut oil",
@@ -142,8 +142,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "GRN-500ML", label: "500 ml", price: 300, stock: 140, image: "/images/products/groundnut-500ml.webp" },
-      { id: "GRN-1L", label: "1 L", price: 550, stock: 100, image: "/images/products/groundnut-1l.webp" },
+      { id: "GRN-500ML", label: "500 ml", price: 300, stock: 140, image: "/images/products/bottle-groundnut-500ml.webp" },
+      { id: "GRN-1L", label: "1 L", price: 550, stock: 100, image: "/images/products/bottle-groundnut-1l.webp" },
     ],
   },
   {
@@ -153,7 +153,7 @@ export const products: Product[] = [
     category: "coconut-oil",
     kind: "single",
     branch: "reshmam",
-    image: "/images/products/coconut-500ml.webp",
+    image: "/images/products/bottle-coconut-500ml.webp",
     imageFit: "contain",
     imageAlt:
       "Bottle of RESHMAM cold pressed coconut oil",
@@ -166,8 +166,8 @@ export const products: Product[] = [
     edible: true,
     bestseller: true,
     variants: [
-      { id: "COC-500ML", label: "500 ml", price: 320, stock: 110, image: "/images/products/coconut-500ml.webp" },
-      { id: "COC-1L", label: "1 L", price: 580, stock: 80, image: "/images/products/coconut-1l.webp" },
+      { id: "COC-500ML", label: "500 ml", price: 320, stock: 110, image: "/images/products/bottle-coconut-500ml.webp" },
+      { id: "COC-1L", label: "1 L", price: 580, stock: 80, image: "/images/products/bottle-coconut-1l.webp" },
     ],
   },
   {
