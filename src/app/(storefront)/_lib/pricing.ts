@@ -41,19 +41,41 @@ export const MAX_UNITS_PER_VARIANT = 50;
 export function priceCart(
   items: { variantId: string; quantity: number }[],
   state?: string,
-  { checkStock = true, live }: { checkStock?: boolean; live?: LiveVariants | null } = {},
+  { checkStock = true, live, products: productList }: { checkStock?: boolean; live?: LiveVariants | null; products?: import("./products").Product[] } = {},
 ): PricingResult {
   if (!items.length) return { ok: false, error: "Your cart is empty." };
   const merged = new Map<string, number>();
   for (const item of items) merged.set(item.variantId, (merged.get(item.variantId) ?? 0) + item.quantity);
   const lines: PricedLine[] = [];
   for (const [variantId, quantity] of merged) {
-    const found = findVariant(variantId);
-    if (!found || (live && !live[variantId]?.active)) {
+    const found = findVariant(variantId, productList);
+    const liveInfo = live?.[variantId];
+    if ((!found && !liveInfo) || (liveInfo && !liveInfo.active)) {
       return { ok: false, error: "One of the items in your cart is no longer available." };
     }
-    const product = found.product;
-    const variant = applyLive(found.variant, live);
+    const product = found?.product ?? {
+      slug: variantId,
+      name: "Product Item",
+      shortName: "Product",
+      category: "general",
+      kind: "single" as const,
+      branch: "reshmam",
+      image: "/images/product-gingelly.webp",
+      imageAlt: "Product",
+      summary: "",
+      description: [],
+      uses: [],
+      edible: true,
+      variants: [],
+    };
+    const variant = found
+      ? applyLive(found.variant, live)
+      : {
+          id: variantId,
+          label: "Standard",
+          price: liveInfo?.price ?? 0,
+          stock: liveInfo?.stock ?? 0,
+        };
     if (quantity > MAX_UNITS_PER_VARIANT) {
       return {
         ok: false,

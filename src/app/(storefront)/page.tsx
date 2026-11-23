@@ -24,17 +24,24 @@ import { AvailableOn } from "./_components/sections/AvailableOn";
 import { ButtonLink, Container, Eyebrow, IconBadge, SectionHeading, LeafFlourish } from "./_components/ui/primitives";
 import { LeafOutline, LeafSprig } from "./_components/ui/decor";
 import { categories, getProduct, type Product } from "./_lib/products";
+import { fetchDynamicProducts, fetchDynamicCategories } from "./_lib/server/catalogue";
 import { posts } from "./_lib/blog";
 import { formatINR } from "./_lib/pricing";
 import { site } from "./_lib/site";
 
-const bestsellers = ["gingelly-oil", "groundnut-oil", "coconut-oil", "combo-oil-gift-pack"]
-  .map(getProduct)
-  .filter(Boolean) as Product[];
-
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
-export default function HomePage() {
+export const instant = false;
+
+export default async function HomePage() {
+  const [dynamicProducts, dynamicCategories] = await Promise.all([
+    fetchDynamicProducts(),
+    fetchDynamicCategories(),
+  ]);
+
+  const categoriesList = dynamicCategories.length > 0 ? dynamicCategories : categories;
+  const featured = dynamicProducts.filter((p) => p.bestseller);
+  const bestsellersList = featured.length >= 2 ? featured.slice(0, 4) : dynamicProducts.slice(0, 4);
   return (
     <>
       <BannerHero
@@ -101,7 +108,7 @@ export default function HomePage() {
         <Container>
           <SectionHeading eyebrow="Our Products" title={<span id="cat-heading">Shop by Category</span>} />
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((c) => (
+            {categoriesList.map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/products?category=${c.slug}`}
@@ -197,7 +204,7 @@ export default function HomePage() {
             </ButtonLink>
           </div>
           <div className="mt-8">
-            <ProductGrid products={bestsellers} />
+            <ProductGrid products={bestsellersList} />
           </div>
         </Container>
       </section>

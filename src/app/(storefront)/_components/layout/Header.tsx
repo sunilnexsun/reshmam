@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { navLinks } from "@storefront/_lib/site";
-import { categories } from "@storefront/_lib/products";
+import { useDynamicCatalogue } from "@storefront/_lib/use-catalogue";
 import { useWishlist } from "@storefront/_lib/store";
 import { useCartLines } from "@storefront/_components/cart/useCartLines";
 import { cn } from "@storefront/_components/ui/primitives";
@@ -46,6 +46,7 @@ function CartButton() {
 }
 
 function ProductsMenu({ active }: { active: boolean }) {
+  const { categories } = useDynamicCatalogue();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLLIElement>(null);
   const pathname = usePathname();
@@ -134,6 +135,7 @@ const navActiveClass =
   "text-forest-800 after:absolute after:inset-x-2.5 after:bottom-1.5 after:h-0.5 after:rounded after:bg-forest-800 xl:after:inset-x-4";
 
 export function Header() {
+  const { categories } = useDynamicCatalogue();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuTop, setMenuTop] = useState(76);

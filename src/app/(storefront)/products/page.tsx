@@ -8,16 +8,25 @@ import { ProductCatalog, ProductCatalogFallback } from "@storefront/_components/
 import { BulkOrderSection } from "@storefront/_components/products/BulkOrderSection";
 import { Breadcrumbs } from "@storefront/_components/sections/Misc";
 import { Container, IconBadge } from "@storefront/_components/ui/primitives";
+import { fetchDynamicProducts, fetchDynamicCategories, fetchDynamicBranches } from "@storefront/_lib/server/catalogue";
 
 export const metadata: Metadata = {
-  title: "Shop Cold Pressed Oils",
+  title: "Shop Cold Pressed Oils & Natural Products",
   description:
-    "Shop RESHMAM traditional cold pressed gingelly, groundnut and coconut oils, family packs and gift combos. Free delivery across Tamil Nadu above ₹1,499.",
+    "Shop RESHMAM traditional cold pressed gingelly, groundnut and coconut oils, cattle feeds and gift combos. Free delivery across Tamil Nadu above ₹1,499.",
   alternates: { canonical: "/products" },
   openGraph: { ...openGraphBase, type: "website", url: "/products", images: ["/images/products-banner.webp"] },
 };
 
-export default function ProductsPage() {
+export const instant = false;
+
+export default async function ProductsPage() {
+  const [products, categories, branches] = await Promise.all([
+    fetchDynamicProducts(),
+    fetchDynamicCategories(),
+    fetchDynamicBranches(),
+  ]);
+
   return (
     <>
       <BannerHero
@@ -76,7 +85,11 @@ export default function ProductsPage() {
           </div>
           <h2 className="sr-only">All products</h2>
           <Suspense fallback={<ProductCatalogFallback />}>
-            <ProductCatalog />
+            <ProductCatalog
+              initialProducts={products}
+              initialCategories={categories}
+              initialBranches={branches}
+            />
           </Suspense>
         </Container>
       </section>

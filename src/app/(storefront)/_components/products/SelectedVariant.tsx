@@ -11,7 +11,7 @@ const SelectedVariantContext = createContext<Selection | null>(null);
 
 /** The first size that is in stock (or the first size), used as the initial selection. */
 export function defaultVariantId(product: Product) {
-  return (product.variants.find((v) => v.stock > 0) ?? product.variants[0]).id;
+  return (product.variants.find((v) => v.stock > 0) ?? product.variants[0])?.id ?? "";
 }
 
 /**

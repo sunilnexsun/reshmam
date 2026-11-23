@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { clientIp, getSupabaseAdmin, rateLimit } from "@storefront/_lib/server/integrations";
 import { ORDER_VIEW_COLUMNS, toOrderView } from "@storefront/_lib/server/orders";
 
@@ -11,6 +11,7 @@ const LIMIT = 50;
  * the email (it's done by an emailed link), so this also finds orders placed as a guest before signing up.
  */
 export async function GET(req: Request) {
+  await connection();
   if (!rateLimit(`account-orders:${clientIp(req)}`, 30, 10 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "Too many requests. Please wait a few minutes." }, { status: 429 });
   }

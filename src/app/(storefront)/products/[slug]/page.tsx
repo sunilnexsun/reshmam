@@ -11,25 +11,27 @@ import {
   IconBadge,
   SectionHeading,
 } from "@storefront/_components/ui/primitives";
-import { getCategory, getProduct, products } from "@storefront/_lib/products";
+import { getCategory, getProduct, products as fallbackProducts } from "@storefront/_lib/products";
 import { applyLiveToProduct } from "@storefront/_lib/live";
-import { getLiveVariants } from "@storefront/_lib/server/catalogue";
+import {
+  getLiveVariants,
+  fetchDynamicProductBySlug,
+  fetchDynamicProducts,
+  fetchDynamicCategories,
+} from "@storefront/_lib/server/catalogue";
 import { absoluteUrl, openGraphBase, site } from "@storefront/_lib/site";
 import { formatINR } from "@storefront/_lib/pricing";
 
-// The page reads its slug and the cached live stock while rendering; it is prerendered for every product
-// (generateStaticParams) and served from that cache, so it may block briefly on a first visit to a new slug.
-export const instant = false;
-
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const dynamic = await fetchDynamicProducts();
+  return dynamic.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = (await fetchDynamicProductBySlug(slug)) || getProduct(slug);
   if (!product) return {};
   return {
     title: product.name,
@@ -45,20 +47,24 @@ export default async function ProductPage({
   params,
 }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
-  const catalogueProduct = getProduct(slug);
+  const catalogueProduct = (await fetchDynamicProductBySlug(slug)) || getProduct(slug);
   if (!catalogueProduct) notFound();
-  // Stock and prices from the database when it is configured (cached for a few minutes).
+
+  // Stock and prices from Firestore
   const product = applyLiveToProduct(catalogueProduct, await getLiveVariants());
-  const category = getCategory(product.category);
-  const related = products
+  const categories = await fetchDynamicCategories();
+  const category = categories.find((c) => c.slug === product.category) || getCategory(product.category);
+
+  const allProducts = await fetchDynamicProducts();
+  const related = allProducts
     .filter((p) => p.slug !== product.slug && p.category === product.category)
     .slice(0, 4);
-  const fill = products.filter(
+  const fill = allProducts.filter(
     (p) => p.slug !== product.slug && !related.includes(p),
   );
   const more = [...related, ...fill].slice(0, 4);
 
-  // Structured data — only facts we actually have (no ratings or reviews).
+  // Structured data
   const ld = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -67,7 +73,7 @@ export default async function ProductPage({
     description: product.summary,
     brand: {
       "@type": "Brand",
-      name: "RESHMAM",
+      name: (product as any).brand || "RESHMAM",
     },
     category: category?.name,
     offers: product.variants.map((v) => ({
@@ -139,7 +145,7 @@ export default async function ProductPage({
                     <IconBadge size="sm">
                       <Cog className="h-4 w-4" />
                     </IconBadge>{" "}
-                    Wooden chekku pressed
+                    Traditional extraction
                   </li>
                   <li className="flex items-center gap-2">
                     <IconBadge size="sm">

@@ -1,14 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
-import { products } from "@storefront/_lib/products";
+import type { Product } from "@storefront/_lib/products";
 import { useWishlist } from "@storefront/_lib/store";
 import { ProductGrid } from "./ProductCatalog";
 import { ButtonLink } from "@storefront/_components/ui/primitives";
 
 export function WishlistView() {
   const slugs = useWishlist();
-  const saved = products.filter((p) => slugs.includes(p.slug));
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && Array.isArray(d.products)) {
+          setAllProducts(d.products);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const saved = allProducts.filter((p) => slugs.includes(p.slug) || ((p as any).id && slugs.includes((p as any).id)));
+
   if (!saved.length) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-dashed border-beige-300 bg-white/70 p-10 text-center">

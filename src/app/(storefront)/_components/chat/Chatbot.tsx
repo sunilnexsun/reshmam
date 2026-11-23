@@ -2,33 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { mountChatbot, type ChatOrder } from "./chatbot-core";
-import { branchName, categories, products } from "@storefront/_lib/products";
+import { mountChatbot } from "./chatbot-core";
+import { branchName } from "@storefront/_lib/products";
+import { useDynamicCatalogue } from "@storefront/_lib/use-catalogue";
 import { faqs } from "@storefront/_lib/faqs";
 import { site } from "@storefront/_lib/site";
 import { addToCart } from "@storefront/_components/products/ProductCard";
-
-const chatProducts = products.map((p) => ({
-  slug: p.slug,
-  name: p.name,
-  shortName: p.shortName,
-  category: p.category,
-  kind: p.kind,
-  branchName: branchName(p.branch),
-  image: p.image,
-  imageAlt: p.imageAlt,
-  summary: p.summary,
-  description: p.description,
-  uses: p.uses,
-  notice: p.notice,
-  variants: p.variants,
-}));
 
 /** Mounts the Reshmam shopping assistant (floating chat button + panel). */
 export function Chatbot() {
   const host = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const routerRef = useRef(router);
+  const { products, categories } = useDynamicCatalogue();
 
   useEffect(() => {
     routerRef.current = router;
@@ -36,6 +22,22 @@ export function Chatbot() {
 
   useEffect(() => {
     if (!host.current) return;
+    const chatProducts = products.map((p) => ({
+      slug: p.slug,
+      name: p.name,
+      shortName: p.shortName,
+      category: p.category,
+      kind: p.kind,
+      branchName: branchName(p.branch),
+      image: p.image,
+      imageAlt: p.imageAlt,
+      summary: p.summary,
+      description: p.description,
+      uses: p.uses,
+      notice: p.notice,
+      variants: p.variants,
+    }));
+
     const bot = mountChatbot(host.current, {
       products: chatProducts,
       categories,
@@ -56,14 +58,14 @@ export function Chatbot() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderNumber, email }),
         });
-        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; order?: ChatOrder };
-        return res.ok && data.ok && data.order
-          ? { ok: true as const, order: data.order }
-          : { ok: false as const, error: data.error ?? "We couldn't find that order." };
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.ok ? data.order : null;
       },
     });
-    return () => bot.destroy();
-  }, []);
 
-  return <div ref={host} data-chatbot />;
+    return () => bot.destroy();
+  }, [products, categories]);
+
+  return <div ref={host} />;
 }

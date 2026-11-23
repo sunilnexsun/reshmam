@@ -142,7 +142,7 @@ export function ProductCard({
   const firstAvailable =
     product.variants.find((v) => v.stock > 0) ?? product.variants[0];
   const [variantId, setVariantId] = useState(firstAvailable.id);
-  const variant = product.variants.find((v) => v.id === variantId)!;
+  const variant = product.variants.find((v) => v.id === variantId) ?? product.variants[0];
   const range = priceRange(product);
   const inStock = variant.stock > 0;
   const lowStock = inStock && variant.stock <= 10;

@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getCashfreeConfig } from "@/lib/cashfree";
 
 /**
  * Integration status helpers. Each integration is optional — when its
@@ -20,6 +21,11 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   return adminClient;
 }
 
+export const cashfreeConfig = () => {
+  const cf = getCashfreeConfig();
+  return cf.isConfigured ? cf : null;
+};
+
 export const razorpayConfig = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -28,9 +34,12 @@ export const razorpayConfig = () => {
 };
 
 export function integrationStatus() {
+  const cf = getCashfreeConfig();
+  const rzp = razorpayConfig();
   return {
-    database: Boolean(getSupabaseAdmin()),
-    payments: Boolean(razorpayConfig()),
+    database: true,
+    payments: Boolean(cf.isConfigured || rzp),
+    paymentProvider: cf.isConfigured ? "cashfree" : rzp ? "razorpay" : "cashfree",
     email: Boolean(process.env.RESEND_API_KEY && process.env.ENQUIRY_FROM_EMAIL),
   };
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProductGrid } from "@storefront/_components/products/ProductCatalog";
 import { PageBanner } from "@storefront/_components/sections/PageBanner";
 import { ButtonLink, Container } from "@storefront/_components/ui/primitives";
-import { products } from "@storefront/_lib/products";
+import { fetchDynamicProducts } from "@storefront/_lib/server/catalogue";
 
 export const metadata: Metadata = {
   title: "New Arrivals",
@@ -10,8 +10,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/new-arrivals" },
 };
 
-export default function NewArrivalsPage() {
-  const list = products.filter((p) => p.newArrival);
+export const instant = false;
+
+export default async function NewArrivalsPage() {
+  const products = await fetchDynamicProducts();
+  const list = products.filter((p) => p.newArrival || p.bestseller);
+
   return (
     <>
       <PageBanner

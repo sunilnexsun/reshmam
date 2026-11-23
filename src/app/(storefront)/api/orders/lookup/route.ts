@@ -1,44 +1,71 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { clientIp, getSupabaseAdmin, rateLimit } from "@storefront/_lib/server/integrations";
-import { ORDER_VIEW_COLUMNS, orderCustomer, safeEqual, toOrderView } from "@storefront/_lib/server/orders";
+import { clientIp, rateLimit } from "@storefront/_lib/server/integrations";
+import { orderCustomer, safeEqual, toOrderView } from "@storefront/_lib/server/orders";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
 const schema = z.union([
   z.object({ orderNumber: z.string().trim().min(5).max(40), token: z.string().min(10).max(80) }),
   z.object({ orderNumber: z.string().trim().min(5).max(40), email: z.string().trim().email() }),
 ]);
 
-/** Order status lookup for the confirmation page (token) and Track Order page (order number + email). */
+/** Order status lookup for confirmation page (token) and Track Order page (order number + email). */
 export async function POST(req: Request) {
   if (!rateLimit(`lookup:${clientIp(req)}`, 20, 10 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   }
-  const db = getSupabaseAdmin();
-  if (!db) {
-    return NextResponse.json(
-      { ok: false, code: "not_configured", error: "Order tracking is not enabled yet. Please contact us for order updates." },
-      { status: 503 },
-    );
-  }
+
   const parsed = schema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ ok: false, error: "Please enter a valid order number and email." }, { status: 400 });
-  const q = parsed.data;
-
-  const { data: order } = await db
-    .from("orders")
-    .select(ORDER_VIEW_COLUMNS)
-    .eq("order_number", q.orderNumber.toUpperCase())
-    .maybeSingle();
-
-  const customer = order ? orderCustomer(order) : undefined;
-  const authorised =
-    order &&
-    ("token" in q
-      ? safeEqual(order.access_token, q.token)
-      : customer?.email?.toLowerCase() === q.email.toLowerCase());
-  if (!order || !authorised) {
-    return NextResponse.json({ ok: false, error: "We couldn't find an order with those details." }, { status: 404 });
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: "Please enter a valid order number and email." }, { status: 400 });
   }
+  const q = parsed.data;
+  const num = q.orderNumber.trim().toUpperCase();
 
-  return NextResponse.json({ ok: true, order: toOrderView(order) });
+  try {
+    let order: any = null;
+
+    // 1. Try finding by order_number
+    let snap = await getDocs(query(collection(db, "orders"), where("order_number", "==", num)));
+    if (!snap.empty) {
+      order = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    // 2. Try finding by number
+    if (!order) {
+      snap = await getDocs(query(collection(db, "orders"), where("number", "==", num)));
+      if (!snap.empty) {
+        order = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      }
+    }
+
+    // 3. Try finding by document id
+    if (!order) {
+      const docSnap = await getDoc(doc(db, "orders", q.orderNumber.trim()));
+      if (docSnap.exists()) {
+        order = { id: docSnap.id, ...docSnap.data() };
+      }
+    }
+
+    if (!order) {
+      return NextResponse.json({ ok: false, error: "We couldn't find an order with those details." }, { status: 404 });
+    }
+
+    const customer = orderCustomer(order);
+    const token = order.access_token || order.accessToken || "";
+    const authorised =
+      "token" in q
+        ? (token && safeEqual(token, q.token))
+        : (customer?.email && customer.email.toLowerCase() === q.email.toLowerCase());
+
+    if (!authorised) {
+      return NextResponse.json({ ok: false, error: "We couldn't find an order with those details." }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, order: toOrderView(order) });
+  } catch (err) {
+    console.error("Order lookup error in Firestore:", err);
+    return NextResponse.json({ ok: false, error: "Unable to look up order at this time." }, { status: 500 });
+  }
 }

@@ -5,5 +5,9 @@ import { integrationStatus } from "@storefront/_lib/server/integrations";
 export async function GET() {
   await connection();
   const s = integrationStatus();
-  return Response.json({ ordering: s.database, onlinePayments: s.database && s.payments });
+  return Response.json({
+    ordering: s.database,
+    onlinePayments: s.database && s.payments,
+    gateway: s.paymentProvider,
+  });
 }

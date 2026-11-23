@@ -1,24 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  branches,
-  categories,
-  productsInCategory,
-  searchProducts,
+  categories as staticCategories,
+  products as staticProducts,
   type BranchSlug,
   type CategorySlug,
+  type Product,
+  type Category,
+  type Branch,
 } from "@storefront/_lib/products";
 import { ProductCard } from "./ProductCard";
 import { cn } from "@storefront/_components/ui/primitives";
 
 type Filter = CategorySlug | "all";
+type BranchFilter = BranchSlug | "all";
 
 export function ProductGrid({
   products,
 }: {
-  products: ReturnType<typeof productsInCategory>;
+  products: Product[];
 }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
@@ -33,14 +36,16 @@ export function ProductGrid({
 
 export function CategoryFilter({
   value,
+  categoriesList = staticCategories,
   onChange,
 }: {
   value: Filter;
+  categoriesList?: Category[];
   onChange: (f: Filter) => void;
 }) {
   const options: { value: Filter; label: string }[] = [
     { value: "all", label: "All Products" },
-    ...categories.map((c) => ({ value: c.slug, label: c.shortName })),
+    ...categoriesList.map((c) => ({ value: c.slug, label: c.shortName || c.name })),
   ];
   return (
     <div
@@ -71,18 +76,18 @@ export function CategoryFilter({
   );
 }
 
-type BranchFilter = BranchSlug | "all";
-
 export function BranchFilterBar({
   value,
+  branchesList = [],
   onChange,
 }: {
   value: BranchFilter;
+  branchesList?: Branch[];
   onChange: (b: BranchFilter) => void;
 }) {
   const options: { value: BranchFilter; label: string }[] = [
     { value: "all", label: "All Branches" },
-    ...branches.map((b) => ({ value: b.slug, label: b.name })),
+    ...branchesList.map((b) => ({ value: b.slug, label: b.name })),
   ];
   return (
     <div
@@ -111,21 +116,58 @@ export function BranchFilterBar({
 }
 
 /** Reads ?branch=, ?category= and ?q= from the URL and filters client-side without a page reload. */
-export function ProductCatalog() {
+export function ProductCatalog({
+  initialProducts,
+  initialCategories,
+  initialBranches,
+}: {
+  initialProducts?: Product[];
+  initialCategories?: Category[];
+  initialBranches?: Branch[];
+} = {}) {
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts || staticProducts);
+  const [allCategories, setAllCategories] = useState<Category[]>(initialCategories || staticCategories);
+  const [allBranches, setAllBranches] = useState<Branch[]>(initialBranches || []);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && Array.isArray(d.products) && d.products.length > 0) {
+          setAllProducts(d.products);
+        }
+        if (d?.ok && Array.isArray(d.categories) && d.categories.length > 0) {
+          setAllCategories(d.categories);
+        }
+        if (d?.ok && Array.isArray(d.branches) && d.branches.length > 0) {
+          setAllBranches(d.branches);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const raw = params.get("category");
-  const filter: Filter = categories.some((c) => c.slug === raw)
+  const filter: Filter = allCategories.some((c) => c.slug === raw)
     ? (raw as CategorySlug)
     : "all";
   const rawBranch = params.get("branch");
-  const branch: BranchFilter = branches.some((b) => b.slug === rawBranch)
+  const branch: BranchFilter = allBranches.some((b) => b.slug === rawBranch)
     ? (rawBranch as BranchSlug)
     : "all";
   const q = params.get("q")?.trim() ?? "";
 
-  const list = q ? searchProducts(q) : productsInCategory(filter, branch);
+  const list = q
+    ? allProducts.filter((p) =>
+        [p.name, p.shortName, p.summary, p.category, (p as any).brand || ""].join(" ").toLowerCase().includes(q.toLowerCase())
+      )
+    : allProducts.filter(
+        (p) =>
+          (branch === "all" || p.branch === branch) &&
+          (filter === "all" || (p.category === filter && p.kind !== "combo"))
+      );
 
   const update = (f: Filter, b: BranchFilter) => {
     const next = new URLSearchParams();
@@ -140,13 +182,14 @@ export function ProductCatalog() {
   return (
     <div>
       {/* Only worth showing when products are sold under more than one branch. */}
-      {branches.length > 1 && (
+      {allBranches.length > 1 && (
         <BranchFilterBar
+          branchesList={allBranches}
           value={q ? "all" : branch}
           onChange={(b) => update(filter, b)}
         />
       )}
-      <CategoryFilter value={q ? "all" : filter} onChange={setFilter} />
+      <CategoryFilter value={q ? "all" : filter} categoriesList={allCategories} onChange={setFilter} />
       <div className="mt-6 flex min-h-6 flex-wrap items-center justify-between gap-2 text-sm text-ink-soft">
         <p aria-live="polite">
           {q ? (
@@ -193,51 +236,13 @@ export function ProductCatalog() {
   );
 }
 
-/** Server-renderable fallback for the Suspense boundary (no URL params yet). */
+/** Server-renderable fallback for the Suspense boundary. */
 export function ProductCatalogFallback() {
   return (
-    <div>
-      <CategoryFilterStatic />
-      <div className="mt-10">
-        <ProductGrid products={productsInCategory("all")} />
-      </div>
-    </div>
-  );
-}
-
-function CategoryFilterStatic() {
-  return (
-    <div data-static-filters>
-      <ul className="mb-4 flex flex-wrap justify-center gap-2" aria-hidden>
-        {["All Branches", ...branches.map((b) => b.name)].map((l, i) => (
-          <li
-            key={l}
-            className={cn(
-              "inline-flex min-h-10 items-center rounded-full border px-5 text-xs font-bold uppercase tracking-wider",
-              i === 0
-                ? "border-forest-800 bg-forest-800 text-white"
-                : "border-beige-300 bg-white text-ink-soft",
-            )}
-          >
-            {l}
-          </li>
-        ))}
-      </ul>
-      <ul className="flex flex-wrap justify-center gap-2.5" aria-hidden>
-        {["All Products", ...categories.map((c) => c.shortName)].map((l, i) => (
-          <li
-            key={l}
-            className={cn(
-              "inline-flex min-h-11 items-center rounded-md border px-5 text-sm font-medium sm:min-w-32 sm:justify-center",
-              i === 0
-                ? "border-forest-800 bg-forest-800 text-white"
-                : "border-beige-300 bg-beige/70",
-            )}
-          >
-            {l}
-          </li>
-        ))}
-      </ul>
+    <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 animate-pulse">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="h-80 rounded-xl bg-beige-200/50 border border-beige-300/40" />
+      ))}
     </div>
   );
 }
