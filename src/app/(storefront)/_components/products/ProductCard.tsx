@@ -166,7 +166,7 @@ export function ProductCard({
           height={320}
           sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
           priority={priority}
-          className={cn("aspect-[29/20] w-full transition-transform duration-500 group-hover:scale-[1.03]", product.imageFit === "contain" ? "object-contain px-2 pb-2 pt-9" : "object-cover")}
+          className={cn("aspect-[29/20] w-full transition-transform duration-500 group-hover:scale-[1.03]", product.imageFit === "contain" ? "object-contain p-2" : "object-cover")}
         />
       </Link>
       <div className="mt-4 flex flex-1 flex-col">

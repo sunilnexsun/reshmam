@@ -4,7 +4,6 @@ import Image from "next/image";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { variantImage, type Product } from "@storefront/_lib/products";
 import { useLiveProduct } from "@storefront/_lib/live-catalogue";
-import { cn } from "@storefront/_components/ui/primitives";
 
 type Selection = { variantId: string; setVariantId: (id: string) => void };
 const SelectedVariantContext = createContext<Selection | null>(null);
@@ -28,22 +27,31 @@ export function useSelectedVariant() {
   return useContext(SelectedVariantContext);
 }
 
-/** Product photo for the selected size (falls back to the product image). */
+/**
+ * Product photo for the selected size (falls back to the product image).
+ * Packshots ("contain") fill the whole tile: square on phones, the full height of the details column from lg up.
+ */
 export function ProductImage({ product }: { product: Product }) {
   const selection = useSelectedVariant();
   const variant = product.variants.find((v) => v.id === selection?.variantId);
+  const src = variantImage(product, variant);
+  const alt = variant ? `${product.imageAlt}, ${variant.label}` : product.imageAlt;
+  if (product.imageFit === "contain") {
+    return (
+      <div className="relative aspect-square w-full lg:aspect-auto lg:h-full lg:min-h-[480px]">
+        <Image src={src} alt={alt} fill priority sizes="(min-width:1024px) 50vw, 100vw" className="object-contain p-6 sm:p-8" />
+      </div>
+    );
+  }
   return (
     <Image
-      src={variantImage(product, variant)}
-      alt={variant ? `${product.imageAlt}, ${variant.label}` : product.imageAlt}
+      src={src}
+      alt={alt}
       width={464}
       height={320}
       priority
       sizes="(min-width:1024px) 50vw, 100vw"
-      className={cn(
-        "aspect-[29/20] w-full",
-        product.imageFit === "contain" ? "object-contain p-6" : "object-cover",
-      )}
+      className="aspect-[29/20] w-full object-cover"
     />
   );
 }
