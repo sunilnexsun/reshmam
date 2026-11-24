@@ -68,10 +68,17 @@ describe("special collections", () => {
     expect(can("Staff", "adminUsers", "read", { docId: "uid-2", selfUid: "uid-1" })).toBe(false);
   });
   it("lets any staff member add to the activity log, and dashboard viewers read it", () => {
-    expect(can("Staff", "activities", "write")).toBe(true);
+    expect(can("Staff", "activities", "write", { writeKind: "create" })).toBe(true);
     expect(can("Staff", "activities", "read")).toBe(true);
     const noDash: Roles = { Packer: { permissions: { orders: "manage" } } };
     expect(can("Packer", "activities", "read", {}, noDash)).toBe(false);
+  });
+  it("never lets anyone change or delete an activity entry (it's the audit trail), matching the rules", () => {
+    for (const role of ["Staff", "Admin"]) {
+      expect(can(role, "activities", "write", { writeKind: "update", changedFields: ["message"] })).toBe(false);
+      expect(can(role, "activities", "write", { writeKind: "delete" })).toBe(false);
+      expect(can(role, "activities", "write")).toBe(false);
+    }
   });
   it("maps configs documents to their own modules", () => {
     expect(can("Manager", "configs", "write", { docId: "whatsapp" })).toBe(false);

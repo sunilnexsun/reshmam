@@ -44,6 +44,7 @@ beforeEach(() => {
     variants: { v1: { productId: "p1", price: 600, mrp: 650, stock: 10 } },
     coupons: { c1: { code: "FESTIVE5" } },
     orders: { o1: { total: 600, status: "Pending" } },
+    activities: { ac1: { message: "Order o1 shipped", type: "order" } },
   });
   fb.db = fake.db;
 });
@@ -119,6 +120,12 @@ describe("POST /api/admin/firestore", () => {
     const res = await postData(post("admin", { action: "save", col: "adminUsers", id: "x", data: { role: "Admin" } }));
     expect(res.status).toBe(403);
     expect(fake.read("adminUsers", "x")).toBeUndefined();
+  });
+  it("lets staff add to the activity log but never edit or delete an entry", async () => {
+    expect((await postData(post("staff", { action: "save", col: "activities", id: "ac2", data: { message: "New" } }))).status).toBe(200);
+    expect((await postData(post("staff", { action: "save", col: "activities", id: "ac1", data: { message: "Rewritten" } }))).status).toBe(403);
+    expect((await postData(post("staff", { action: "delete", col: "activities", id: "ac1" }))).status).toBe(403);
+    expect(fake.read("activities", "ac1")?.message).toBe("Order o1 shipped");
   });
   it("strips passwords from saved settings", async () => {
     const res = await postData(post("admin", { action: "save", col: "configs", id: "settings", data: { roles: DEFAULT_ROLES, users: [{ id: "u", password: "secret" }] } }));

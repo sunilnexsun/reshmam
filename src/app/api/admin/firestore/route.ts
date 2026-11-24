@@ -119,13 +119,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "Staff accounts are managed through /api/admin/staff." }, { status: 403 });
       }
       let fields: string[] | undefined;
+      let writeKind: "create" | "update" | "delete" = "delete";
       if (op.type !== "delete") {
         const stored = await db.collection(op.col).doc(op.id).get();
         // An update lists its changed fields; a create (no stored document) is checked like a delete.
+        writeKind = stored.exists ? "update" : "create";
         if (stored.exists) fields = changedFields(stored.data() as Data, op.data ?? {}, op.merge !== false);
         if (stored.exists && fields!.length === 0) continue;
       }
-      const ok = canAccess({ role: ctx.staff.role, roles: ctx.roles, col: op.col, docId: op.id, op: "write", changedFields: fields });
+      const ok = canAccess({ role: ctx.staff.role, roles: ctx.roles, col: op.col, docId: op.id, op: "write", changedFields: fields, writeKind });
       if (!ok) {
         return NextResponse.json({ ok: false, error: `Your role can't change ${op.col}.` }, { status: 403 });
       }

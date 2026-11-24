@@ -93,11 +93,13 @@ export type AccessRequest = {
   op: "read" | "write";
   /** For updates: the fields being written. Omitted for creates and deletes. */
   changedFields?: string[];
+  /** For writes: whether the document is new, already exists, or is being deleted. */
+  writeKind?: "create" | "update" | "delete";
   /** The caller's uid, so a staff member can read their own adminUsers record. */
   selfUid?: string;
 };
 
-export function canAccess({ role, roles, col, docId, op, changedFields, selfUid }: AccessRequest): boolean {
+export function canAccess({ role, roles, col, docId, op, changedFields, writeKind, selfUid }: AccessRequest): boolean {
   const lvl = (m: Module) => levelFor(role, roles, m);
   const known = role === ADMIN_ROLE || Boolean(roles[role]);
   if (!known) return false;
@@ -125,7 +127,8 @@ export function canAccess({ role, roles, col, docId, op, changedFields, selfUid 
       return (selfUid !== undefined && docId === selfUid) || allows(lvl("settings"), "read");
     }
     case "activities":
-      return op === "write" ? true : allows(lvl("dashboard"), "read");
+      // The audit trail: any staff member adds entries; nobody changes or deletes them (as in the rules).
+      return op === "write" ? writeKind === "create" : allows(lvl("dashboard"), "read");
     default:
       return false;
   }
