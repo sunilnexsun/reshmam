@@ -1,13 +1,13 @@
 "use client";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { products } from "./products";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { customerAuth, customerDb } from "./customer-firebase";
 import { cartStore, wishlistStore, type CartItem } from "./store";
-import { getSupabaseBrowser } from "./supabase-browser";
 
 /**
- * Keeps a signed-in customer's cart and wishlist in Supabase (the `carts` and `wishlists` tables), so they
- * follow the customer to other devices. Guests keep both only in this browser, as before.
+ * Keeps a signed-in customer's cart and wishlist in their Firebase account (customers/{uid}.cart and
+ * .wishlist), so they follow the customer to other devices. Guests keep both only in this browser, as before.
  *
  * - First sign-in on a device: what's in this browser is merged with what the account already has.
  * - After that the account is the source of truth: each page load, and each return to the tab, loads it,
@@ -20,7 +20,16 @@ export const SYNCED_USER_KEY = "reshmam-synced-user";
 /** How long to wait after a change before saving, so quick edits are saved together. */
 export const SAVE_DELAY_MS = 500;
 
-const knownProducts = new Set(products.map((p) => p.slug));
+type Lists = { cart: CartItem[]; wishlist: string[] };
+
+/** Where a customer's lists are kept. The real one is Firestore; tests use an in-memory one. */
+export type AccountStore = {
+  /** Called with the customer's uid once they're signed in and have a profile, and with null on sign-out. */
+  onUser(cb: (uid: string | null) => void): () => void;
+  /** The account's lists, or null if the account has no profile. Throws if they couldn't be loaded. */
+  load(uid: string): Promise<Lists | null>;
+  save(uid: string, lists: Lists): Promise<void>;
+};
 
 /** Both lists' items; for a product in both, keeps the larger quantity (signing in twice never doubles it). */
 export function mergeCarts(local: CartItem[], saved: CartItem[]): CartItem[] {
@@ -31,6 +40,48 @@ export function mergeCarts(local: CartItem[], saved: CartItem[]): CartItem[] {
 
 export function mergeWishlists(local: string[], saved: string[]): string[] {
   return [...new Set([...saved, ...local])];
+}
+
+/** customers/{uid} in Firestore. A new customer signs in a moment before their profile is written, so the
+ * uid is only reported once the profile exists (saving updates the document, which must already be there). */
+export function firestoreAccountStore(): AccountStore {
+  const ref = (uid: string) => doc(customerDb, "customers", uid);
+  return {
+    onUser(cb) {
+      let stopProfile: (() => void) | undefined;
+      const stopAuth = onAuthStateChanged(customerAuth, (user) => {
+        stopProfile?.();
+        stopProfile = undefined;
+        if (!user) return cb(null);
+        let reported = false;
+        stopProfile = onSnapshot(
+          ref(user.uid),
+          (snap) => {
+            if (!snap.exists() || reported) return;
+            reported = true;
+            cb(user.uid);
+          },
+          () => {},
+        );
+      });
+      return () => {
+        stopProfile?.();
+        stopAuth();
+      };
+    },
+    async load(uid) {
+      const snap = await getDoc(ref(uid));
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      return {
+        cart: Array.isArray(data.cart) ? (data.cart as CartItem[]) : [],
+        wishlist: Array.isArray(data.wishlist) ? (data.wishlist as string[]) : [],
+      };
+    },
+    async save(uid, { cart, wishlist }) {
+      await updateDoc(ref(uid), { cart, wishlist, updatedAt: new Date().toISOString() });
+    },
+  };
 }
 
 function readMarker() {
@@ -49,15 +100,12 @@ function writeMarker(userId: string | null) {
   }
 }
 
-/** Starts syncing; returns a function that stops it. Does nothing when Supabase isn't configured. */
-export function startAccountSync(db: SupabaseClient | null = getSupabaseBrowser()): () => void {
-  if (!db) return () => {};
-
+/** Starts syncing; returns a function that stops it. */
+export function startAccountSync(store: AccountStore = firestoreAccountStore()): () => void {
   let userId: string | null = null;
   let ready = false; // true once the account's saved lists have loaded; nothing is saved before that
   let applying = false; // true while we write the account's lists into this browser
-  let savedCart = "[]"; // what the account holds, as last loaded or saved
-  let savedWishlist = new Set<string>();
+  let saved = ""; // what the account holds, as last loaded or saved
   let timer: ReturnType<typeof setTimeout> | undefined;
   let queue = Promise.resolve();
 
@@ -77,24 +125,17 @@ export function startAccountSync(db: SupabaseClient | null = getSupabaseBrowser(
     }
   };
 
+  const current = (): Lists => ({ cart: cartStore.get(), wishlist: wishlistStore.get() });
+
   async function load(merge: boolean) {
     const id = userId;
     if (!id) return;
-    const [cartRes, listRes] = await Promise.all([
-      db!.from("carts").select("items").eq("auth_user_id", id).maybeSingle(),
-      db!.from("wishlists").select("product_slug").eq("auth_user_id", id).order("created_at"),
-    ]);
-    if (cartRes.error || listRes.error) throw cartRes.error ?? listRes.error;
-    if (id !== userId) return; // signed out meanwhile
-
-    const accountCart = (cartRes.data?.items as CartItem[] | undefined) ?? [];
-    const accountList = (listRes.data ?? []).map((r: { product_slug: string }) => r.product_slug);
-    savedCart = JSON.stringify(accountCart);
-    savedWishlist = new Set(accountList);
-
+    const account = await store.load(id);
+    if (id !== userId || !account) return; // signed out meanwhile, or no profile to sync with
+    saved = JSON.stringify(account);
     applyLocally(
-      merge ? mergeCarts(cartStore.get(), accountCart) : accountCart,
-      merge ? mergeWishlists(wishlistStore.get(), accountList) : accountList,
+      merge ? mergeCarts(cartStore.get(), account.cart) : account.cart,
+      merge ? mergeWishlists(wishlistStore.get(), account.wishlist) : account.wishlist,
     );
     ready = true;
     writeMarker(id);
@@ -104,28 +145,11 @@ export function startAccountSync(db: SupabaseClient | null = getSupabaseBrowser(
   async function save() {
     const id = userId;
     if (!ready || !id) return;
-    const cart = cartStore.get();
-    if (JSON.stringify(cart) !== savedCart) {
-      const { error } = await db!
-        .from("carts")
-        .upsert({ auth_user_id: id, items: cart, updated_at: new Date().toISOString() });
-      if (error) throw error;
-      savedCart = JSON.stringify(cart);
-    }
-    const list = wishlistStore.get().filter((slug) => knownProducts.has(slug));
-    const added = list.filter((slug) => !savedWishlist.has(slug));
-    const removed = [...savedWishlist].filter((slug) => !list.includes(slug));
-    if (added.length) {
-      const { error } = await db!
-        .from("wishlists")
-        .upsert(added.map((product_slug) => ({ auth_user_id: id, product_slug })), { ignoreDuplicates: true });
-      if (error) throw error;
-    }
-    if (removed.length) {
-      const { error } = await db!.from("wishlists").delete().eq("auth_user_id", id).in("product_slug", removed);
-      if (error) throw error;
-    }
-    savedWishlist = new Set(list);
+    const lists = current();
+    const json = JSON.stringify(lists);
+    if (json === saved) return;
+    await store.save(id, lists);
+    saved = json;
   }
 
   const saveSoon = () => {
@@ -150,23 +174,19 @@ export function startAccountSync(db: SupabaseClient | null = getSupabaseBrowser(
     else if (ready && timer === undefined) void run(() => load(false));
   };
 
-  const { data: auth } = db.auth.onAuthStateChange((event, session) => {
-    const id = session?.user.id ?? null;
-    // Supabase asks that its calls aren't made inside this callback, so the work runs just after it.
-    setTimeout(() => {
-      if (id && id !== userId) {
-        userId = id;
-        ready = false;
-        void run(() => load(readMarker() !== id));
-      } else if (!id && event === "SIGNED_OUT" && userId) {
-        clearTimeout(timer);
-        timer = undefined;
-        userId = null;
-        ready = false;
-        writeMarker(null);
-        applyLocally([], []);
-      }
-    }, 0);
+  const stopUser = store.onUser((id) => {
+    if (id && id !== userId) {
+      userId = id;
+      ready = false;
+      void run(() => load(readMarker() !== id));
+    } else if (!id && userId) {
+      clearTimeout(timer);
+      timer = undefined;
+      userId = null;
+      ready = false;
+      writeMarker(null);
+      applyLocally([], []);
+    }
   });
 
   const stopCart = cartStore.subscribe(saveSoon);
@@ -175,7 +195,7 @@ export function startAccountSync(db: SupabaseClient | null = getSupabaseBrowser(
 
   return () => {
     saveNow();
-    auth.subscription.unsubscribe();
+    stopUser();
     stopCart();
     stopWishlist();
     document.removeEventListener("visibilitychange", onVisibility);
