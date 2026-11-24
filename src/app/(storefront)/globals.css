@@ -140,7 +140,7 @@ body {
   font-style: italic;
   font-weight: 700;
   font-display: swap;
-  src: local("TeX Gyre Bonum Bold Italic"), local("TeXGyreBonum-BoldItalic");
+  src: local("TeX Gyre Bonum Bold Italic"), local("TeXGyreBonum-BoldItalic"), url("/fonts/texgyrebonum-bolditalic.woff2") format("woff2");
 }
 @utility font-bookman {
   font-family: "Bookman Old Style", "TeX Gyre Bonum", "URW Bookman", serif;
