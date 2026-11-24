@@ -6,8 +6,16 @@ This is the one-time order of steps to switch the live site (Firebase project `r
 - staff who sign in to `/admin` with real Firebase Auth accounts (no passwords in Firestore any more),
 - Firestore and Storage rules that keep customers and staff apart and enforce each role's permissions.
 
-Do the steps **in this order**. Steps 1–4 can be done any time; step 5 (the new rules) locks out the old
-admin login, so do it only after step 4 has moved the staff over.
+Do the steps **in this order**. From the moment step 3 deploys until step 4 finishes, nobody can sign in to
+`/admin` (the old password login is gone and staff don't have Firebase accounts yet), so do steps 3 and 4
+together, at a quiet time. The storefront keeps working throughout.
+
+## 0. Remove the demo staff logins
+
+The admin panel was seeded with demo staff (`admin@reshmam.com`, `manager@reshmam.com`,
+`staff@reshmam.com`) whose passwords were public. Before anything else, in the current admin panel →
+Settings → User Management, delete every one of them that isn't a real person's login, and make sure each real
+staff member has their own email there. Anyone you keep will have to use Forgot password after step 4.
 
 ## 1. Service account for the server
 
@@ -17,6 +25,9 @@ The server (checkout, order lookup, payments, the admin API) uses the Firebase A
 2. In Vercel → Project → Settings → **Environment variables**, add `FIREBASE_SERVICE_ACCOUNT` with the whole
    JSON file's contents on **one line** (Production and Preview). Never commit it.
 3. Delete the downloaded file from your computer once it's saved in Vercel.
+4. Also check the Cashfree variables are set for Production: `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY` (the live
+   keys) and `CASHFREE_ENV=PROD`. Without keys a production server doesn't offer online payment at all (only
+   Cash on Delivery). Use `CASHFREE_ENV=TEST` with sandbox keys only on Preview.
 
 ## 2. Turn on Email/Password sign-in (for staff)
 
@@ -25,8 +36,8 @@ off.)
 
 ## 3. Deploy the code
 
-Merge the pull request and let Vercel deploy. Until step 5, the old Firestore rules are still in place, so
-nothing is locked out yet.
+Merge the pull request and let Vercel deploy, then go straight on to step 4: until it's done, nobody can
+sign in to `/admin`. (The old Firestore rules stay in place until step 5.)
 
 ## 4. Move the staff to Firebase Auth
 
@@ -44,6 +55,10 @@ node scripts/migrate-admin-users.mjs --apply    # does it
   a random password instead. The script prints their emails at the end: on the admin login screen use
   **Forgot Password?** for each one (or ask them to), so they set their own.
 - The staff list and every password are removed from `configs/settings`.
+- If a sign-in account already exists for a staff email (someone could have registered one once step 2 turned
+  on Email/Password), the script doesn't trust it: it sets a random password, signs it out everywhere and lists
+  the email for Forgot password. Before `--apply`, glance at Authentication → **Users**; any email account you
+  don't recognise is worth deleting.
 - It's safe to run again; staff already moved are skipped.
 
 Then sign in at `/admin` with an Admin account to check it works.
