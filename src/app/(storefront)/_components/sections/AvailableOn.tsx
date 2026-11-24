@@ -5,7 +5,7 @@ import { Container, SectionHeading } from "@storefront/_components/ui/primitives
 
 /**
  * "Also available on" strip listing the marketplaces RESHMAM sells on (site.marketplaces).
- * Shows each store's logo once one is configured, otherwise its name.
+ * Shows each store's logo (with a text label where the logo alone doesn't name the store), otherwise its name.
  */
 export function AvailableOn() {
   const stores = site.marketplaces;
@@ -22,7 +22,18 @@ export function AvailableOn() {
           {stores.map((m) => {
             const live = m.url && m.url !== "#";
             const body = m.logo ? (
-              <Image src={m.logo} alt={m.name} width={140} height={48} className="h-10 w-auto object-contain" />
+              <span className="flex flex-col items-center gap-1.5">
+                {/* Logo files are 120 px tall; 24 px (32 px from lg up), with any label stacked below. */}
+                <Image
+                  src={m.logo}
+                  // With a label, the image only names what the label doesn't (Swiggy + "Instamart"; JioMart's icon adds nothing).
+                  alt={m.label ? m.name.replace(m.label, "").trim() : m.name}
+                  width={m.width ?? 120}
+                  height={120}
+                  className="h-6 w-auto object-contain lg:h-8"
+                />
+                {m.label && <span className="text-sm font-bold leading-none text-ink lg:text-base">{m.label}</span>}
+              </span>
             ) : (
               <span className="flex items-center gap-2 font-serif text-lg font-bold text-forest-800">
                 <ShoppingBag className="h-5 w-5 text-rust" aria-hidden />

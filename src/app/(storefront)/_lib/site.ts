@@ -71,15 +71,16 @@ export const site = {
   /**
    * Marketplaces RESHMAM is also sold on, shown in the "Also available on" section of the home page.
    * Replace "#" with each store's RESHMAM listing URL; entries still set to "#" are shown without a link.
-   * `logo` takes a path under /public (e.g. "/images/marketplaces/amazon.svg") once the official logo
-   * files are supplied; until then the store name is shown as text.
+   * `logo` is a path under /public (null shows the store name as text). `label` is text shown beside the
+   * logo when the logo alone doesn't name the store (JioMart's is only its bag icon; Instamart uses Swiggy's).
+   * Logos are from Wikimedia Commons (public domain / CC0), Nov 2026.
    */
   marketplaces: [
-    { name: "Amazon", url: "#", logo: null },
-    { name: "Zepto", url: "#", logo: null },
-    { name: "Swiggy Instamart", url: "#", logo: null },
-    { name: "JioMart", url: "#", logo: null },
-  ] as { name: string; url: string; logo: string | null }[],
+    { name: "Amazon", url: "#", logo: "/images/marketplaces/amazon.webp", width: 398 },
+    { name: "Zepto", url: "#", logo: "/images/marketplaces/zepto.webp", width: 367 },
+    { name: "Swiggy Instamart", url: "#", logo: "/images/marketplaces/swiggy.webp", width: 400, label: "Instamart" },
+    { name: "JioMart", url: "#", logo: "/images/marketplaces/jiomart.webp", width: 120, label: "JioMart" },
+  ] as { name: string; url: string; logo: string | null; width?: number; label?: string }[],
 
   /**
    * Current offers shown by the chat assistant. Only list offers that are
