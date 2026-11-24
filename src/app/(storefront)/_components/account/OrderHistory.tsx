@@ -6,32 +6,31 @@ import { AlertCircle, ChevronDown, Loader2, Package } from "lucide-react";
 import { statusLabel } from "@storefront/_lib/order-status";
 import { formatINR } from "@storefront/_lib/pricing";
 import { OrderDetails, type OrderView } from "@storefront/_components/cart/OrderStatus";
+import { fetchCustomerOrders } from "@storefront/_lib/customer-orders";
 
 type State = { kind: "loading" } | { kind: "error"; text: string } | { kind: "ready"; orders: OrderView[] };
 
 const orderDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-/** The signed-in customer's orders, newest first (GET /api/account/orders). */
-export function OrderHistory({ accessToken }: { accessToken: string }) {
+/** The signed-in customer's orders, newest first (orders placed while signed in to this account). */
+export function OrderHistory({ uid }: { uid: string }) {
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/account/orders", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (cancelled) return;
-        if (res.ok && data.ok) setState({ kind: "ready", orders: data.orders });
-        else setState({ kind: "error", text: data.error ?? "We couldn't load your orders. Please try again." });
+    fetchCustomerOrders(uid)
+      .then((orders) => {
+        if (!cancelled) setState({ kind: "ready", orders });
       })
-      .catch(() => {
-        if (!cancelled) setState({ kind: "error", text: "We couldn't reach the server. Please check your connection." });
+      .catch((e) => {
+        console.error("Order history failed", e);
+        if (!cancelled) setState({ kind: "error", text: "We couldn't load your orders. Please check your connection and try again." });
       });
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [uid]);
 
   return (
     <section aria-labelledby="order-history-title" className="space-y-4">
@@ -51,7 +50,7 @@ export function OrderHistory({ accessToken }: { accessToken: string }) {
           <Package className="mx-auto h-8 w-8 text-forest-800" aria-hidden />
           <p className="mt-2 font-medium">You haven&apos;t placed any orders yet.</p>
           <p className="mt-1 text-sm text-ink-soft">
-            Orders placed with this email address will appear here.{" "}
+            Orders you place while logged in will appear here.{" "}
             <Link href="/products" className="font-semibold text-forest-800 underline">Browse our oils</Link>
           </p>
         </div>

@@ -1,61 +1,69 @@
 rules_version = '2';
+
+// RESHMAM Storage rules: anyone can view images; only staff whose role manages the matching module can
+// upload or delete them (roles as in firestore.rules: adminUsers/{uid} + configs/settings.roles).
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Maximum file size: 2 MB
     function isUnderMaxSize() {
       return request.resource.size <= 2 * 1024 * 1024;
     }
 
-    // Must be valid image type
     function isValidImageType() {
-      return request.resource.contentType.matches('image/(jpeg|png|webp|gif|svg\\+xml)');
+      return request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
     }
 
-    // -------------------------------------------------------------
-    // Product Images
-    // -------------------------------------------------------------
+    function staffDoc() {
+      return firestore.get(/databases/(default)/documents/adminUsers/$(request.auth.uid));
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/adminUsers/$(request.auth.uid))
+        && staffDoc().data.status == 'Active';
+    }
+
+    function canManage(module) {
+      return isStaff() && (
+        staffDoc().data.role == 'Admin'
+        || firestore.get(/databases/(default)/documents/configs/settings).data.get('roles', {})
+             .get(staffDoc().data.role, {}).get('permissions', {}).get(module, 'none') == 'manage'
+      );
+    }
+
+    function canUpload(module) {
+      return canManage(module) && isValidImageType() && isUnderMaxSize();
+    }
+
     match /products/{allPaths=**} {
-      // Anyone can view product images (storefront + admin)
       allow read: if true;
-      // Only authenticated users can upload product images under 2MB
-      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
-      // Only authenticated users can delete product images
-      allow delete: if isAuthenticated();
+      allow create, update: if canUpload('products');
+      allow delete: if canManage('products');
     }
 
-    // -------------------------------------------------------------
-    // Categories and Brands Logos/Banners
-    // -------------------------------------------------------------
     match /categories/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
-      allow delete: if isAuthenticated();
+      allow create, update: if canUpload('categories');
+      allow delete: if canManage('categories');
     }
 
     match /brands/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
-      allow delete: if isAuthenticated();
+      allow create, update: if canUpload('brands');
+      allow delete: if canManage('brands');
     }
 
-    // -------------------------------------------------------------
-    // Marketing Banners & Avatars
-    // -------------------------------------------------------------
     match /banners/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
-      allow delete: if isAuthenticated();
+      allow create, update: if canUpload('marketing');
+      allow delete: if canManage('marketing');
     }
 
+    // Staff profile pictures: any active staff member.
     match /avatars/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && isValidImageType() && isUnderMaxSize();
-      allow delete: if isAuthenticated();
+      allow create, update: if isStaff() && isValidImageType() && isUnderMaxSize();
+      allow delete: if isStaff();
     }
   }
 }

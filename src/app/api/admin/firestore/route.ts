@@ -1,143 +1,149 @@
-import { NextResponse } from 'next/server'
-import { initializeApp, getApps } from 'firebase/app'
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireStaff, withoutPasswords } from "@/lib/staff-auth";
+import { canAccess } from "@/lib/staff-permissions";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDWfC3Z-5nYzmDKIoLRwRCAkCQhIKQH8LI",
-  authDomain: "reshmam-oil.firebaseapp.com",
-  projectId: "reshmam-oil",
-  storageBucket: "reshmam-oil.firebasestorage.app",
-  messagingSenderId: "245127746311",
-  appId: "1:245127746311:web:fb9041eea8686cb0e06ba2"
-}
-
-const APP_NAME = 'admin-server-app'
-const app = getApps().find((a) => a.name === APP_NAME) ?? initializeApp(firebaseConfig, APP_NAME)
-const db = getFirestore(app)
+/**
+ * The admin panel's data API. Only signed-in, active staff get in, and every read and write is limited to
+ * what their role allows (same table as firestore.rules). Uses the Admin SDK, so these checks are the only
+ * protection: keep them in step with src/lib/staff-permissions.ts.
+ *
+ * Staff records (adminUsers) are never written here: they go through /api/admin/staff, which also manages
+ * the Firebase Auth account. Passwords are never returned or stored.
+ */
 
 const COLLECTIONS = [
-  'adminUsers',
-  'categories',
-  'brands',
-  'branches',
-  'products',
-  'variants',
-  'customers',
-  'orders',
-  'stockMovements',
-  'priceHistory',
-  'coupons',
-  'campaigns',
-  'banners',
-  'activities',
-]
+  "adminUsers",
+  "categories",
+  "brands",
+  "branches",
+  "products",
+  "variants",
+  "customers",
+  "orders",
+  "stockMovements",
+  "priceHistory",
+  "coupons",
+  "campaigns",
+  "banners",
+  "activities",
+] as const;
+const CONFIG_KEYS = ["settings", "whatsapp", "chatbot"];
 
-const CONFIG_KEYS = ['settings', 'whatsapp', 'chatbot']
+const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
+type Data = Record<string, unknown>;
+
+/** Firestore rejects undefined; turn it into null and Dates into ISO strings. */
 function sanitize(val: unknown): unknown {
-  if (val === undefined) return null
-  if (val === null || typeof val !== 'object') return val
-  if (val instanceof Date) return val.toISOString()
-  if (Array.isArray(val)) return val.map(sanitize)
-  const clean: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(val)) {
-    if (v !== undefined) {
-      clean[k] = sanitize(v)
-    }
-  }
-  return clean
+  if (val === undefined) return null;
+  if (val === null || typeof val !== "object") return val;
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) return val.map(sanitize);
+  const clean: Data = {};
+  for (const [k, v] of Object.entries(val)) if (v !== undefined) clean[k] = sanitize(v);
+  return clean;
 }
 
-export async function GET() {
-  try {
-    const data: Record<string, unknown[]> = {}
-    const configs: Record<string, Record<string, unknown>> = {}
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
+/** Fields whose values differ from the stored document (what the rules' diff() sees). */
+function changedFields(stored: Data | undefined, incoming: Data, merge: boolean): string[] {
+  const before = stored ?? {};
+  const keys = new Set([...Object.keys(incoming), ...(merge ? [] : Object.keys(before))]);
+  return [...keys].filter((k) => k !== "id" && k !== "updatedAt" && !same(before[k], incoming[k]));
+}
+
+export async function GET(req: Request) {
+  const ctx = await requireStaff(req);
+  if (ctx instanceof Response) return ctx;
+  const may = (col: string, docId?: string) =>
+    canAccess({ role: ctx.staff.role, roles: ctx.roles, col, docId, op: "read", selfUid: ctx.uid });
+
+  try {
+    const db = adminDb();
+    const data: Record<string, Data[]> = {};
+    const configs: Record<string, Data> = {};
     await Promise.all([
       ...COLLECTIONS.map(async (col) => {
-        try {
-          const snap = await getDocs(collection(db, col))
-          data[col] = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-        } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e)
-          console.warn(`Server Firestore getDocs error on ${col}:`, msg)
-          data[col] = []
+        if (col === "adminUsers") {
+          const snap = await db.collection(col).get();
+          const rows = snap.docs.filter((d) => may(col, d.id)).map((d) => ({ ...(d.data() as Data), id: d.id }));
+          if (rows.length) data[col] = rows;
+          return;
         }
+        if (!may(col)) return;
+        const snap = await db.collection(col).get();
+        data[col] = snap.docs.map((d) => ({ ...(d.data() as Data), id: d.id }));
       }),
       (async () => {
-        try {
-          const snap = await getDocs(collection(db, 'configs'))
-          snap.docs.forEach((d) => {
-            if (CONFIG_KEYS.includes(d.id)) {
-              const docData = d.data()
-              // Strip helper metadata fields if present
-              const { id: _id, updatedAt: _u, ...rest } = docData
-              configs[d.id] = rest
-            }
-          })
-        } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e)
-          console.warn('Server Firestore getDocs error on configs:', msg)
+        const snap = await db.collection("configs").get();
+        for (const d of snap.docs) {
+          if (!CONFIG_KEYS.includes(d.id) || !may("configs", d.id)) continue;
+          const { id: _id, updatedAt: _u, ...rest } = d.data() as Data;
+          configs[d.id] = rest;
         }
       })(),
-    ])
-
-    return NextResponse.json({ ok: true, data, configs }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-      },
-    })
+    ]);
+    return NextResponse.json(withoutPasswords({ ok: true, data, configs }), { headers: NO_STORE });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Server error'
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+    console.error("[admin/firestore] read failed", err);
+    return NextResponse.json({ ok: false, error: "Could not load admin data." }, { status: 500 });
   }
 }
 
+type Op = { type: "set" | "delete"; col: string; id: string; data?: Data; merge?: boolean };
+
 export async function POST(req: Request) {
+  const ctx = await requireStaff(req);
+  if (ctx instanceof Response) return ctx;
+
+  const body = (await req.json().catch(() => null)) as
+    | { action?: string; col?: string; id?: string; data?: Data; merge?: boolean; operations?: Op[] }
+    | null;
+  if (!body) return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+
+  const ops: Op[] =
+    body.action === "batch" && Array.isArray(body.operations)
+      ? body.operations.filter((o) => o?.col && o?.id).map((o) => ({ ...o, col: String(o.col), id: String(o.id) }))
+      : body.col && body.id
+        ? [{ type: body.action === "delete" ? "delete" : "set", col: String(body.col), id: String(body.id), data: body.data, merge: body.merge }]
+        : [];
+  if (!ops.length) return NextResponse.json({ ok: false, error: "Missing col or id" }, { status: 400 });
+
   try {
-    const body = await req.json()
-    const { action, col, id, data, merge = true, operations } = body
-
-    if (action === 'batch' && Array.isArray(operations)) {
-      for (const op of operations) {
-        if (!op?.col || !op?.id) continue
-        const dRef = doc(db, String(op.col), String(op.id))
-        if (op.type === 'delete') {
-          await deleteDoc(dRef)
-        } else {
-          const cData = sanitize({
-            ...(op.data || {}),
-            id: String(op.id),
-            updatedAt: new Date().toISOString(),
-          }) as Record<string, unknown>
-          await setDoc(dRef, cData, { merge: op.merge !== false })
-        }
+    const db = adminDb();
+    // Check every operation before writing anything, so a refused batch leaves no partial writes.
+    for (const op of ops) {
+      if (op.col === "adminUsers") {
+        return NextResponse.json({ ok: false, error: "Staff accounts are managed through /api/admin/staff." }, { status: 403 });
       }
-      return NextResponse.json({ ok: true, action: 'batch', count: operations.length })
+      let fields: string[] | undefined;
+      let writeKind: "create" | "update" | "delete" = "delete";
+      if (op.type !== "delete") {
+        const stored = await db.collection(op.col).doc(op.id).get();
+        // An update lists its changed fields; a create (no stored document) is checked like a delete.
+        writeKind = stored.exists ? "update" : "create";
+        if (stored.exists) fields = changedFields(stored.data() as Data, op.data ?? {}, op.merge !== false);
+        if (stored.exists && fields!.length === 0) continue;
+      }
+      const ok = canAccess({ role: ctx.staff.role, roles: ctx.roles, col: op.col, docId: op.id, op: "write", changedFields: fields, writeKind });
+      if (!ok) {
+        return NextResponse.json({ ok: false, error: `Your role can't change ${op.col}.` }, { status: 403 });
+      }
     }
 
-    if (!col || !id) {
-      return NextResponse.json({ ok: false, error: 'Missing col or id' }, { status: 400 })
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    for (const op of ops) {
+      const ref = db.collection(op.col).doc(op.id);
+      if (op.type === "delete") batch.delete(ref);
+      else batch.set(ref, withoutPasswords(sanitize({ ...(op.data ?? {}), id: op.id, updatedAt: now })) as Data, { merge: op.merge !== false });
     }
-
-    const docRef = doc(db, String(col), String(id))
-
-    if (action === 'delete') {
-      await deleteDoc(docRef)
-      return NextResponse.json({ ok: true, action: 'deleted', col, id: String(id) })
-    }
-
-    // Save / update
-    const cleanData = sanitize({
-      ...(data || {}),
-      id: String(id),
-      updatedAt: new Date().toISOString(),
-    }) as Record<string, unknown>
-    await setDoc(docRef, cleanData, { merge: merge !== false })
-    return NextResponse.json({ ok: true, action: 'saved', col, id: String(id) })
+    await batch.commit();
+    return NextResponse.json({ ok: true, count: ops.length });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Server error'
-    console.error('[Server API] Firestore operation failed:', msg)
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+    console.error("[admin/firestore] write failed", err);
+    return NextResponse.json({ ok: false, error: "Could not save." }, { status: 500 });
   }
 }

@@ -15,6 +15,8 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.{ts,js}"],
+    // Security-rules tests need the Firebase emulators: run them with `npm run test:rules`.
+    exclude: ["tests/rules/**", "**/node_modules/**"],
     environment: "node",
     setupFiles: ["tests/setup/local-storage.ts"],
     // The database tests boot an in-memory Postgres (PGlite) and apply every migration.

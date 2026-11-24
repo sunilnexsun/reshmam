@@ -8,9 +8,8 @@ import { posts } from "./app/(storefront)/_lib/blog";
  * Product slugs are NOT checked here: products now come from Firestore (added in the admin panel), so this
  * file can't know them. The product page calls notFound() itself for slugs that don't exist.
  *
- * The admin panel is a demo until it has real sign-in (Supabase Auth): its logins are checked in the
- * browser and listed on its login screen. It is served by default; set DISABLE_ADMIN_DEMO=1 on a
- * production server to answer /admin with a 404 instead.
+ * The admin panel is always served: staff sign in with Firebase Auth, and the admin API and Firestore
+ * rules refuse anyone who isn't active staff.
  */
 const postSlugs = new Set(posts.map((p) => p.slug));
 
@@ -23,13 +22,10 @@ function decode(segment: string) {
   }
 }
 
-export const adminDemoEnabled = () =>
-  process.env.NODE_ENV !== "production" || process.env.DISABLE_ADMIN_DEMO !== "1";
-
 export function proxy(request: NextRequest) {
   const [, section, slug, extra] = request.nextUrl.pathname.split("/");
   if (section === "admin") {
-    return adminDemoEnabled() ? NextResponse.next() : NextResponse.rewrite(new URL("/__not-found", request.url));
+    return NextResponse.next();
   }
   if (section === "products") {
     // Only /products/<slug>; deeper paths don't exist.

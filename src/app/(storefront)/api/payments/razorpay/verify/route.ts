@@ -59,6 +59,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Payment is not complete." }, { status: 402 });
   }
 
-  await markOrderPaid(db, order.id, p.razorpay_payment_id);
+  await markOrderPaid(order.id, p.razorpay_payment_id);
   return NextResponse.json({ ok: true });
 }

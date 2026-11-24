@@ -2,8 +2,7 @@ import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PricedLine } from "@storefront/_lib/pricing";
 import type { CheckoutInput } from "@storefront/_lib/validation";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
 
 /** The date part of an order number, in India time. */
 const IST_DATE = new Intl.DateTimeFormat("en-CA", {
@@ -37,23 +36,29 @@ export function hmacHex(secret: string, payload: string) {
 
 export class OutOfStockError extends Error {}
 
+/** A signed-in customer placing the order: their Firebase uid and verified phone (E.164). */
+export type OrderCustomer = { uid: string; phone: string };
+
 /**
- * Saves the customer, address, order and items directly into Firestore.
+ * Saves the order (and, for a guest, a customer record) through the Firebase Admin SDK.
+ * A signed-in customer's order is linked to their account (customerId = uid, phone = verified phone), so it
+ * shows in their order history; their own customers/{uid} profile is theirs, so no guest record is written.
  * Matches exact Firestore order schema: branchId, createdAt, customerEmail, customerId,
  * customerName, customerPhone, discount, id, items, number, paymentMethod, paymentStatus,
  * shipping, shippingAddress, status, stockDeducted, subtotal, tax, timeline, total, updatedAt.
  */
 export async function createOrder(
-  _dummyDb: unknown,
   input: CheckoutInput,
   pricing: { lines: PricedLine[]; subtotal: number; shipping: number; total: number; discount?: number; tax?: number },
-  options: { paymentMethod?: string; branchId?: string } = {}
+  options: { paymentMethod?: string; branchId?: string; customer?: OrderCustomer | null } = {}
 ) {
+  const db = adminDb();
   const orderNumber = newOrderNumber();
   const accessToken = newAccessToken();
   const id = `o_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
-  const customerId = `c_${Date.now().toString().slice(-6)}_${Math.random().toString(36).substring(2, 6)}`;
+  const customer = options.customer ?? null;
+  const customerId = customer?.uid ?? `c_${Date.now().toString().slice(-6)}_${Math.random().toString(36).substring(2, 6)}`;
 
   const discount = Number(pricing.discount ?? 0);
   const tax = Number(pricing.tax ?? Math.round(pricing.subtotal * 0.05));
@@ -67,7 +72,7 @@ export async function createOrder(
     customerEmail: input.customer.email,
     customerId,
     customerName: input.customer.name,
-    customerPhone: input.customer.phone,
+    customerPhone: customer?.phone ?? input.customer.phone,
     discount,
     id,
     items: pricing.lines.map((l) => ({
@@ -108,17 +113,17 @@ export async function createOrder(
     access_token: accessToken,
   };
 
-  await setDoc(doc(db, "orders", id), orderDoc);
+  await db.collection("orders").doc(id).set(orderDoc);
 
   // Stock deduction in Firestore variants
   for (const line of pricing.lines) {
     try {
-      const vRef = doc(db, "variants", line.variantId);
-      const vSnap = await getDoc(vRef);
-      if (vSnap.exists()) {
-        const vData = vSnap.data();
+      const vRef = db.collection("variants").doc(line.variantId);
+      const vSnap = await vRef.get();
+      if (vSnap.exists) {
+        const vData = vSnap.data() ?? {};
         const currentStock = typeof vData.stock === "number" ? vData.stock : 0;
-        await updateDoc(vRef, {
+        await vRef.update({
           stock: Math.max(0, currentStock - line.quantity),
           updatedAt: now,
         });
@@ -128,10 +133,9 @@ export async function createOrder(
     }
   }
 
-  // Customer collection sync in Firestore
-  try {
-    await setDoc(
-      doc(db, "customers", customerId),
+  // Guest customer record (a signed-in customer's own profile at customers/{uid} is left alone).
+  if (!customer) try {
+    await db.collection("customers").doc(customerId).set(
       {
         id: customerId,
         name: input.customer.name,
@@ -156,7 +160,7 @@ export async function createOrder(
   // Activity log sync in Firestore activities
   try {
     const actId = `ac_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    await setDoc(doc(db, "activities", actId), {
+    await db.collection("activities").doc(actId).set({
       id: actId,
       type: "orders",
       message: `New order ${orderNumber} placed by ${input.customer.name} (₹${pricing.total})`,
@@ -171,15 +175,16 @@ export async function createOrder(
 }
 
 /** Marks an order paid in Firestore. */
-export async function markOrderPaid(_dummyDb: unknown, orderId: string, paymentId: string, method = "UPI (Cashfree)") {
+export async function markOrderPaid(orderId: string, paymentId: string, method = "UPI (Cashfree)") {
   const now = new Date().toISOString();
+  const db = adminDb();
   try {
-    const oRef = doc(db, "orders", orderId);
-    const snap = await getDoc(oRef);
-    if (snap.exists()) {
-      const data = snap.data();
+    const oRef = db.collection("orders").doc(orderId);
+    const snap = await oRef.get();
+    if (snap.exists) {
+      const data = snap.data() ?? {};
       const timeline = Array.isArray(data.timeline) ? data.timeline : [];
-      await updateDoc(oRef, {
+      await oRef.update({
         paymentStatus: "Paid",
         payment_status: "Paid",
         status: "Processing",
@@ -200,7 +205,7 @@ export async function markOrderPaid(_dummyDb: unknown, orderId: string, paymentI
 
       try {
         const actId = `ac_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        await setDoc(doc(db, "activities", actId), {
+        await db.collection("activities").doc(actId).set({
           id: actId,
           type: "orders",
           message: `Order ${data.number || orderId} payment confirmed via ${method} (₹${data.total})`,
@@ -218,10 +223,9 @@ export async function markOrderPaid(_dummyDb: unknown, orderId: string, paymentI
 }
 
 /** Records a failed online payment in Firestore. */
-export async function markOrderFailed(_dummyDb: unknown, orderId: string) {
+export async function markOrderFailed(orderId: string) {
   try {
-    const oRef = doc(db, "orders", orderId);
-    await updateDoc(oRef, {
+    await adminDb().collection("orders").doc(orderId).update({
       paymentStatus: "Failed",
       payment_status: "Failed",
       updatedAt: new Date().toISOString(),
@@ -239,77 +243,10 @@ export type PaymentIssue = {
   amountPaise?: number;
 };
 
-export async function recordPaymentIssue(_dummyDb: unknown, issue: PaymentIssue) {
+export async function recordPaymentIssue(issue: PaymentIssue) {
   console.error("Payment needs attention", issue);
 }
 
 export const ORDER_VIEW_COLUMNS = "*";
 
-/** One item as stored on an order document (older and newer field names). */
-export type OrderRowItem = {
-  product_name?: string;
-  name?: string;
-  variant_label?: string;
-  size?: string;
-  quantity?: number;
-  qty?: number;
-  line_total?: number;
-  total?: number;
-};
-
-/** An order document from Firestore. Field names vary between the storefront and the admin panel. */
-export type OrderRow = {
-  id?: string;
-  customer?: { name?: string; email?: string; phone?: string };
-  customerName?: string;
-  customerEmail?: string;
-  customerPhone?: string;
-  order_number?: string;
-  number?: string;
-  status?: string;
-  payment_method?: string;
-  paymentMethod?: string;
-  payment_status?: string;
-  paymentStatus?: string;
-  subtotal_inr?: number;
-  subtotal?: number;
-  shipping_inr?: number;
-  shipping?: number;
-  total_inr?: number;
-  total?: number;
-  created_at?: string;
-  createdAt?: string;
-  access_token?: string;
-  accessToken?: string;
-  items?: OrderRowItem[];
-};
-
-export function orderCustomer(row: OrderRow) {
-  if (row.customer && typeof row.customer === "object") return row.customer;
-  return {
-    name: row.customerName || "",
-    email: row.customerEmail || "",
-    phone: row.customerPhone || "",
-  };
-}
-
-export function toOrderView(row: OrderRow) {
-  const cust = orderCustomer(row);
-  return {
-    orderNumber: row.order_number || row.number,
-    status: row.status || "Pending",
-    paymentMethod: row.payment_method || row.paymentMethod || "Cash on Delivery",
-    paymentStatus: row.payment_status || row.paymentStatus || "Pending",
-    subtotal: Number(row.subtotal_inr || row.subtotal || 0),
-    shipping: Number(row.shipping_inr || row.shipping || 0),
-    total: Number(row.total_inr || row.total || 0),
-    createdAt: row.created_at || row.createdAt || new Date().toISOString(),
-    customerName: cust.name,
-    items: (row.items || []).map((item) => ({
-      product_name: item.product_name || item.name || "Product",
-      variant_label: item.variant_label || item.size || "Standard",
-      quantity: item.quantity || item.qty || 1,
-      line_total_inr: item.line_total || item.total || 0,
-    })),
-  };
-}
+export { orderCustomer, toOrderView, type OrderRow, type OrderRowItem } from "@storefront/_lib/order-view";

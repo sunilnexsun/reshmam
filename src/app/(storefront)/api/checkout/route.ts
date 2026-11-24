@@ -5,8 +5,7 @@ import { clientIp, cashfreeConfig, razorpayConfig, rateLimit } from "@storefront
 import { fetchLiveVariants, fetchDynamicProducts } from "@storefront/_lib/server/catalogue";
 import { createOrder, markOrderFailed, OutOfStockError } from "@storefront/_lib/server/orders";
 import { createCashfreeOrder } from "@/lib/cashfree";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
   if (!rateLimit(`checkout:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
@@ -43,11 +42,16 @@ export async function POST(req: Request) {
     const pricing = priceCart(input.items, input.address.state, { live, products: dynamicProducts });
     if (!pricing.ok) return NextResponse.json({ ok: false, error: pricing.error }, { status: 409 });
 
+    // A signed-in customer (valid Firebase ID token with a verified phone) gets the order on their account;
+    // anything else, including an expired or forged token, is a guest order.
+    const token = await verifyIdToken(req);
+    const customer = token?.phone_number ? { uid: token.uid, phone: token.phone_number } : null;
+
     const order = await createOrder(
-      null,
       input,
       pricing,
       {
+        customer,
         branchId: "br_rs",
         paymentMethod: input.paymentMethod === "cod" ? "Cash on Delivery" : cf ? "UPI (Cashfree)" : "UPI (Razorpay)",
       }
@@ -76,7 +80,7 @@ export async function POST(req: Request) {
           returnUrl,
         });
 
-        await updateDoc(doc(db, "orders", order.id), {
+        await adminDb().collection("orders").doc(order.id).update({
           cashfreeOrderId: cfOrder.orderId,
           cashfreeCfOrderId: cfOrder.cfOrderId,
           cashfreePaymentSessionId: cfOrder.paymentSessionId,
@@ -95,7 +99,7 @@ export async function POST(req: Request) {
         });
       } catch (cfErr) {
         console.error("Cashfree order creation error:", cfErr);
-        await markOrderFailed(null, order.id);
+        await markOrderFailed(order.id);
         return NextResponse.json(
           {
             ok: false,
@@ -124,24 +128,24 @@ export async function POST(req: Request) {
       });
     } catch (err) {
       console.error("Could not reach Razorpay", err);
-      await markOrderFailed(null, order.id);
+      await markOrderFailed(order.id);
       return NextResponse.json({ ok: false, error: "We couldn't start the payment. Nothing was charged. Please try again." }, { status: 502 });
     }
     if (!res.ok) {
       console.error("Razorpay order creation failed", res.status, await res.text().catch(() => ""));
-      await markOrderFailed(null, order.id);
+      await markOrderFailed(order.id);
       return NextResponse.json({ ok: false, error: "We couldn't start the payment. Please try again." }, { status: 502 });
     }
     const rzpOrder = (await res.json()) as { id: string; amount: number; currency: string };
 
     try {
-      await updateDoc(doc(db, "orders", order.id), {
+      await adminDb().collection("orders").doc(order.id).update({
         razorpay_order_id: rzpOrder.id,
         razorpayOrderId: rzpOrder.id,
       });
     } catch (linkErr) {
       console.error("Could not save the Razorpay order id in Firestore", linkErr);
-      await markOrderFailed(null, order.id);
+      await markOrderFailed(order.id);
       return NextResponse.json({ ok: false, error: "We couldn't start the payment. Nothing was charged. Please try again." }, { status: 500 });
     }
 

@@ -19,13 +19,16 @@ npm run dev          # http://localhost:3000/admin
 npm run build        # production build of the whole app (storefront + admin)
 ```
 
-Demo logins (also shown on the login screen):
+**Signing in.** Staff sign in with their email and password through Firebase Auth. Each staff member has a
+record at `adminUsers/{their Firebase uid}` with a role (Admin, Manager, Staff, or a custom role). What each
+role may see and change is set in **Settings → Roles** and enforced by the Firestore rules and the admin API
+(`src/lib/staff-permissions.ts`); the Admin role always has full access. New staff are added in
+**Settings → User Management**, which creates their Firebase account and gives a reset link to set their own
+password. "Forgot Password?" on the login screen sends Firebase's reset email. Passwords are never stored in
+Firestore or the browser.
 
-| Role    | Email                 | Password     |
-|---------|-----------------------|--------------|
-| Admin   | admin@reshmam.com     | Admin@123    |
-| Manager | manager@reshmam.com   | Manager@123  |
-| Staff   | staff@reshmam.com     | Staff@123    |
+Staff created before this change (with passwords in Firestore) are moved over once by
+`scripts/migrate-admin-users.mjs`; see [`firebase-go-live.md`](firebase-go-live.md) step 4.
 
 Settings → Danger zone → **Reset demo data** restores the original sample data.
 
@@ -85,7 +88,7 @@ existing API routes.
 
 | Concern | Frontend today | Backend |
 |---|---|---|
-| Auth & roles | demo users in settings, plain-text demo passwords | Supabase Auth; roles table + RLS; never store passwords client-side |
+| Auth & roles | Firebase Auth (email/password); roles in `configs/settings`, enforced by Firestore rules and `/api/admin/*` | done |
 | Data | localStorage | Postgres tables mirroring `seed.js` collections |
 | Images | resized to data URLs in the browser | Supabase Storage bucket, store URLs |
 | Stock moves / transfers | client-side action | Postgres function in a transaction (no negative stock) |

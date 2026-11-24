@@ -8,7 +8,7 @@ import { orderGst } from './gst'
 import { issueInvoice, withIssuedInvoices } from './invoice'
 import { normSize, variantSku } from '@admin/products/productUtils'
 import { uid } from './format'
-import { saveDocument, deleteDocument, batchFirestore, subscribeCollection, getPendingWrites, getWriteVersion, db as firestore } from './firebase'
+import { saveDocument, deleteDocument, batchFirestore, subscribeCollection, getPendingWrites, getWriteVersion, authHeader, db as firestore } from './firebase'
 import { collection, getDocs } from 'firebase/firestore'
 
 const KEY = 'reshmam-admin-v1'
@@ -196,12 +196,26 @@ function sameValue(a, b) {
   return canonicalJson(a) === canonicalJson(b)
 }
 
+/** Removes every `password` key, at any depth. */
+function withoutPasswords(value) {
+  if (Array.isArray(value)) return value.map(withoutPasswords)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).filter(([k]) => k !== 'password').map(([k, v]) => [k, withoutPasswords(v)]))
+  }
+  return value
+}
+
 function persistConfigSection(path) {
   const topKey = path.split('.')[0]
   if (OBJECTS.includes(topKey)) {
-    const sectionData = getState()[topKey]
+    let sectionData = getState()[topKey]
+    // Staff live in adminUsers (managed through /api/admin/staff), never in the settings document.
+    if (topKey === 'settings' && sectionData) {
+      const { users: _users, ...rest } = sectionData
+      sectionData = rest
+    }
     if (sectionData && typeof sectionData === 'object') {
-      saveDocument('configs', topKey, sectionData, { merge: false }).catch((e) =>
+      saveDocument('configs', topKey, withoutPasswords(sectionData), { merge: false }).catch((e) =>
         console.warn(`Firestore config save error on ${topKey}:`, e)
       )
     }
@@ -216,7 +230,7 @@ export async function fetchAllFromFirestore() {
 
   // 1. Fetch via server-side proxy API (bypasses browser ad-blockers and streaming errors)
   try {
-    const res = await fetch('/api/admin/firestore', { cache: 'no-store' })
+    const res = await fetch('/api/admin/firestore', { cache: 'no-store', headers: await authHeader() })
     if (res.ok) {
       const json = await res.json()
       if (json.ok && json.data) {
@@ -363,12 +377,37 @@ function setPath(obj, path, value) {
   return { ...obj, [k]: rest.length ? setPath(obj[k] ?? {}, rest.join('.'), value) : value }
 }
 
+// ---------------------------------------------------------------------------
+// Staff accounts: Firebase Auth users + adminUsers records, managed only through /api/admin/staff (Admin
+// role). No password is ever sent from here or stored; new staff get a reset link to set their own.
+// ---------------------------------------------------------------------------
+const STAFF_FIELDS = ['name', 'phone', 'role', 'branchId', 'status', 'avatar']
+
+async function staffRequest(method, { query = '', body } = {}) {
+  const res = await fetch(`/api/admin/staff${query}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok || !json.ok) throw new Error(json.error || `Staff update failed (HTTP ${res.status})`)
+  return json
+}
+
+/** Creates a staff member. Returns { user, resetLink } — share the link so they can set their password. */
+export async function createStaff(data) {
+  const body = Object.fromEntries([...STAFF_FIELDS, 'email'].filter((k) => data[k] !== undefined).map((k) => [k, data[k]]))
+  const { user, resetLink } = await staffRequest('POST', { body })
+  setState((s) => ({ ...s, settings: { ...s.settings, users: [user, ...(s.settings?.users || [])] } }))
+  logActivity('settings', `User added: ${user.name}`)
+  return { user, resetLink }
+}
+
 export function createItem(col, data, prefix = col.split('.').pop().slice(0, 3)) {
+  if (col === 'settings.users') throw new Error('Use createStaff() to add staff.')
   const item = { id: data?.id || uid(prefix), createdAt: now(), ...data }
   setState((s) => setPath(s, col, [item, ...(getPath(s, col) || [])]))
-  if (col === 'settings.users') {
-    saveDocument('adminUsers', item.id, item, { merge: false }).catch((e) => console.warn('Firestore save error on adminUsers:', e))
-  } else if (!col.includes('.')) {
+  if (!col.includes('.')) {
     saveDocument(col, item.id, item, { merge: false }).catch((e) => console.warn(`Firestore save error on ${col}:`, e))
     logActivity(col, `Added ${col}: ${item.name || item.title || item.id}`)
   } else {
@@ -386,7 +425,11 @@ export function updateItem(col, id, patch) {
     return x
   })))
   if (col === 'settings.users' && updated) {
-    saveDocument('adminUsers', id, updated, { merge: false }).catch((e) => console.warn('Firestore update error on adminUsers:', e))
+    const p = typeof patch === 'function' ? updated : patch
+    const changes = Object.fromEntries(STAFF_FIELDS.filter((k) => p[k] !== undefined).map((k) => [k, p[k]]))
+    if (Object.keys(changes).length) {
+      staffRequest('PATCH', { body: { uid: id, ...changes } }).catch((e) => console.warn('Staff update failed:', e))
+    }
   } else if (!col.includes('.') && updated) {
     saveDocument(col, id, updated, { merge: false }).catch((e) => console.warn(`Firestore update error on ${col}:`, e))
     logActivity(col, `Updated ${col}: ${updated.name || updated.title || id}`)
@@ -398,7 +441,7 @@ export function removeItem(col, id) {
   const currentItem = (getPath(state, col) || []).find((x) => x.id === id)
   setState((s) => setPath(s, col, (getPath(s, col) || []).filter((x) => x.id !== id)))
   if (col === 'settings.users') {
-    deleteDocument('adminUsers', id).catch((e) => console.warn('Firestore delete error on adminUsers:', e))
+    staffRequest('DELETE', { query: `?uid=${encodeURIComponent(id)}` }).catch((e) => console.warn('Staff delete failed:', e))
   } else if (!col.includes('.')) {
     deleteDocument(col, id).catch((e) => console.warn(`Firestore delete error on ${col}:`, e))
     logActivity(col, `Deleted ${col}: ${currentItem?.name || currentItem?.title || id}`)

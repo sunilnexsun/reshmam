@@ -36,8 +36,7 @@ npm run dev
 | `npm test` | Unit and database tests (Vitest; the database tests run every migration on an in-memory Postgres) |
 | `npm run db:seed:generate` | Rebuild `supabase/seed.sql` from the product catalogue |
 
-The admin login screen lists the demo accounts (Admin, Manager and Staff roles). They are sample
-credentials for the local demo only.
+Staff sign in to `/admin` with their own Firebase Auth email and password (see [`docs/admin.md`](docs/admin.md)).
 
 ---
 
@@ -51,8 +50,10 @@ A responsive shop built on the Next.js App Router.
   Razorpay online payments are supported, with signature and amount verification plus a webhook. Payments that
   can't be matched to an open order are kept in a `payment_issues` table for staff.
 - **Orders**: a confirmation page and order tracking by order number and email.
-- **Accounts**: Supabase magic-link sign-in, order history, and a cart and wishlist saved to the account so
-  they follow the customer across devices (guests keep them in the browser).
+- **Accounts**: create an account or log in with a mobile number and a one-time SMS code (Firebase Phone Auth),
+  from the header's person icon. My Account shows the profile and the orders placed while logged in; checkout is
+  prefilled; and the cart and wishlist are saved to the account so they follow the customer across devices
+  (guests keep them in the browser).
 - **Enquiries**: contact and bulk-order forms with validation, a honeypot field, a timing check and
   rate limiting. Submissions are stored in Supabase and/or emailed via Resend.
 - **Content**: Our Story, Health Benefits, blog, FAQ and a help centre with the shipping, returns,
@@ -167,15 +168,14 @@ reshmam/
 
 ## Configuration
 
-The storefront reads these environment variables, and `ENABLE_ADMIN_DEMO` decides whether a production server
-shows the admin demo. Set them **before** `npm run build`: the `NEXT_PUBLIC_*` values and the security headers
+The app reads these environment variables. Set them **before** `npm run build`: the `NEXT_PUBLIC_*` values and the security headers
 are fixed at build time. Copy `.env.example` to `.env.local` and fill in:
 
 | Variable | Used for |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | Canonical URLs, sitemap, Open Graph |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Database and customer sign-in |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only database access. Never expose it to the browser |
+| `FIREBASE_SERVICE_ACCOUNT` | Server-only Firebase Admin SDK (checkout, orders, payments, admin API). Never expose it to the browser |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Server-only: enquiries and the Razorpay webhook. Never expose the key to the browser |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Online payments |
 | `RESEND_API_KEY`, `ENQUIRY_FROM_EMAIL`, `ENQUIRY_TO_EMAIL` | Enquiry notification emails |
 
@@ -183,15 +183,14 @@ Never commit `.env.local` or any real secret.
 
 ## Before launch
 
-- [ ] Create the Supabase project, apply the migrations and run the seed
+- [ ] Follow [`docs/firebase-go-live.md`](docs/firebase-go-live.md): service account, staff migration, rules, phone sign-in
+- [ ] Create the Supabase project, apply the migrations and run the seed (enquiries and the Razorpay webhook)
 - [ ] Add the Razorpay keys and webhook — events `payment.captured`, `order.paid`, `payment.failed` (test first, then live)
 - [ ] Set every variable from `.env.example` **before** `npm run build` (the `NEXT_PUBLIC_*` values and the security headers are fixed at build time)
-- [ ] Decide whether the public site should hide the admin demo (`DISABLE_ADMIN_DEMO=1` answers `/admin` with a 404); it is served by default
 - [ ] Set up Resend with a verified sending domain
 - [ ] Replace the provisional images in `public/images/` with real, licensed photos
 - [ ] Replace the sample testimonials and blog posts, and confirm the placeholder prices and stock
 - [ ] Add the marketplace listing URLs in `src/app/(storefront)/_lib/site.ts`
-- [ ] Connect the admin panel to Supabase, using Supabase Auth and roles instead of the demo users
 - [ ] Move the WhatsApp, AI and refund integrations behind server-side endpoints
 
 ## Contributing

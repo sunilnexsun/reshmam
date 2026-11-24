@@ -11,13 +11,16 @@ export interface CashfreeConfig {
 export function getCashfreeConfig(): CashfreeConfig {
   const appId = process.env.CASHFREE_APP_ID?.trim() || "";
   const secretKey = process.env.CASHFREE_SECRET_KEY?.trim() || "";
-  const envRaw = (process.env.CASHFREE_ENV || "TEST").toUpperCase();
+  const productionServer = process.env.NODE_ENV === "production";
+  // Unset means live on a production server and sandbox elsewhere; CASHFREE_ENV=TEST picks sandbox on purpose
+  // (e.g. a preview deploy with sandbox keys).
+  const envRaw = (process.env.CASHFREE_ENV?.trim() || (productionServer ? "PROD" : "TEST")).toUpperCase();
   const isProd = envRaw === "PROD" || envRaw === "PRODUCTION";
   const baseUrl = isProd ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg";
 
-  const isTestMode = !isProd;
-  // In TEST mode, online test payments are enabled for simulation even before keys are pasted
-  const isConfigured = Boolean(appId && secretKey) || isTestMode;
+  // Without keys, sandbox mode simulates payments (every one counts as paid) for local testing only; a
+  // production server never simulates, so it needs real keys before checkout offers Cashfree.
+  const isConfigured = Boolean(appId && secretKey) || (!isProd && !productionServer);
 
   return {
     appId,
@@ -57,7 +60,7 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
   // If live keys are not configured yet in TEST mode, use Sandbox Test Simulator
   if (!config.appId || !config.secretKey) {
-    if (config.env === "sandbox") {
+    if (config.env === "sandbox" && process.env.NODE_ENV !== "production") {
       return {
         orderId: params.orderId,
         cfOrderId: `cf_test_${Date.now()}`,
@@ -134,7 +137,8 @@ export interface CashfreeVerifyResult {
 export async function verifyCashfreeOrder(orderId: string, testParam?: string): Promise<CashfreeVerifyResult> {
   const config = getCashfreeConfig();
 
-  if (testParam === "PAID" || (!config.appId && config.env === "sandbox")) {
+  const simulate = process.env.NODE_ENV !== "production" && (testParam === "PAID" || (!config.appId && config.env === "sandbox"));
+  if (simulate) {
     return {
       orderId,
       cfOrderId: `cf_test_${Date.now()}`,

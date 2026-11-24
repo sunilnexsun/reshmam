@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Banknote, CreditCard, Info, Loader2, Lock } from "lucide-react";
+import { AlertCircle, Banknote, CreditCard, Info, Loader2, Lock, LogIn } from "lucide-react";
 import { useCartLines } from "./useCartLines";
 import { OrderSummary } from "./CartView";
 import { checkoutSchema, fieldErrors, indianStates } from "@storefront/_lib/validation";
 import { formatINR } from "@storefront/_lib/pricing";
 import { site } from "@storefront/_lib/site";
 import { ButtonLink, cn } from "@storefront/_components/ui/primitives";
+import { useSignInDialog } from "@storefront/_components/account/SignInDialogProvider";
+import { useCustomer } from "@storefront/_lib/customer-auth";
 
 type Status = { ordering: boolean; onlinePayments: boolean } | null;
 
@@ -62,6 +64,10 @@ const inputCls =
 export function CheckoutForm() {
   const router = useRouter();
   const { lines, subtotal } = useCartLines();
+  // Signed in: details are prefilled, the mobile is the verified one, and the order is linked to the account.
+  const { user, profile } = useCustomer();
+  const { open: openSignIn } = useSignInDialog();
+  const verifiedPhone = user?.phoneNumber ?? null;
   const [state, setState] = useState<string>(site.shipping.homeState);
   const [method, setMethod] = useState<"online" | "cod">("online");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -143,9 +149,12 @@ export function CheckoutForm() {
         data = pendingRef.current.data;
       } else {
         pendingRef.current = null;
+        // The server checks this token and links the order to the account (an expired or forged one makes
+        // it a guest order, so a failure here never blocks checkout).
+        const idToken = user ? await user.getIdToken().catch(() => null) : null;
         const res = await fetch("/api/checkout", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
           body: request,
         });
         const body = await res.json().catch(() => ({}));
@@ -270,22 +279,47 @@ export function CheckoutForm() {
           </p>
         )}
 
-        <fieldset className="rounded-xl border border-beige-300/80 bg-white p-6">
+        {/* Remounts once the account loads, so the prefilled values appear in these uncontrolled fields. */}
+        <fieldset key={profile?.id ?? "guest"} className="rounded-xl border border-beige-300/80 bg-white p-6">
           <legend className="px-1 font-serif text-xl font-bold text-forest-800">Customer details</legend>
+          {!user && (
+            <p className="mt-1 text-sm text-ink-soft">
+              Have an account?{" "}
+              <button type="button" onClick={() => openSignIn("login")} className="inline-flex items-center gap-1 font-semibold text-forest-800 underline underline-offset-2">
+                <LogIn className="h-3.5 w-3.5" aria-hidden /> Log in for faster checkout
+              </button>
+            </p>
+          )}
           <div className="mt-2 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="c-name" className="text-sm font-medium">Full name *</label>
-              <input id="c-name" name="customer.name" autoComplete="name" {...field("customer.name")} />
+              <input id="c-name" name="customer.name" autoComplete="name" defaultValue={profile?.name ?? ""} {...field("customer.name")} />
               {err("customer.name")}
             </div>
             <div>
               <label htmlFor="c-email" className="text-sm font-medium">Email *</label>
-              <input id="c-email" name="customer.email" type="email" autoComplete="email" {...field("customer.email")} />
+              <input id="c-email" name="customer.email" type="email" autoComplete="email" defaultValue={profile?.email ?? ""} {...field("customer.email")} />
               {err("customer.email")}
             </div>
             <div>
               <label htmlFor="c-phone" className="text-sm font-medium">Mobile number *</label>
-              <input id="c-phone" name="customer.phone" type="tel" autoComplete="tel" {...field("customer.phone")} />
+              {verifiedPhone ? (
+                <>
+                  <input
+                    id="c-phone"
+                    name="customer.phone"
+                    type="tel"
+                    readOnly
+                    value={verifiedPhone}
+                    {...field("customer.phone")}
+                    className={cn(inputCls, "border-beige-300 bg-beige/40 text-ink-soft")}
+                    aria-describedby="c-phone-note"
+                  />
+                  <p id="c-phone-note" className="mt-1 text-xs text-ink-soft">Your verified mobile number.</p>
+                </>
+              ) : (
+                <input id="c-phone" name="customer.phone" type="tel" autoComplete="tel" {...field("customer.phone")} />
+              )}
               {err("customer.phone")}
             </div>
           </div>

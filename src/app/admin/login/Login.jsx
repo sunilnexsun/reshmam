@@ -9,37 +9,25 @@ import hero from '@admin/_assets/login-hero.webp'
 
 const REMEMBER_KEY = 'reshmam-admin-remember'
 
-function loadRemembered() {
+// Only the email is remembered; Firebase keeps the session itself. Passwords are never stored.
+function loadRememberedEmail() {
   try {
-    const raw = localStorage.getItem(REMEMBER_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object' && parsed.email) {
-      return {
-        email: String(parsed.email || ''),
-        password: String(parsed.password || ''),
-        remember: true,
-      }
-    }
-  } catch {}
-  return null
+    const parsed = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null')
+    return parsed && typeof parsed.email === 'string' ? parsed.email : ''
+  } catch {
+    return ''
+  }
 }
 
-function saveRemembered(remember, email, password) {
+function saveRememberedEmail(remember, email) {
   try {
-    if (remember) {
-      localStorage.setItem(
-        REMEMBER_KEY,
-        JSON.stringify({ email: String(email || '').trim(), password: String(password || ''), remember: true })
-      )
-    } else {
-      localStorage.removeItem(REMEMBER_KEY)
-    }
+    if (remember) localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: String(email || '').trim() }))
+    else localStorage.removeItem(REMEMBER_KEY)
   } catch {}
 }
 
 export default function Login() {
-  const { user, login } = useAuth()
+  const { user, login, resetPassword } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   // Only panel-relative paths, so ?next= can't send anyone to another site.
@@ -48,16 +36,16 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [forgot, setForgot] = useState(false)
   const [error, setError] = useState('')
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetState, setResetState] = useState({ busy: false, message: '' })
+  const { register, handleSubmit, reset, getValues, formState: { errors, isSubmitting } } = useForm({
     defaultValues: { email: '', password: '', remember: true },
   })
 
-  // Restore remembered email & password on client mount
+  // Restore the remembered email on client mount
   useEffect(() => {
-    const saved = loadRemembered()
-    if (saved) {
-      reset(saved)
-    }
+    const email = loadRememberedEmail()
+    if (email) reset({ email, password: '', remember: true })
   }, [reset])
 
   if (user) return <Navigate to={next} replace />
@@ -66,7 +54,7 @@ export default function Login() {
     setError('')
     try {
       const u = await login(email, password, remember)
-      saveRemembered(!!remember, email, password)
+      saveRememberedEmail(!!remember, email)
       toast.success(`Welcome back, ${(u.name || 'Admin').split(' ')[0]}!`)
       navigate(next, { replace: true })
     } catch (e) { setError(e.message) }
@@ -75,7 +63,7 @@ export default function Login() {
   const rememberField = register('remember', {
     onChange: (e) => {
       if (!e.target.checked) {
-        saveRemembered(false, '', '')
+        saveRememberedEmail(false, '')
       }
     },
   })
@@ -131,7 +119,7 @@ export default function Login() {
               </Field>
               <div className="flex items-center justify-between">
                 <Checkbox label="Remember Me" {...rememberField} />
-                <button type="button" onClick={() => setForgot(true)} className="text-sm font-medium text-accent hover:underline">Forgot Password?</button>
+                <button type="button" onClick={() => { setResetEmail(getValues('email') || ''); setResetState({ busy: false, message: '' }); setForgot(true) }} className="text-sm font-medium text-accent hover:underline">Forgot Password?</button>
               </div>
               <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>Login</Button>
             </form>
@@ -139,8 +127,30 @@ export default function Login() {
         </div>
       </div>
 
-      <Modal open={forgot} onClose={() => setForgot(false)} title="Reset password" size="sm" footer={<Button onClick={() => setForgot(false)}>Got it</Button>}>
-        <p className="text-sm text-ink">Contact an Admin to reset your password from <b>Settings → User Management</b>.</p>
+      <Modal
+        open={forgot}
+        onClose={() => setForgot(false)}
+        title="Reset password"
+        size="sm"
+        footer={
+          <Button
+            loading={resetState.busy}
+            onClick={async () => {
+              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail.trim())) return setResetState({ busy: false, message: 'Enter the email address you sign in with.' })
+              setResetState({ busy: true, message: '' })
+              // Same message whether or not the email is registered, so this can't be used to find staff emails.
+              await resetPassword(resetEmail).catch(() => {})
+              setResetState({ busy: false, message: 'If that email belongs to a staff account, a reset link is on its way. Check your inbox.' })
+            }}
+          >
+            Send reset link
+          </Button>
+        }
+      >
+        <Field label="Email Address" htmlFor="reset-email">
+          <Input id="reset-email" type="email" autoComplete="username" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+        </Field>
+        {resetState.message && <p role="status" className="mt-3 text-sm text-ink">{resetState.message}</p>}
       </Modal>
     </div>
   )

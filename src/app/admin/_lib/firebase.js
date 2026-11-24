@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from 'firebase/app'
+import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { initializeFirestore, getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
@@ -12,8 +12,8 @@ export const firebaseConfig = {
   appId: "1:245127746311:web:fb9041eea8686cb0e06ba2"
 }
 
-// Initialize Firebase singleton
-export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+// The default app (the storefront's customer sign-in uses its own named app, which may already exist).
+export const app = getApps().find((a) => a.name === '[DEFAULT]') ?? initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 
 let firestoreInstance
@@ -27,6 +27,13 @@ try {
 }
 export const db = firestoreInstance
 export const storage = getStorage(app)
+
+/** Authorization header carrying the signed-in staff member's Firebase ID token ({} when signed out). */
+export async function authHeader() {
+  const user = auth.currentUser
+  if (!user) return {}
+  return { Authorization: `Bearer ${await user.getIdToken()}` }
+}
 
 /**
  * Validates and uploads an image file directly to Firebase Storage.
@@ -154,7 +161,7 @@ function enqueueDocWrite(key, task) {
 async function postToProxy(payload) {
   const res = await fetch('/api/admin/firestore', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
     body: JSON.stringify(payload),
   })
   const json = await res.json().catch(() => ({}))

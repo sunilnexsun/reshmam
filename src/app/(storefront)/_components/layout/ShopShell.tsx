@@ -2,6 +2,7 @@ import { AnnouncementBar } from "./AnnouncementBar";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { AccountSync } from "./AccountSync";
+import { SignInDialogProvider } from "@storefront/_components/account/SignInDialogProvider";
 import { Toaster } from "@storefront/_components/ui/Toaster";
 import { Chatbot } from "@storefront/_components/chat/Chatbot";
 import { JsonLd } from "@storefront/_components/sections/Misc";
@@ -28,23 +29,25 @@ const organizationLd = {
 /** Storefront chrome shared by the (storefront) layout and the 404 page. */
 export function ShopShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col antialiased">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-forest-800 focus:px-4 focus:py-2 focus:text-white"
-      >
-        Skip to content
-      </a>
-      <AnnouncementBar />
-      <Header />
-      <main id="main" className="flex-1">
-        {children}
-      </main>
-      <Footer />
-      <Toaster />
-      <Chatbot />
-      <AccountSync />
-      <JsonLd data={organizationLd} />
-    </div>
+    <SignInDialogProvider>
+      <div className="flex min-h-screen flex-col antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-forest-800 focus:px-4 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
+        <AnnouncementBar />
+        <Header />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <Footer />
+        <Toaster />
+        <Chatbot />
+        <AccountSync />
+        <JsonLd data={organizationLd} />
+      </div>
+    </SignInDialogProvider>
   );
 }
