@@ -173,14 +173,15 @@ export default async function HomePage() {
               Learn More About Us <ArrowRight className="h-4 w-4" aria-hidden />
             </ButtonLink>
           </div>
-          <ul className="grid content-center gap-5 border-t border-beige-300 px-4 pb-12 sm:grid-cols-2 sm:px-8 lg:grid-cols-1 lg:border-l lg:border-t-0 lg:py-12">
+          {/* From lg up the four points fill the column's full height: equal rows, separated by dividers. */}
+          <ul className="grid content-center gap-5 border-t border-beige-300 px-4 pb-12 sm:grid-cols-2 sm:px-8 lg:grid-cols-1 lg:grid-rows-4 lg:content-stretch lg:gap-0 lg:divide-y lg:divide-beige-300 lg:border-l lg:border-t-0 lg:px-0 lg:py-0">
             {[
               { icon: Cog, t: "Traditional Extraction", d: "Using the wooden chekku method" },
               { icon: Leaf, t: "Pure & Natural", d: "No chemicals or preservatives" },
               { icon: Wheat, t: "Quality Ingredients", d: "Sourced from trusted farmers" },
               { icon: Heart, t: "Healthy Living", d: "Goodness for your family" },
             ].map(({ icon: Icon, t, d }) => (
-              <li key={t} className="flex items-center gap-3 pt-4 lg:pt-0">
+              <li key={t} className="flex items-center gap-3 pt-4 lg:px-8 lg:py-6 xl:px-10">
                 <IconBadge tone="gold" size="md">
                   <Icon className="h-5 w-5" />
                 </IconBadge>
