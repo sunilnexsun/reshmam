@@ -36,11 +36,14 @@ for (const p of products) {
 }
 
 // Products and variants removed from the catalogue are deactivated (not deleted: past orders refer to them).
+// Skipped when the code catalogue is empty: products are managed in Firestore now, and `not in ()` isn't valid SQL.
 const ids = (xs: string[]) => xs.map(q).join(", ");
-lines.push(
-  `update public.product_variants set active = false where id not in (${ids(products.flatMap((p) => p.variants.map((v) => v.id)))});`,
-  `update public.products set active = false where slug not in (${ids(products.map((p) => p.slug))});`,
-);
+if (products.length) {
+  lines.push(
+    `update public.product_variants set active = false where id not in (${ids(products.flatMap((p) => p.variants.map((v) => v.id)))});`,
+    `update public.products set active = false where slug not in (${ids(products.map((p) => p.slug))});`,
+  );
+}
 
 for (const b of posts) {
   lines.push(

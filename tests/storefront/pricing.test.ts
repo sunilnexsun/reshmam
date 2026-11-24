@@ -1,10 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { MAX_UNITS_PER_VARIANT, priceCart, shippingFee } from "@storefront/_lib/pricing";
-import { products } from "@storefront/_lib/products";
+import type { Product } from "@storefront/_lib/products";
 import { site } from "@storefront/_lib/site";
 
-// Any variant with a little stock (more than 2, fewer than the cap) — the tests don't depend on which.
-const inStock = products.flatMap((p) => p.variants).find((v) => v.stock > 2 && v.stock < MAX_UNITS_PER_VARIANT - 1)!;
+// Products now come from Firestore, so the tests price against their own small catalogue.
+const products: Product[] = [
+  {
+    slug: "test-gingelly-oil",
+    name: "Test Gingelly Oil",
+    shortName: "Gingelly Oil",
+    category: "gingelly-oil",
+    kind: "single",
+    branch: "reshmam",
+    image: "/images/products/bottle-gingelly-500ml.webp",
+    imageAlt: "Bottle of gingelly oil",
+    summary: "",
+    description: [],
+    uses: [],
+    edible: true,
+    variants: [
+      { id: "T-GIN-500ML", label: "500 ml", price: 350, stock: 20 },
+      { id: "T-GIN-1L", label: "1 L", price: 600, stock: 0 },
+    ],
+  },
+];
+const inStock = products[0].variants[0];
+const opts = { products };
 
 describe("priceCart", () => {
   it("has a suitable catalogue variant to test with", () => {
@@ -12,7 +33,7 @@ describe("priceCart", () => {
   });
 
   it("prices from the catalogue, never from the client", () => {
-    const r = priceCart([{ variantId: inStock.id, quantity: 2 }]);
+    const r = priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, opts);
     expect(r.ok && r.lines[0].unitPrice).toBe(inStock.price);
     expect(r.ok && r.subtotal).toBe(inStock.price * 2);
   });
@@ -21,7 +42,7 @@ describe("priceCart", () => {
     const r = priceCart([
       { variantId: inStock.id, quantity: 1 },
       { variantId: inStock.id, quantity: 2 },
-    ]);
+    ], undefined, opts);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.lines).toHaveLength(1);
@@ -33,7 +54,7 @@ describe("priceCart", () => {
     const r = priceCart([
       { variantId: inStock.id, quantity: inStock.stock },
       { variantId: inStock.id, quantity: 1 },
-    ]);
+    ], undefined, opts);
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toMatch(/in stock/);
   });
@@ -45,7 +66,7 @@ describe("priceCart", () => {
         { variantId: inStock.id, quantity: 30 },
       ],
       undefined,
-      { checkStock: false },
+      { ...opts, checkStock: false },
     );
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toMatch(/bulk order enquiry/);
@@ -53,13 +74,13 @@ describe("priceCart", () => {
 
   it("checks catalogue stock by default and skips it with checkStock: false", () => {
     const tooMany = [{ variantId: inStock.id, quantity: inStock.stock + 1 }];
-    expect(priceCart(tooMany).ok).toBe(false);
-    expect(priceCart(tooMany, undefined, { checkStock: false }).ok).toBe(true);
+    expect(priceCart(tooMany, undefined, opts).ok).toBe(false);
+    expect(priceCart(tooMany, undefined, { ...opts, checkStock: false }).ok).toBe(true);
   });
 
   it("refuses unknown variants and empty carts", () => {
-    expect(priceCart([{ variantId: "NOPE-1L", quantity: 1 }]).ok).toBe(false);
-    expect(priceCart([]).ok).toBe(false);
+    expect(priceCart([{ variantId: "NOPE-1L", quantity: 1 }], undefined, opts).ok).toBe(false);
+    expect(priceCart([], undefined, opts).ok).toBe(false);
   });
 });
 
@@ -69,16 +90,16 @@ describe("priceCart with live database values", () => {
   });
 
   it("uses the database price over the catalogue", () => {
-    const r = priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, { live: live({ price: inStock.price + 15 }) });
+    const r = priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, { ...opts, live: live({ price: inStock.price + 15 }) });
     expect(r.ok && r.subtotal).toBe((inStock.price + 15) * 2);
   });
   it("checks the database stock, not the catalogue's", () => {
-    expect(priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, { live: live({ stock: 1 }) }).ok).toBe(false);
-    expect(priceCart([{ variantId: inStock.id, quantity: inStock.stock + 1 }], undefined, { live: live({ stock: inStock.stock + 1 }) }).ok).toBe(true);
+    expect(priceCart([{ variantId: inStock.id, quantity: 2 }], undefined, { ...opts, live: live({ stock: 1 }) }).ok).toBe(false);
+    expect(priceCart([{ variantId: inStock.id, quantity: inStock.stock + 1 }], undefined, { ...opts, live: live({ stock: inStock.stock + 1 }) }).ok).toBe(true);
   });
   it("treats inactive or missing variants as unavailable", () => {
-    expect(priceCart([{ variantId: inStock.id, quantity: 1 }], undefined, { live: live({ active: false }) }).ok).toBe(false);
-    expect(priceCart([{ variantId: inStock.id, quantity: 1 }], undefined, { live: {} }).ok).toBe(false);
+    expect(priceCart([{ variantId: inStock.id, quantity: 1 }], undefined, { ...opts, live: live({ active: false }) }).ok).toBe(false);
+    expect(priceCart([{ variantId: inStock.id, quantity: 1 }], undefined, { ...opts, live: {} }).ok).toBe(false);
   });
 });
 

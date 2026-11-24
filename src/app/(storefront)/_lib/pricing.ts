@@ -50,7 +50,9 @@ export function priceCart(
   for (const [variantId, quantity] of merged) {
     const found = findVariant(variantId, productList);
     const liveInfo = live?.[variantId];
-    if ((!found && !liveInfo) || (liveInfo && !liveInfo.active)) {
+    // With database stock supplied, an item it doesn't list (or lists as inactive) can't be checked, so it
+    // isn't sold. Without it, the item must at least be in the catalogue.
+    if (live ? !liveInfo?.active : !found) {
       return { ok: false, error: "One of the items in your cart is no longer available." };
     }
     const product = found?.product ?? {

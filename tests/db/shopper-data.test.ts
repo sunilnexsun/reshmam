@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
+import { TEST_CATALOGUE_SQL } from "./test-catalogue";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const root = join(__dirname, "../..");
@@ -38,6 +39,7 @@ beforeAll(async () => {
     await db.exec(readFileSync(join(migrationsDir, f), "utf8").replace("create extension if not exists pgcrypto;", ""));
   }
   await db.exec(readFileSync(join(root, "supabase/seed.sql"), "utf8"));
+  await db.exec(TEST_CATALOGUE_SQL);
   await db.exec(`
     grant select, insert, update, delete on public.carts, public.wishlists to authenticated;
     insert into auth.users values ('${ME}'), ('${OTHER}');
