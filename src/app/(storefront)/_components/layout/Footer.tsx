@@ -10,7 +10,9 @@ import { LeafOutline } from "@storefront/_components/ui/decor";
 
 function FooterHeading({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-5 font-sans text-xs font-bold uppercase tracking-[0.18em] text-gold">{children}</h2>
+    <h2 className="mb-5 w-fit border-b-2 border-gold pb-1.5 font-sans text-xs font-bold uppercase tracking-[0.18em] text-gold">
+      {children}
+    </h2>
   );
 }
 
@@ -69,7 +71,7 @@ export function Footer() {
           <Link href="/" aria-label="Reshmam home" className="inline-flex rounded-xl bg-cream px-4 py-2.5 shadow-sm">
             <Image src="/images/logo.png" alt="RESHMAM" width={150} height={80} className="h-16 w-auto" />
           </Link>
-          <p className="mt-3 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.24em] text-gold">
+          <p className="mt-3 w-fit whitespace-nowrap border-b-2 border-gold pb-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-gold">
             {site.brandLine}
           </p>
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/75">{site.description}</p>
