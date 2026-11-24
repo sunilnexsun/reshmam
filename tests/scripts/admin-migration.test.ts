@@ -1,7 +1,7 @@
 // The one-time move of staff to Firebase Auth: who keeps their password, who must reset it, and making sure
 // no password survives anywhere in Firestore.
 import { describe, expect, it } from "vitest";
-import { SEED_PASSWORDS, planMigration } from "../../scripts/lib/admin-migration.mjs";
+import { SEED_PASSWORDS, linkAuthUser, planMigration } from "../../scripts/lib/admin-migration.mjs";
 
 const users = [
   { id: "u_1", name: "Reshmam Admin", email: "Admin@Reshmam.com", password: "Admin@123", role: "Admin", status: "Active" },
@@ -60,5 +60,43 @@ describe("planMigration", () => {
     const p = planMigration([{ id: "uid9", email: "done@x.com", role: "Admin", status: "Active", migratedAt: "2026-11-24" }], null);
     expect(p.users[0]).toMatchObject({ alreadyMigrated: true });
     expect(p.mustReset).toEqual([]);
+  });
+});
+
+describe("linkAuthUser", () => {
+  const fakeAuth = (existing: { uid: string; email: string } | null) => {
+    const calls: string[] = [];
+    return {
+      calls,
+      auth: {
+        getUserByEmail: async () => {
+          if (!existing) throw Object.assign(new Error("no user"), { code: "auth/user-not-found" });
+          return existing;
+        },
+        createUser: async (u: { email: string; password: string }) => (calls.push(`create:${u.email}:${u.password ? "pw" : ""}`), { uid: "new-uid", email: u.email }),
+        updateUser: async (uid: string, u: Record<string, unknown>) => (calls.push(`update:${uid}:${Object.keys(u).sort().join(",")}:${u.emailVerified}`), { uid }),
+        revokeRefreshTokens: async (uid: string) => void calls.push(`revoke:${uid}`),
+      },
+    };
+  };
+  const staff = { email: "admin@reshmam.com", record: { name: "Admin", status: "Active" } };
+
+  it("creates a new account when none exists", async () => {
+    const f = fakeAuth(null);
+    const r = await linkAuthUser(f.auth, staff, "Str0ng&Private!");
+    expect(r).toEqual({ uid: "new-uid", reset: false });
+    expect(f.calls).toEqual(["create:admin@reshmam.com:pw"]);
+  });
+
+  it("never trusts an account someone else registered: new random password, sessions revoked, must reset", async () => {
+    const f = fakeAuth({ uid: "attacker", email: "admin@reshmam.com" });
+    const r = await linkAuthUser(f.auth, staff, "Str0ng&Private!");
+    expect(r).toEqual({ uid: "attacker", reset: true });
+    expect(f.calls).toEqual(["update:attacker:disabled,emailVerified,password:false", "revoke:attacker"]);
+  });
+
+  it("propagates other lookup errors instead of creating a duplicate", async () => {
+    const auth = { ...fakeAuth(null).auth, getUserByEmail: async () => { throw Object.assign(new Error("quota"), { code: "auth/internal-error" }); } };
+    await expect(linkAuthUser(auth, staff, "x")).rejects.toThrow("quota");
   });
 });

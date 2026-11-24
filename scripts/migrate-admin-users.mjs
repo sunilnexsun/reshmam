@@ -12,13 +12,14 @@
  * Usage:
  *   FIREBASE_SERVICE_ACCOUNT='<service-account JSON>' node scripts/migrate-admin-users.mjs           # dry run
  *   FIREBASE_SERVICE_ACCOUNT='<service-account JSON>' node scripts/migrate-admin-users.mjs --apply   # write
- * Safe to run again: users already in Firebase Auth are linked, not duplicated. Never prints a password.
+ * Safe to run again: staff already migrated are skipped. A sign-in account that already exists for a staff
+ * email is never trusted as is: its password is reset and its sessions ended. Never prints a password.
  */
 import { randomBytes } from "node:crypto";
 import { cert, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { planMigration } from "./lib/admin-migration.mjs";
+import { linkAuthUser, planMigration } from "./lib/admin-migration.mjs";
 
 const apply = process.argv.includes("--apply");
 const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -50,20 +51,13 @@ if (!apply) {
 const original = new Map(usersSnap.docs.map((d) => [d.id, d.data()]));
 for (const u of plan.users) {
   if (u.alreadyMigrated) continue;
-  let fbUser = await auth.getUserByEmail(u.email).catch(() => null);
   const password = u.keepPassword ? String(original.get(u.oldId)?.password) : randomBytes(24).toString("base64url");
-  if (!fbUser) {
-    fbUser = await auth.createUser({
-      email: u.email,
-      displayName: String(u.record.name ?? ""),
-      password,
-      disabled: u.record.status !== "Active",
-    });
-  }
+  const { uid, reset } = await linkAuthUser(auth, u, password);
+  if (reset && !plan.mustReset.includes(u.email)) plan.mustReset.push(u.email);
   const now = new Date().toISOString();
-  await db.collection("adminUsers").doc(fbUser.uid).set({ ...u.record, id: fbUser.uid, migratedAt: now, updatedAt: now });
-  if (u.oldId !== fbUser.uid) await db.collection("adminUsers").doc(u.oldId).delete();
-  console.log(`  migrated ${u.email} -> ${fbUser.uid}`);
+  await db.collection("adminUsers").doc(uid).set({ ...u.record, id: uid, migratedAt: now, updatedAt: now });
+  if (u.oldId !== uid) await db.collection("adminUsers").doc(u.oldId).delete();
+  console.log(`  migrated ${u.email} -> ${uid}${reset ? " (existing sign-in account: password reset, sessions ended)" : ""}`);
 }
 if (plan.scrubbedSettings) {
   await db.collection("configs").doc("settings").set(plan.scrubbedSettings);
