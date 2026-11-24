@@ -25,6 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # Firestore and Storage security rules, tested against the Firebase emulators (which need Java).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm run test:rules
       # supabase/seed.sql is generated from the catalogue; fail if someone changed products.ts without regenerating it.
       - name: Check the database seed is up to date
         run: npm run db:seed:generate && git diff --exit-code supabase/seed.sql
