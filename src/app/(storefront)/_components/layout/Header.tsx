@@ -18,6 +18,8 @@ import { useDynamicCatalogue } from "@storefront/_lib/use-catalogue";
 import { useWishlist } from "@storefront/_lib/store";
 import { useCartLines } from "@storefront/_components/cart/useCartLines";
 import { cn } from "@storefront/_components/ui/primitives";
+import { useSignInDialog } from "@storefront/_components/account/SignInDialogProvider";
+import { useCustomer } from "@storefront/_lib/customer-auth";
 
 function isActive(pathname: string, href: string) {
   return href === "/"
@@ -192,13 +194,7 @@ export function Header() {
             </ul>
           </nav>
           <div className="ml-auto flex items-center gap-0.5 lg:ml-0 lg:justify-self-end">
-            <Link
-              href="/account"
-              aria-label="My account"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-forest-800 hover:bg-leaf-100"
-            >
-              <User className="h-6 w-6" aria-hidden />
-            </Link>
+            <AccountButton />
             <CartButton />
             <button
               type="button"
@@ -288,5 +284,24 @@ export function Header() {
         </div>
       )}
     </>
+  );
+}
+
+/** Signed in: a link to My Account. Signed out: opens the Log In / Create Account dialog. */
+function AccountButton() {
+  const { user, loading } = useCustomer();
+  const { open } = useSignInDialog();
+  const cls = "inline-flex h-11 w-11 items-center justify-center rounded-full text-forest-800 hover:bg-leaf-100";
+  if (loading || user) {
+    return (
+      <Link href="/account" aria-label="My account" className={cls}>
+        <User className="h-6 w-6" aria-hidden />
+      </Link>
+    );
+  }
+  return (
+    <button type="button" aria-label="Log in or create an account" aria-haspopup="dialog" className={cls} onClick={() => open("login")}>
+      <User className="h-6 w-6" aria-hidden />
+    </button>
   );
 }

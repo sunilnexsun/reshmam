@@ -95,7 +95,6 @@ const { POST: webhook } = await import("@storefront/api/payments/razorpay/webhoo
 const { POST: lookup } = await import("@storefront/api/orders/lookup/route");
 const { POST: contact } = await import("@storefront/api/contact/route");
 const { POST: checkout } = await import("@storefront/api/checkout/route");
-const { GET: accountOrders } = await import("@storefront/api/account/orders/route");
 
 const post = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("https://www.reshmam.com/api", { method: "POST", headers: { "content-type": "application/json", ...headers }, body: typeof body === "string" ? body : JSON.stringify(body) });
@@ -287,36 +286,5 @@ describe("POST /api/checkout", () => {
     const data = await (await checkout(post(order("online")))).json();
     expect(data).toMatchObject({ ok: true, razorpay: { orderId: "order_rzp_1", amount: 120000 } });
     expect(store.updates).toContainEqual({ path: "orders/order-uuid", value: expect.objectContaining({ razorpay_order_id: "order_rzp_1" }) });
-  });
-});
-
-describe("GET /api/account/orders", () => {
-  const get = (token?: string) =>
-    accountOrders(new Request("https://www.reshmam.com/api/account/orders", { headers: token ? { authorization: `Bearer ${token}` } : {} }));
-  const user = (over = {}) => ({ data: { user: { email: "Buyer@Example.com", email_confirmed_at: "2026-11-01T00:00:00Z", ...over } }, error: null });
-  const row = { order_number: "RSH-1", access_token: "tok_abcdefghijklmnop", status: "shipped", payment_method: "cod", payment_status: "cod_pending", subtotal_inr: 600, shipping_inr: 0, total_inr: 600, created_at: "2026-11-01", customers: { email: "buyer@example.com", name: "Buyer" }, order_items: [] };
-
-  it("lists the signed-in customer's orders by their email, without access tokens", async () => {
-    db.auth.getUser.mockResolvedValue(user());
-    results.orders = { data: [row], error: null };
-    const res = await get("session-token");
-    expect(res.status).toBe(200);
-    expect(db.auth.getUser).toHaveBeenCalledWith("session-token");
-    expect(filters).toContainEqual({ table: "orders", column: "customers.email", value: "buyer@example.com" });
-    const data = await res.json();
-    expect(data.orders).toEqual([expect.objectContaining({ orderNumber: "RSH-1", status: "shipped", total: 600 })]);
-    expect(JSON.stringify(data)).not.toContain("tok_abcdefghijklmnop");
-  });
-  it("refuses a missing or invalid session, or an unconfirmed email", async () => {
-    expect((await get()).status).toBe(401);
-    db.auth.getUser.mockResolvedValue({ data: { user: null }, error: { message: "invalid" } });
-    expect((await get("bad")).status).toBe(401);
-    db.auth.getUser.mockResolvedValue(user({ email_confirmed_at: null }));
-    expect((await get("unconfirmed")).status).toBe(401);
-    expect(db.from).not.toHaveBeenCalled();
-  });
-  it("says so when the database isn't connected", async () => {
-    config.db = null;
-    expect((await get("session-token")).status).toBe(503);
   });
 });

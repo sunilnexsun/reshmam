@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from 'firebase/app'
+import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { initializeFirestore, getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
@@ -12,8 +12,8 @@ export const firebaseConfig = {
   appId: "1:245127746311:web:fb9041eea8686cb0e06ba2"
 }
 
-// Initialize Firebase singleton
-export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+// The default app (the storefront's customer sign-in uses its own named app, which may already exist).
+export const app = getApps().find((a) => a.name === '[DEFAULT]') ?? initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 
 let firestoreInstance

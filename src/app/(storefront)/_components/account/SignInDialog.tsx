@@ -28,15 +28,20 @@ function BrandPanel() {
     <div className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_0%_0%,var(--color-forest-700),var(--color-forest-950))] text-white">
       {/* Phones: a compact header. */}
       <div className="flex items-center gap-3 px-5 py-4 md:hidden">
-        <Image src="/images/logo.png" alt="Reshmam" width={96} height={51} className="h-9 w-auto" />
+        <span className="inline-flex rounded-lg bg-cream px-2 py-1">
+          <Image src="/images/logo.png" alt="Reshmam" width={96} height={51} className="h-8 w-auto" />
+        </span>
         <p className="font-bookman text-lg leading-tight">
           Create Your <span className="text-gold">Account</span>
         </p>
       </div>
       {/* Tablets and up: the full brand panel. */}
       <div className="hidden h-full flex-col px-7 py-8 md:flex">
-        <Image src="/images/logo.png" alt="Reshmam" width={150} height={80} className="h-auto w-36" />
-        <p className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-gold">Pure. Traditional. Trusted.</p>
+        {/* The logo's green lettering needs a light background to read on green (as in the footer). */}
+        <span className="inline-flex w-fit rounded-xl bg-cream px-3 py-2 shadow-sm">
+          <Image src="/images/logo.png" alt="Reshmam" width={150} height={80} className="h-14 w-auto" />
+        </span>
+        <p className="mt-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-gold">Pure. Traditional. Trusted.</p>
         <p className="font-bookman mt-6 text-3xl leading-tight">
           Create Your
           <br />
@@ -111,6 +116,8 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
     const opener = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
     dialog?.showModal();
+    // showModal() focuses the first button (×); start on the first field instead.
+    dialog?.querySelector<HTMLElement>("form input")?.focus();
     return () => {
       verifierRef.current?.clear();
       verifierRef.current = null;
@@ -145,10 +152,13 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
 
   async function sendOtp(phone: string) {
     try {
-      if (!verifierRef.current && recaptchaRef.current) {
-        verifierRef.current = new RecaptchaVerifier(customerAuth, recaptchaRef.current, { size: "invisible" });
-      }
-      confirmationRef.current = await signInWithPhoneNumber(customerAuth, toE164(phone), verifierRef.current!);
+      // A reCAPTCHA token works for one SMS only, so every send (including Resend and a changed number) gets a
+      // fresh verifier on a fresh element; reusing a solved one leaves the request hanging.
+      verifierRef.current?.clear();
+      const host = document.createElement("div");
+      recaptchaRef.current!.replaceChildren(host);
+      verifierRef.current = new RecaptchaVerifier(customerAuth, host, { size: "invisible" });
+      confirmationRef.current = await signInWithPhoneNumber(customerAuth, toE164(phone), verifierRef.current);
       setResendAt(Date.now() + RESEND_SECONDS * 1000);
       setNow(Date.now());
       dispatch({ type: "OTP_SENT" });
