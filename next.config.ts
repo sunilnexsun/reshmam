@@ -74,11 +74,14 @@ const nextConfig: NextConfig = {
       "premium-gingelly-oil",
       "pure-coconut-oil",
       "velum-mayilum-groundnut-oil",
-    ].map((slug) => ({
-      source: `/products/${slug}`,
-      destination: "/products",
-      permanent: true,
-    }));
+    ]
+      .map((slug) => ({
+        source: `/products/${slug}`,
+        destination: "/products",
+        permanent: true,
+      }))
+      // The New Arrivals page was removed (Nov 2026); send old links and bookmarks to the shop.
+      .concat({ source: "/new-arrivals", destination: "/products", permanent: true });
   },
   partialPrefetching: true,
   turbopack: {

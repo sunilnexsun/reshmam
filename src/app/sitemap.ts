@@ -18,7 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/terms-conditions",
     "/cancellation-policy",
     "/track-order",
-    "/new-arrivals",
   ];
   return [
     ...pages.map((p) => ({ url: absoluteUrl(p), changeFrequency: "weekly" as const, priority: p === "/" ? 1 : 0.7 })),
