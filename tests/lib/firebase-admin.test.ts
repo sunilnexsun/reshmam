@@ -68,3 +68,21 @@ describe("adminDb", () => {
     expect(sdk.cert).toHaveBeenCalledWith(expect.objectContaining({ project_id: "reshmam-oil" }));
   });
 });
+
+describe("local emulators", () => {
+  beforeEach(() => vi.stubEnv("FIREBASE_SERVICE_ACCOUNT", ""));
+
+  it("uses the emulators without credentials in development", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("FIRESTORE_EMULATOR_HOST", "127.0.0.1:8080");
+    expect(() => mod.adminDb()).not.toThrow();
+    expect(sdk.initializeApp).toHaveBeenCalledWith({ projectId: "reshmam-oil" }, "reshmam-admin-server");
+    expect(sdk.cert).not.toHaveBeenCalled();
+  });
+
+  it("never does so in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("FIRESTORE_EMULATOR_HOST", "127.0.0.1:8080");
+    expect(() => mod.adminDb()).toThrow(mod.FirebaseAdminNotConfigured);
+  });
+});

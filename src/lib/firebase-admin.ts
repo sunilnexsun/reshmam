@@ -7,7 +7,9 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * Firebase Admin SDK for server routes. It bypasses Firestore security rules, so every route that uses it
  * must do its own checks (see src/lib/staff-auth.ts and src/lib/staff-permissions.ts).
  *
- * Credentials come only from FIREBASE_SERVICE_ACCOUNT: the service-account JSON as one string.
+ * Credentials come only from FIREBASE_SERVICE_ACCOUNT: the service-account JSON as one string. For local
+ * testing only (never in production), FIRESTORE_EMULATOR_HOST / FIREBASE_AUTH_EMULATOR_HOST without credentials
+ * point it at the Firebase emulators instead.
  */
 
 const APP_NAME = "reshmam-admin-server";
@@ -24,9 +26,15 @@ let app: App | null = null;
 function adminApp(): App {
   if (app) return app;
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) throw new FirebaseAdminNotConfigured();
+  const emulators =
+    process.env.NODE_ENV !== "production" && Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST);
+  if (!raw && !emulators) throw new FirebaseAdminNotConfigured();
   const existing = getApps().find((a) => a.name === APP_NAME);
-  app = existing ?? initializeApp({ credential: cert(JSON.parse(raw)) }, APP_NAME);
+  app =
+    existing ??
+    (raw
+      ? initializeApp({ credential: cert(JSON.parse(raw)) }, APP_NAME)
+      : initializeApp({ projectId: process.env.GCLOUD_PROJECT || "reshmam-oil" }, APP_NAME));
   return app;
 }
 
