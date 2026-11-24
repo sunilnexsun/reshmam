@@ -107,6 +107,8 @@ export function formatProduct(raw: FirestoreRawProduct, rawVariants: FirestoreRa
     kind: isCombo ? "combo" : isPack ? "pack" : "single",
     branch: (raw.branch as any) || "reshmam",
     image,
+    // Admin uploads are product packshots (bottles on white): show them whole, never cropped.
+    imageFit: "contain",
     imageAlt: name,
     summary,
     description,

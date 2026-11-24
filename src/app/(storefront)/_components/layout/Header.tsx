@@ -117,7 +117,7 @@ function ProductsMenu({ active }: { active: boolean }) {
                   alt=""
                   width={40}
                   height={28}
-                  className="h-8 w-10 rounded object-cover"
+                  className="h-8 w-10 rounded bg-white object-contain"
                 />
                 {c.name}
               </Link>
