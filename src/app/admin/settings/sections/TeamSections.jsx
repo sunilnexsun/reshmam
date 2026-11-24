@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { KeyRound, Lock, Pencil, ShieldCheck, Trash2, UserPlus, Wand2 } from 'lucide-react'
+import { KeyRound, Lock, Pencil, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
 import { Avatar, Badge, Button, Card, DataTable, Field, FilterSelect, IconButton, Input, Modal, SearchInput, Segmented, Select, StatusBadge, Textarea, useConfirm, useToast } from '@admin/_components/ui'
-import { createItem, getState, logActivity, removeItem, updateItem, updateSection, useDb } from '@admin/_lib/store'
+import { createStaff, getState, logActivity, removeItem, updateItem, updateSection, useDb } from '@admin/_lib/store'
 import { useAuth } from '@admin/_lib/auth'
 import { PERMISSION_MODULES } from '@admin/_lib/seed'
 import { cn, dateTime } from '@admin/_lib/format'
-import { CopyButton, SecretInput } from '@admin/settings/common'
-import PasswordStrength from '@admin/settings/PasswordStrength'
-import { generatePassword, validatePassword } from '@admin/settings/passwordRules'
+import { CopyButton } from '@admin/settings/common'
+import { resetStaffPassword } from '@admin/_lib/staff-session'
 
 const MODULE_LABELS = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', prices: 'Price Management', inventory: 'Inventory', branches: 'Branches', customers: 'Customers', marketing: 'Coupons', whatsapp: 'WhatsApp Automation', chatbot: 'AI Chatbot', reports: 'Reports', settings: 'Settings' }
 const LEVELS = [{ value: 'none', label: 'None' }, { value: 'view', label: 'View' }, { value: 'manage', label: 'Manage' }]
-const emptyUser = (role) => ({ name: '', email: '', phone: '', role, branchId: 'all', status: 'Active', password: '' })
+const emptyUser = (role) => ({ name: '', email: '', phone: '', role, branchId: 'all', status: 'Active' })
 const activeAdmins = (users, exceptId) => users.filter((u) => u.role === 'Admin' && u.status === 'Active' && u.id !== exceptId).length
 // Settings "manage" lets Managers run the team, but only an Admin may create Admins, touch an Admin's account
 // or change role permissions — otherwise anyone with settings access could make themselves an Admin.
@@ -26,11 +25,12 @@ function UserFormModal({ user, onClose }) {
   const roles = Object.keys(db.settings.roles).filter((r) => r !== 'Admin' || isAdmin(me))
   const defaultRole = roles.includes('Staff') ? 'Staff' : roles[0]
   const ownAccount = !!user && user.id === me?.id
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({ defaultValues: emptyUser(defaultRole) })
-  useEffect(() => { if (user !== undefined) reset(user ? { ...emptyUser(defaultRole), ...user, password: '' } : emptyUser(defaultRole)) }, [user, reset, defaultRole])
-  const password = watch('password')
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ defaultValues: emptyUser(defaultRole) })
+  const [resetLink, setResetLink] = useState('')
+  useEffect(() => { if (user !== undefined) reset(user ? { ...emptyUser(defaultRole), ...user } : emptyUser(defaultRole)) }, [user, reset, defaultRole])
+  const close = () => { setResetLink(''); onClose() }
 
-  const onSubmit = (v) => {
+  const onSubmit = async (v) => {
     const s = getState()
     const email = v.email.trim().toLowerCase()
     if (s.settings.users.some((u) => u.id !== user?.id && u.email.toLowerCase() === email)) return toast.error('A user with this email already exists.')
@@ -39,14 +39,24 @@ function UserFormModal({ user, onClose }) {
     if (!isAdmin(me) && (v.role === 'Admin' || isAdmin(user))) return toast.error('Only an Admin can create or change Admin accounts.')
     if (ownAccount && !isAdmin(me) && v.role !== user.role) return toast.error('You cannot change your own role.')
     const data = { name: v.name.trim(), email, phone: v.phone.trim(), role: v.role, branchId: v.branchId, status: v.status }
-    if (isNew) { createItem('settings.users', { ...data, password: v.password, lastLogin: '', avatar: '' }, 'u'); logActivity('settings', `User added: ${data.name} (${data.role})`) }
-    else { updateItem('settings.users', user.id, data); logActivity('settings', `User updated: ${data.name}`) }
-    toast.success(isNew ? 'User added' : 'User updated')
-    onClose()
+    if (isNew) {
+      try {
+        const { resetLink: link } = await createStaff(data)
+        toast.success('User added. Share the link below so they can set their password.')
+        setResetLink(link)
+      } catch (e) {
+        toast.error(e.message)
+      }
+      return
+    }
+    updateItem('settings.users', user.id, data)
+    logActivity('settings', `User updated: ${data.name}`)
+    toast.success('User updated')
+    close()
   }
   return (
-    <Modal open={user !== undefined} onClose={onClose} title={isNew ? 'Add User' : 'Edit User'} size="lg"
-      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button type="submit" form="user-form" loading={isSubmitting}>{isNew ? 'Add User' : 'Save Changes'}</Button></>}>
+    <Modal open={user !== undefined} onClose={close} title={isNew ? 'Add User' : 'Edit User'} size="lg"
+      footer={resetLink ? <Button onClick={close}>Done</Button> : <><Button variant="outline" onClick={close}>Cancel</Button><Button type="submit" form="user-form" loading={isSubmitting}>{isNew ? 'Add User' : 'Save Changes'}</Button></>}>
       <form id="user-form" onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 sm:grid-cols-2">
         <Field label="Full Name" required error={errors.name} htmlFor="u-name"><Input id="u-name" error={errors.name} {...register('name', { required: 'Name is required' })} /></Field>
         <Field label="Email" required error={errors.email} htmlFor="u-email"><Input id="u-email" type="email" autoComplete="off" error={errors.email} {...register('email', { required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } })} /></Field>
@@ -56,13 +66,15 @@ function UserFormModal({ user, onClose }) {
         </Field>
         <Field label="Branch" htmlFor="u-branch" hint="Limits which branch the user works in"><Select id="u-branch" options={[{ value: 'all', label: 'All branches' }, ...db.branches.map((b) => ({ value: b.id, label: b.name }))]} {...register('branchId')} /></Field>
         <Field label="Status" htmlFor="u-status"><Select id="u-status" options={['Active', 'Inactive']} {...register('status')} /></Field>
-        {isNew && (
-          <Field label="Temporary password" required error={errors.password} htmlFor="u-pass" className="sm:col-span-2">
+        {isNew && !resetLink && (
+          <p className="text-sm text-muted sm:col-span-2">They&apos;ll get a link to set their own password; no password is set here.</p>
+        )}
+        {resetLink && (
+          <Field label="Password set-up link (share it privately)" htmlFor="u-link" className="sm:col-span-2">
             <div className="flex gap-2">
-              <div className="min-w-0 flex-1"><SecretInput id="u-pass" autoComplete="new-password" error={errors.password} {...register('password', { required: 'Set a temporary password', validate: validatePassword })} /></div>
-              <Button variant="outline" icon={Wand2} onClick={() => setValue('password', generatePassword(), { shouldValidate: true })}>Generate</Button>
+              <Input id="u-link" readOnly value={resetLink} className="min-w-0 flex-1 font-mono text-xs" />
+              <CopyButton value={resetLink} ariaLabel="Copy the password set-up link" />
             </div>
-            <PasswordStrength value={password} />
           </Field>
         )}
       </form>
@@ -72,28 +84,24 @@ function UserFormModal({ user, onClose }) {
 
 function ResetPasswordModal({ user, onClose }) {
   const toast = useToast()
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({ defaultValues: { password: '' } })
-  useEffect(() => { if (user) reset({ password: generatePassword() }) }, [user, reset])
-  const password = watch('password')
-  const onSubmit = (v) => {
-    updateItem('settings.users', user.id, { password: v.password, passwordChangedAt: new Date().toISOString() })
-    logActivity('settings', `Password reset for ${user.name}`)
-    toast.success(`Password reset for ${user.name}. Share it securely.`)
-    onClose()
+  const [busy, setBusy] = useState(false)
+  const send = async () => {
+    setBusy(true)
+    try {
+      await resetStaffPassword(user.email)
+      logActivity('settings', `Password reset link sent to ${user.name}`)
+      toast.success(`Reset link sent to ${user.email}.`)
+      onClose()
+    } catch {
+      toast.error('Could not send the reset link. Try again.')
+    } finally {
+      setBusy(false)
+    }
   }
   return (
     <Modal open={!!user} onClose={onClose} title="Reset password" subtitle={user ? `${user.name} · ${user.email}` : ''} size="md"
-      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button type="submit" form="reset-form" icon={KeyRound}>Set new password</Button></>}>
-      <form id="reset-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3">
-        <Field label="New temporary password" required error={errors.password} htmlFor="rp-pass">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="min-w-0 flex-1"><SecretInput id="rp-pass" autoComplete="new-password" error={errors.password} {...register('password', { required: 'Enter a password', validate: validatePassword })} /></div>
-            <div className="flex gap-2"><Button variant="outline" icon={Wand2} onClick={() => setValue('password', generatePassword(), { shouldValidate: true })}>Generate</Button>{password && <CopyButton value={password} ariaLabel="Copy password" />}</div>
-          </div>
-          <PasswordStrength value={password} />
-        </Field>
-        <p className="text-xs text-muted">Ask the user to change it after signing in. With the backend connected, this will instead email a one-time reset link.</p>
-      </form>
+      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button icon={KeyRound} loading={busy} onClick={send}>Send reset link</Button></>}>
+      <p className="text-sm text-ink">We&apos;ll email {user?.email} a link to choose a new password. Nobody else ever sees it.</p>
     </Modal>
   )
 }

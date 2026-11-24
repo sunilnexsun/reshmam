@@ -160,6 +160,15 @@ describe("/api/admin/staff", () => {
     expect(fb.updateUser).toHaveBeenCalledWith("staff1", expect.objectContaining({ disabled: true }));
     expect(fb.revokeRefreshTokens).toHaveBeenCalledWith("staff1");
   });
+  it("lets any staff member change their own name and phone, but nothing else about themselves", async () => {
+    const own = await staffRoute.PATCH(call("staff", { method: "PATCH", body: JSON.stringify({ uid: "staff1", name: "Lakshmi P", phone: "9000000000" }) }));
+    expect(own.status).toBe(200);
+    expect(fake.read("adminUsers", "staff1")).toMatchObject({ name: "Lakshmi P", role: "Staff" });
+    const promote = await staffRoute.PATCH(call("staff", { method: "PATCH", body: JSON.stringify({ uid: "staff1", role: "Admin" }) }));
+    expect(promote.status).toBe(403);
+    const other = await staffRoute.PATCH(call("staff", { method: "PATCH", body: JSON.stringify({ uid: "manager1", name: "x" }) }));
+    expect(other.status).toBe(403);
+  });
   it("deletes both the sign-in and the staff record", async () => {
     const res = await staffRoute.DELETE(call("admin", { method: "DELETE" }, "https://www.reshmam.com/api/admin/staff?uid=staff1"));
     expect(res.status).toBe(200);

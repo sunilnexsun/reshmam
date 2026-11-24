@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Avatar, Badge, Field, ImageUploader, Input, useToast } from '@admin/_components/ui'
-import { getState, logActivity, updateItem, useDb } from '@admin/_lib/store'
+import { logActivity, updateItem, useDb } from '@admin/_lib/store'
 import { useAuth } from '@admin/_lib/auth'
 import { dateTime } from '@admin/_lib/format'
 import { FormCard, SecretInput } from '@admin/settings/common'
+import { changeStaffPassword } from '@admin/_lib/staff-session'
 import PasswordStrength from '@admin/settings/PasswordStrength'
 import { validatePassword } from '@admin/settings/passwordRules'
 
@@ -20,9 +21,8 @@ export function ProfileSettings() {
   const branch = user.branchId === 'all' ? 'All branches' : db.branches.find((b) => b.id === user.branchId)?.name || '—'
 
   const onSave = (v) => {
-    const email = v.email.trim().toLowerCase()
-    if (getState().settings.users.some((u) => u.id !== user.id && u.email.toLowerCase() === email)) return toast.error('Another user already has this email address.')
-    updateItem('settings.users', user.id, { name: v.name.trim(), email, phone: v.phone.trim(), avatar: v.avatar })
+    // Email is the sign-in identity, so it isn't changed here.
+    updateItem('settings.users', user.id, { name: v.name.trim(), phone: v.phone.trim(), avatar: v.avatar })
     logActivity('settings', 'Admin profile updated')
     toast.success('Profile saved')
   }
@@ -38,7 +38,7 @@ export function ProfileSettings() {
       </div>
       <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2">
         <Field label="Full Name" required error={errors.name} htmlFor="pf-name"><Input id="pf-name" autoComplete="name" error={errors.name} {...register('name', { required: 'Name is required', minLength: { value: 2, message: 'Name is too short' } })} /></Field>
-        <Field label="Email" required error={errors.email} htmlFor="pf-email" hint="Used to sign in"><Input id="pf-email" type="email" autoComplete="email" error={errors.email} {...register('email', { required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } })} /></Field>
+        <Field label="Email" htmlFor="pf-email" hint="Used to sign in. Ask an Admin to change it."><Input id="pf-email" type="email" autoComplete="email" readOnly className="bg-surface text-muted" {...register('email', { required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } })} /></Field>
         <Field label="Phone" error={errors.phone} htmlFor="pf-phone"><Input id="pf-phone" inputMode="tel" autoComplete="tel" error={errors.phone} {...register('phone', { pattern: { value: /^\+?[\d\s-]{10,16}$/, message: 'Enter a valid phone number' } })} /></Field>
         <div className="sm:col-span-2">
           <p className="label">Profile photo</p>
@@ -55,17 +55,19 @@ export function PasswordSettings() {
   const { register, handleSubmit, reset, watch, setError, formState: { errors, isDirty, isSubmitting } } = useForm({ defaultValues: { current: '', next: '', confirm: '' } })
   if (!user) return null
   const next = watch('next')
-  const onSave = (v) => {
-    const fresh = getState().settings.users.find((u) => u.id === user.id)
-    if (fresh?.password !== v.current) return setError('current', { message: 'Current password is incorrect' }, { shouldFocus: true })
-    updateItem('settings.users', user.id, { password: v.next, passwordChangedAt: new Date().toISOString() })
+  const onSave = async (v) => {
+    try {
+      await changeStaffPassword(v.current, v.next)
+    } catch (e) {
+      return setError('current', { message: e.message }, { shouldFocus: true })
+    }
     logActivity('settings', `Password changed for ${user.name}`)
     reset({ current: '', next: '', confirm: '' })
     toast.success('Password changed')
   }
   return (
     <FormCard title="Change Password" subtitle={`Signed in as ${user.email}`} id="set-password" onSubmit={handleSubmit(onSave)} isDirty={isDirty} isSubmitting={isSubmitting}
-      footerNote="Demo only: passwords are kept in browser storage. The backend must hash passwords (bcrypt/argon2) and handle resets.">
+      footerNote="Your password is checked and stored by Firebase, never by this site.">
       <div className="grid max-w-lg gap-4">
         <input type="text" autoComplete="username" value={user.email} readOnly hidden />
         <Field label="Current password" required error={errors.current} htmlFor="pw-cur"><SecretInput id="pw-cur" autoComplete="current-password" error={errors.current} {...register('current', { required: 'Enter your current password' })} /></Field>

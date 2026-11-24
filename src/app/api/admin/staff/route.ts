@@ -17,6 +17,8 @@ const fields = {
   role: z.string().trim().min(1).max(40),
   branchId: z.string().trim().max(40).optional(),
   status: z.enum(["Active", "Inactive"]),
+  // Profile photo: a Storage URL or a small data URL from the admin's image uploader.
+  avatar: z.string().max(500_000).optional(),
 };
 const createSchema = z.object({ ...fields, email: z.string().trim().toLowerCase().email() });
 const updateSchema = z.object({ uid: z.string().min(1), ...fields }).partial({ name: true, role: true, status: true });
@@ -53,12 +55,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, user: record, resetLink });
 }
 
+/** Fields any staff member may change on their own record (My Profile). */
+const SELF_EDITABLE = new Set(["name", "phone", "avatar"]);
+
 export async function PATCH(req: Request) {
-  const ctx = await requireAdminRole(req);
+  const ctx = await requireStaff(req);
   if (ctx instanceof Response) return ctx;
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return bad("Please check the staff details.");
   const { uid, ...changes } = parsed.data;
+  const ownProfileOnly = uid === ctx.uid && Object.keys(changes).every((k) => SELF_EDITABLE.has(k));
+  if (ctx.staff.role !== ADMIN_ROLE && !ownProfileOnly) {
+    return NextResponse.json({ ok: false, error: "Only the Admin role can manage staff." }, { status: 403 });
+  }
 
   const ref = adminDb().collection("adminUsers").doc(uid);
   if (!(await ref.get()).exists) return NextResponse.json({ ok: false, error: "No such staff member." }, { status: 404 });

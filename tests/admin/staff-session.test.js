@@ -7,12 +7,17 @@ const fa = vi.hoisted(() => ({
   signInWithEmailAndPassword: vi.fn(),
   signOut: vi.fn(async () => {}),
   sendPasswordResetEmail: vi.fn(async () => {}),
+  reauthenticateWithCredential: vi.fn(async () => {}),
+  updatePassword: vi.fn(async () => {}),
 }))
 vi.mock('firebase/auth', () => ({
   getAuth: () => fa,
   signInWithEmailAndPassword: (...a) => fa.signInWithEmailAndPassword(...a),
   signOut: (...a) => fa.signOut(...a),
   sendPasswordResetEmail: (...a) => fa.sendPasswordResetEmail(...a),
+  reauthenticateWithCredential: (...a) => fa.reauthenticateWithCredential(...a),
+  updatePassword: (...a) => fa.updatePassword(...a),
+  EmailAuthProvider: { credential: (email, pw) => ({ email, pw }) },
   onAuthStateChanged: () => () => {},
 }))
 
@@ -30,7 +35,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-const { signInStaff, signOutStaff, resetStaffPassword } = await import('@admin/_lib/staff-session')
+const { changeStaffPassword, signInStaff, signOutStaff, resetStaffPassword } = await import('@admin/_lib/staff-session')
 const { authHeader } = await import('@admin/_lib/firebase')
 
 describe('signInStaff', () => {
@@ -69,5 +74,21 @@ describe('authHeader', () => {
   })
   it('is empty when nobody is signed in', async () => {
     expect(await authHeader()).toEqual({})
+  })
+})
+
+describe('changeStaffPassword', () => {
+  const me = { email: 'a@x.com', getIdToken: async () => 't' }
+  it('re-checks the current password with Firebase, then sets the new one', async () => {
+    fa.currentUser = me
+    await changeStaffPassword('old-pw', 'New-pw-123!')
+    expect(fa.reauthenticateWithCredential).toHaveBeenCalledWith(me, { email: 'a@x.com', pw: 'old-pw' })
+    expect(fa.updatePassword).toHaveBeenCalledWith(me, 'New-pw-123!')
+  })
+  it('says so plainly when the current password is wrong', async () => {
+    fa.currentUser = me
+    fa.reauthenticateWithCredential.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'auth/invalid-credential' }))
+    await expect(changeStaffPassword('bad', 'New-pw-123!')).rejects.toThrow('Current password is incorrect')
+    expect(fa.updatePassword).not.toHaveBeenCalled()
   })
 })
