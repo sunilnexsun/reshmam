@@ -41,9 +41,10 @@ export const metadata: Metadata = {
 const productBenefits = [
   {
     name: "Gingelly Oil (Sesame Oil)",
-    image: "/images/product-gingelly.webp",
-    alt: "RESHMAM gingelly oil with sesame seeds",
-    href: "/products/gingelly-oil",
+    image: "/images/products/bottle-gingelly-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed gingelly oil",
+    // Products come from Firestore with their own links, so point at the category.
+    href: "/products?category=gingelly-oil",
     points: [
       "Contains naturally occurring antioxidants such as sesamol",
       "A traditional choice for South Indian cooking",
@@ -52,9 +53,10 @@ const productBenefits = [
   },
   {
     name: "Groundnut Oil (Peanut Oil)",
-    image: "/images/product-groundnut.webp",
-    alt: "RESHMAM groundnut oil with groundnuts",
-    href: "/products/groundnut-oil",
+    image: "/images/products/bottle-groundnut-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed groundnut oil",
+    // Products come from Firestore with their own links, so point at the category.
+    href: "/products?category=groundnut-oil",
     points: [
       "Contains unsaturated fats",
       "Mild flavour suited to everyday cooking",
@@ -63,9 +65,10 @@ const productBenefits = [
   },
   {
     name: "Coconut Oil",
-    image: "/images/product-coconut.webp",
-    alt: "RESHMAM coconut oil with a split coconut",
-    href: "/products/coconut-oil",
+    image: "/images/products/bottle-coconut-1l.webp",
+    alt: "Bottle of RESHMAM cold pressed coconut oil",
+    // Products come from Firestore with their own links, so point at the category.
+    href: "/products?category=coconut-oil",
     points: [
       "Suited to cooking and baking",
       "Distinctive natural aroma and flavour",
@@ -159,7 +162,7 @@ export default function HealthBenefitsPage() {
                   alt={p.alt}
                   width={464}
                   height={320}
-                  className="aspect-[29/20] w-full object-cover"
+                  className="aspect-[29/20] w-full bg-white object-contain p-4"
                 />
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="font-serif text-xl font-bold text-forest-800">
