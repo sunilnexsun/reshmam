@@ -33,7 +33,7 @@ Without credentials the full storefront works (browsing, filters, variants, sear
 
 ## Pages
 
-`/` Home · `/products` (filters via `?category=`, search via `?q=`) · `/products/[slug]` · `/new-arrivals` · `/our-story` · `/health-benefits` · `/blog`, `/blog/[slug]` · `/contact` (`?subject=bulk-orders` preselects) · `/cart` · `/checkout` · `/checkout/confirmation` · `/wishlist` · `/account` · `/track-order` · `/faq` · `/shipping-delivery` · `/returns-refund-policy` · `/privacy-policy` · `/terms-conditions` · `/cancellation-policy` · `sitemap.xml` · `robots.txt`
+`/` Home · `/products` (filters via `?category=`, search via `?q=`) · `/products/[slug]` · `/our-story` · `/health-benefits` · `/blog`, `/blog/[slug]` · `/contact` (`?subject=bulk-orders` preselects) · `/cart` · `/checkout` · `/checkout/confirmation` · `/wishlist` · `/account` · `/track-order` · `/faq` · `/shipping-delivery` · `/returns-refund-policy` · `/privacy-policy` · `/terms-conditions` · `/cancellation-policy` · `sitemap.xml` · `robots.txt`
 
 ## Footer
 

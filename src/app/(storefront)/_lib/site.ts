@@ -124,7 +124,6 @@ export const footerQuickLinks = [
   { href: "/", label: "Home" },
   { href: "/our-story", label: "About Us" },
   { href: "/products", label: "Shop" },
-  { href: "/new-arrivals", label: "New Arrivals" },
   { href: "/contact", label: "Contact Us" },
 ] as const;
 
