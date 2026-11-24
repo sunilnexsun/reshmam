@@ -77,9 +77,9 @@ export async function fetchDynamicProductBySlug(slug: string): Promise<Product |
     all.find(
       (p) =>
         p.slug.toLowerCase() === clean ||
-        (p as any).id?.toLowerCase() === clean ||
+        p.id?.toLowerCase() === clean ||
         p.slug.toLowerCase() === clean.replace(/^p_cf_/, "").replace(/^p_rs_/, "") ||
-        (p as any).id?.toLowerCase() === "p_" + clean.replace(/-/g, "_")
+        p.id?.toLowerCase() === "p_" + clean.replace(/-/g, "_")
     ) ?? null
   );
 }

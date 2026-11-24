@@ -73,7 +73,7 @@ export async function createOrder(
     items: pricing.lines.map((l) => ({
       name: l.productName,
       price: l.unitPrice,
-      productId: (l as any).productId || l.productSlug || "",
+      productId: l.productSlug || "",
       qty: l.quantity,
       size: l.variantLabel,
       subtotal: l.lineTotal,
@@ -245,7 +245,46 @@ export async function recordPaymentIssue(_dummyDb: unknown, issue: PaymentIssue)
 
 export const ORDER_VIEW_COLUMNS = "*";
 
-export function orderCustomer(row: Record<string, any>) {
+/** One item as stored on an order document (older and newer field names). */
+export type OrderRowItem = {
+  product_name?: string;
+  name?: string;
+  variant_label?: string;
+  size?: string;
+  quantity?: number;
+  qty?: number;
+  line_total?: number;
+  total?: number;
+};
+
+/** An order document from Firestore. Field names vary between the storefront and the admin panel. */
+export type OrderRow = {
+  id?: string;
+  customer?: { name?: string; email?: string; phone?: string };
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  order_number?: string;
+  number?: string;
+  status?: string;
+  payment_method?: string;
+  paymentMethod?: string;
+  payment_status?: string;
+  paymentStatus?: string;
+  subtotal_inr?: number;
+  subtotal?: number;
+  shipping_inr?: number;
+  shipping?: number;
+  total_inr?: number;
+  total?: number;
+  created_at?: string;
+  createdAt?: string;
+  access_token?: string;
+  accessToken?: string;
+  items?: OrderRowItem[];
+};
+
+export function orderCustomer(row: OrderRow) {
   if (row.customer && typeof row.customer === "object") return row.customer;
   return {
     name: row.customerName || "",
@@ -254,7 +293,7 @@ export function orderCustomer(row: Record<string, any>) {
   };
 }
 
-export function toOrderView(row: Record<string, any>) {
+export function toOrderView(row: OrderRow) {
   const cust = orderCustomer(row);
   return {
     orderNumber: row.order_number || row.number,
@@ -266,7 +305,7 @@ export function toOrderView(row: Record<string, any>) {
     total: Number(row.total_inr || row.total || 0),
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
     customerName: cust.name,
-    items: (row.items || []).map((item: any) => ({
+    items: (row.items || []).map((item) => ({
       product_name: item.product_name || item.name || "Product",
       variant_label: item.variant_label || item.size || "Standard",
       quantity: item.quantity || item.qty || 1,

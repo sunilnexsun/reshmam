@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@storefront/_lib/server/integrations";
-import { orderCustomer, safeEqual, toOrderView } from "@storefront/_lib/server/orders";
+import { orderCustomer, safeEqual, toOrderView, type OrderRow } from "@storefront/_lib/server/orders";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const num = q.orderNumber.trim().toUpperCase();
 
   try {
-    let order: any = null;
+    let order: OrderRow | null = null;
 
     // 1. Try finding by order_number
     let snap = await getDocs(query(collection(db, "orders"), where("order_number", "==", num)));

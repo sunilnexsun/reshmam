@@ -22,7 +22,7 @@ export function WishlistView() {
       .catch(() => {});
   }, []);
 
-  const saved = allProducts.filter((p) => slugs.includes(p.slug) || ((p as any).id && slugs.includes((p as any).id)));
+  const saved = allProducts.filter((p) => slugs.includes(p.slug) || (p.id && slugs.includes(p.id)));
 
   if (!saved.length) {
     return (
