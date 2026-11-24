@@ -28,17 +28,10 @@ describe("proxy", () => {
     expect(rewritesTo404("/blog/%E0")).toBe(true);
   });
 
-  it("serves the admin demo in production unless DISABLE_ADMIN_DEMO=1", () => {
+  it("always serves the admin panel (it has real sign-in now), even with the old DISABLE_ADMIN_DEMO=1", () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DISABLE_ADMIN_DEMO", "1");
     expect(rewritesTo404("/admin")).toBe(false);
     expect(rewritesTo404("/admin/orders")).toBe(false);
-    vi.stubEnv("DISABLE_ADMIN_DEMO", "1");
-    expect(rewritesTo404("/admin")).toBe(true);
-    expect(rewritesTo404("/admin/orders")).toBe(true);
-  });
-
-  it("keeps the admin available outside production", () => {
-    vi.stubEnv("NODE_ENV", "development");
-    expect(rewritesTo404("/admin")).toBe(false);
   });
 });

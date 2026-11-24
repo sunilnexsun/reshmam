@@ -8,7 +8,7 @@ import { orderGst } from './gst'
 import { issueInvoice, withIssuedInvoices } from './invoice'
 import { normSize, variantSku } from '@admin/products/productUtils'
 import { uid } from './format'
-import { saveDocument, deleteDocument, batchFirestore, subscribeCollection, getPendingWrites, getWriteVersion, db as firestore } from './firebase'
+import { saveDocument, deleteDocument, batchFirestore, subscribeCollection, getPendingWrites, getWriteVersion, authHeader, db as firestore } from './firebase'
 import { collection, getDocs } from 'firebase/firestore'
 
 const KEY = 'reshmam-admin-v1'
@@ -216,7 +216,7 @@ export async function fetchAllFromFirestore() {
 
   // 1. Fetch via server-side proxy API (bypasses browser ad-blockers and streaming errors)
   try {
-    const res = await fetch('/api/admin/firestore', { cache: 'no-store' })
+    const res = await fetch('/api/admin/firestore', { cache: 'no-store', headers: await authHeader() })
     if (res.ok) {
       const json = await res.json()
       if (json.ok && json.data) {

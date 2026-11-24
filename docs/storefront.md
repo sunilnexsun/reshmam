@@ -137,7 +137,7 @@ supabase/
 
 Any Node host that runs Next.js 16 (Vercel recommended). Set the environment variables from `.env.example` **before building** — the `NEXT_PUBLIC_*` values and the security headers (CSP) are fixed at build time. Set `NEXT_PUBLIC_SITE_URL` to the live domain (a production build without it uses `https://www.reshmam.com`). Node ≥ 20.9.
 
-The admin panel at `/admin` is a demo with browser-only sign-in until it is connected to Supabase Auth. It is served by default; set `DISABLE_ADMIN_DEMO=1` to answer it with a 404 on the public site.
+The admin panel at `/admin` is for staff only: they sign in with Firebase Auth, and the admin API and Firestore rules refuse everyone else (see `docs/admin.md`).
 
 ## Credentials still required
 

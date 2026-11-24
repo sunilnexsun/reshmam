@@ -28,6 +28,13 @@ try {
 export const db = firestoreInstance
 export const storage = getStorage(app)
 
+/** Authorization header carrying the signed-in staff member's Firebase ID token ({} when signed out). */
+export async function authHeader() {
+  const user = auth.currentUser
+  if (!user) return {}
+  return { Authorization: `Bearer ${await user.getIdToken()}` }
+}
+
 /**
  * Validates and uploads an image file directly to Firebase Storage.
  * @param {File} file
@@ -154,7 +161,7 @@ function enqueueDocWrite(key, task) {
 async function postToProxy(payload) {
   const res = await fetch('/api/admin/firestore', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
     body: JSON.stringify(payload),
   })
   const json = await res.json().catch(() => ({}))

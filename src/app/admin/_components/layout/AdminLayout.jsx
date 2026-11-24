@@ -13,7 +13,7 @@ import { NAV } from './navigation'
 const COLLAPSE_KEY = 'reshmam-admin-sidebar'
 
 export function AdminLayout({ children }) {
-  const { user, can } = useAuth()
+  const { user, can, ready } = useAuth()
   const saveFailed = useSaveFailed()
   const { pathname, search } = useLocation()
   const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false } })
@@ -21,6 +21,7 @@ export function AdminLayout({ children }) {
   useEffect(() => { try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0') } catch { /* ignore */ } }, [collapsed])
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
+  if (!ready) return <div className="flex min-h-screen items-center justify-center text-sm text-muted" role="status">Loading…</div>
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(pathname + search)}`} replace />
   const nav = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to)))
   const personalSettings = pathname === '/settings' && /[?&]tab=(profile|password)\b/.test(search)

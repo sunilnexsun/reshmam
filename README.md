@@ -186,7 +186,6 @@ Never commit `.env.local` or any real secret.
 - [ ] Create the Supabase project, apply the migrations and run the seed
 - [ ] Add the Razorpay keys and webhook — events `payment.captured`, `order.paid`, `payment.failed` (test first, then live)
 - [ ] Set every variable from `.env.example` **before** `npm run build` (the `NEXT_PUBLIC_*` values and the security headers are fixed at build time)
-- [ ] Decide whether the public site should hide the admin demo (`DISABLE_ADMIN_DEMO=1` answers `/admin` with a 404); it is served by default
 - [ ] Set up Resend with a verified sending domain
 - [ ] Replace the provisional images in `public/images/` with real, licensed photos
 - [ ] Replace the sample testimonials and blog posts, and confirm the placeholder prices and stock
