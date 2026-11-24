@@ -32,26 +32,29 @@ const store = vi.hoisted(() => ({
   orders: [] as Record<string, unknown>[],
   updates: [] as { path: string; value: unknown }[],
 }));
-vi.mock("@/lib/firebase", () => ({ db: {} }));
-vi.mock("firebase/firestore", () => {
-  type Cond = { field: string; value: unknown };
-  const snap = (o: Record<string, unknown> | undefined, id: string) => ({ id, exists: () => Boolean(o), data: () => o });
-  return {
-    collection: (_db: unknown, name: string) => ({ name }),
-    where: (field: string, _op: string, value: unknown) => ({ field, value }),
-    query: (col: unknown, ...conds: Cond[]) => ({ col, conds }),
-    getDocs: async (q: { conds: Cond[] }) => {
-      const docs = store.orders
-        .filter((o) => q.conds.every((c) => o[c.field] === c.value))
-        .map((o) => snap(o, String(o.id)));
+// The order routes use the Firebase Admin SDK: a small stand-in over `store`, plus ID tokens by name.
+const idTokens: Record<string, { uid: string; phone_number?: string }> = {
+  "good-token": { uid: "u1", phone_number: "+919999999999" },
+};
+vi.mock("@/lib/firebase-admin", () => {
+  type Row = Record<string, unknown>;
+  const snap = (o: Row | undefined, id: string) => ({ id, exists: Boolean(o), data: () => o });
+  const query = (conds: [string, unknown][]) => ({
+    where: (field: string, _op: string, value: unknown) => query([...conds, [field, value]]),
+    limit: () => query(conds),
+    get: async () => {
+      const docs = store.orders.filter((o) => conds.every(([f, v]) => o[f] === v)).map((o) => snap(o, String(o.id)));
       return { empty: docs.length === 0, docs };
     },
-    doc: (_db: unknown, col: string, id: string) => ({ col, id }),
-    getDoc: async (ref: { id: string }) => snap(store.orders.find((o) => o.id === ref.id), ref.id),
-    setDoc: async () => {},
-    updateDoc: async (ref: { col: string; id: string }, value: unknown) => {
-      store.updates.push({ path: `${ref.col}/${ref.id}`, value });
-    },
+  });
+  const docRef = (col: string, id: string) => ({
+    get: async () => snap(col === "orders" ? store.orders.find((o) => o.id === id) : undefined, id),
+    update: async (value: unknown) => void store.updates.push({ path: `${col}/${id}`, value }),
+    set: async (value: unknown) => void store.updates.push({ path: `${col}/${id}`, value }),
+  });
+  return {
+    adminDb: () => ({ collection: (col: string) => ({ ...query([]), doc: (id: string) => docRef(col, id) }) }),
+    verifyIdToken: async (req: Request) => idTokens[req.headers.get("authorization")?.replace(/^Bearer /, "") ?? ""] ?? null,
   };
 });
 const cashfree = vi.hoisted(() => ({ createCashfreeOrder: vi.fn() }));
@@ -124,7 +127,7 @@ describe("POST /api/payments/razorpay/verify", () => {
     payment("captured");
     const res = await verify(post(body()));
     expect(res.status).toBe(200);
-    expect(orderFns.markOrderPaid).toHaveBeenCalledWith(db, "order-uuid", "pay_123");
+    expect(orderFns.markOrderPaid).toHaveBeenCalledWith("order-uuid", "pay_123");
   });
   it("leaves an authorized (not yet captured) payment for the webhook", async () => {
     results.orders = { data: order, error: null };
@@ -160,17 +163,17 @@ describe("POST /api/payments/razorpay/webhook", () => {
     results.orders = { data: { id: "order-uuid", total_inr: 600 }, error: null };
     await send(event("payment.captured", 100));
     expect(orderFns.markOrderPaid).not.toHaveBeenCalled();
-    expect(orderFns.recordPaymentIssue).toHaveBeenCalledWith(db, expect.objectContaining({ kind: "amount_mismatch", orderId: "order-uuid" }));
+    expect(orderFns.recordPaymentIssue).toHaveBeenCalledWith(expect.objectContaining({ kind: "amount_mismatch", orderId: "order-uuid" }));
   });
   it("records a payment for an unknown order", async () => {
     results.orders = { data: null, error: null };
     expect((await send(event("payment.captured"))).status).toBe(200);
-    expect(orderFns.recordPaymentIssue).toHaveBeenCalledWith(db, expect.objectContaining({ kind: "unknown_order", razorpayOrderId: "order_123" }));
+    expect(orderFns.recordPaymentIssue).toHaveBeenCalledWith(expect.objectContaining({ kind: "unknown_order", razorpayOrderId: "order_123" }));
   });
   it("marks the order failed on payment.failed", async () => {
     results.orders = { data: { id: "order-uuid", total_inr: 600 }, error: null };
     await send(event("payment.failed"));
-    expect(orderFns.markOrderFailed).toHaveBeenCalledWith(db, "order-uuid");
+    expect(orderFns.markOrderFailed).toHaveBeenCalledWith("order-uuid");
     expect(orderFns.markOrderPaid).not.toHaveBeenCalled();
   });
 });
@@ -237,8 +240,21 @@ describe("POST /api/checkout", () => {
   it("places a cash-on-delivery order priced from the database", async () => {
     const res = await checkout(post(order("cod")));
     expect(res.status).toBe(200);
-    const pricing = orderFns.createOrder.mock.calls[0][2] as { subtotal: number };
+    const pricing = orderFns.createOrder.mock.calls[0][1] as { subtotal: number };
     expect(pricing.subtotal).toBe(1200); // 2 × the live price of 600, not the catalogue's 999
+  });
+  it("places a guest order when no one is signed in", async () => {
+    await checkout(post(order("cod")));
+    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: null });
+  });
+  it("links the order to a signed-in customer, using the verified phone over the form's", async () => {
+    await checkout(post(order("cod"), { authorization: "Bearer good-token" }));
+    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: { uid: "u1", phone: "+919999999999" } });
+  });
+  it("treats an expired or forged token as a guest order, not an error", async () => {
+    const res = await checkout(post(order("cod"), { authorization: "Bearer forged" }));
+    expect(res.status).toBe(200);
+    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: null });
   });
   it("refuses more than the database has in stock", async () => {
     const res = await checkout(post({ ...order("cod"), items: [{ variantId: "GIN-1L", quantity: 21 }] }));
@@ -258,13 +274,13 @@ describe("POST /api/checkout", () => {
     cashfree.createCashfreeOrder.mockRejectedValue(new Error("Cashfree is down"));
     const res = await checkout(post(order("online")));
     expect(res.status).toBe(502);
-    expect(orderFns.markOrderFailed).toHaveBeenCalledWith(null, "order-uuid");
+    expect(orderFns.markOrderFailed).toHaveBeenCalledWith("order-uuid");
   });
   it("falls back to Razorpay without Cashfree, and marks the order failed when Razorpay can't be reached", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
     const res = await checkout(post(order("online")));
     expect(res.status).toBe(502);
-    expect(orderFns.markOrderFailed).toHaveBeenCalledWith(null, "order-uuid");
+    expect(orderFns.markOrderFailed).toHaveBeenCalledWith("order-uuid");
   });
   it("links the Razorpay order and returns it for an online payment", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ id: "order_rzp_1", amount: 120000, currency: "INR" })));

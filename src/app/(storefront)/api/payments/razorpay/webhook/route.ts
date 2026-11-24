@@ -36,17 +36,17 @@ export async function POST(req: Request) {
 
   if (!order) {
     if (captured) {
-      await recordPaymentIssue(db, { kind: "unknown_order", razorpayPaymentId: payment.id, razorpayOrderId: payment.order_id, amountPaise: payment.amount });
+      await recordPaymentIssue({ kind: "unknown_order", razorpayPaymentId: payment.id, razorpayOrderId: payment.order_id, amountPaise: payment.amount });
     }
     return NextResponse.json({ ok: true });
   }
 
   if (event.event === "payment.failed") {
-    await markOrderFailed(db, order.id);
+    await markOrderFailed(order.id);
   } else if (payment.amount !== order.total_inr * 100) {
-    await recordPaymentIssue(db, { kind: "amount_mismatch", razorpayPaymentId: payment.id, razorpayOrderId: payment.order_id, orderId: order.id, amountPaise: payment.amount });
+    await recordPaymentIssue({ kind: "amount_mismatch", razorpayPaymentId: payment.id, razorpayOrderId: payment.order_id, orderId: order.id, amountPaise: payment.amount });
   } else {
-    await markOrderPaid(db, order.id, payment.id);
+    await markOrderPaid(order.id, payment.id);
   }
   return NextResponse.json({ ok: true });
 }
