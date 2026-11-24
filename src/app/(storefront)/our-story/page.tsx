@@ -13,6 +13,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
+import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { VideoPlayer, VideoSection } from "@storefront/_components/sections/VideoSection";
 import {
   ImageCardGrid,
@@ -27,38 +28,48 @@ import {
   SectionHeading,
 } from "@storefront/_components/ui/primitives";
 import { LeafOutline, LeafSprig } from "@storefront/_components/ui/decor";
-import { site } from "@storefront/_lib/site";
+import { openGraphBase, site } from "@storefront/_lib/site";
 
 export const metadata: Metadata = {
   title: "Our Story",
   description:
     "Rooted in tradition, nourishing generations. Learn how RESHMAM brings traditionally extracted wooden chekku cold-pressed oils to your home.",
   alternates: { canonical: "/our-story" },
-  openGraph: { url: "/our-story", images: ["/images/story-hero.webp"] },
+  openGraph: { ...openGraphBase, url: "/our-story", images: ["/images/story-banner.webp"] },
 };
 
 export default function OurStoryPage() {
   return (
     <>
-      <PageHero
+      <BannerHero
+        src="/images/story-banner.webp"
+        width={1600}
+        height={605}
+        alt="A smiling oil maker pours cold pressed oil into a bottle beside a wooden chekku press, with seeds, palms and a bullock"
         eyebrow="Our Story"
-        title={
-          <>
-            Rooted in Tradition, <br className="hidden sm:block" />
-            <Gold>Nourishing Generations.</Gold>
-          </>
+        title="Rooted in Tradition, Nourishing Generations."
+        description="At RESHMAM, we bring you the goodness of traditionally extracted cold-pressed oils, crafted with care, purity, and a deep respect for nature."
+        fallback={
+          <PageHero
+            eyebrow="Our Story"
+            title={
+              <>
+                Rooted in Tradition, <br className="hidden sm:block" />
+                <Gold>Nourishing Generations.</Gold>
+              </>
+            }
+            description={
+              <p>
+                At RESHMAM, we bring you the goodness of traditionally extracted
+                cold-pressed oils, crafted with care, purity and a deep respect for
+                nature.
+              </p>
+            }
+            image="/images/story-banner-mobile.webp"
+            imageAlt="A smiling oil maker pours cold pressed oil into a bottle beside a wooden chekku press, with seeds, palms and a bullock"
+            size="lg"
+          />
         }
-        description={
-          <p>
-            At RESHMAM, we bring you the goodness of traditionally extracted
-            cold-pressed oils, made with care, purity and a deep respect for
-            nature.
-          </p>
-        }
-        image="/images/story-hero.webp"
-        imageAlt="Wooden chekku oil press with sesame seeds, surrounded by greenery"
-        script="Pure by Tradition, Made for Tomorrow"
-        size="lg"
       />
 
       <div className="relative overflow-hidden bg-paper">
