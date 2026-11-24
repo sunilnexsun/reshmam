@@ -13,12 +13,15 @@ import { ButtonLink, cn } from "@storefront/_components/ui/primitives";
 
 type Status = { ordering: boolean; onlinePayments: boolean } | null;
 
+/** The part of the Cashfree JS SDK this form uses. */
+type CashfreeInstance = {
+  checkout: (opts: { paymentSessionId: string; redirectTarget?: "_self" | "_blank" | "_top" }) => Promise<unknown>;
+};
+
 declare global {
   interface Window {
-    Cashfree?: (opts: { mode: "sandbox" | "production" }) => {
-      checkout: (opts: { paymentSessionId: string; redirectTarget?: "_self" | "_blank" | "_top" }) => Promise<any>;
-    };
-    loadCashfree?: (opts: { mode: "sandbox" | "production" }) => Promise<any>;
+    Cashfree?: (opts: { mode: "sandbox" | "production" }) => CashfreeInstance;
+    loadCashfree?: (opts: { mode: "sandbox" | "production" }) => Promise<CashfreeInstance>;
     Razorpay?: new (opts: Record<string, unknown>) => { open: () => void; on: (e: string, cb: (r: unknown) => void) => void };
   }
 }
@@ -177,7 +180,7 @@ export function CheckoutForm() {
         }
 
         try {
-          let cfInstance: any;
+          let cfInstance: CashfreeInstance | undefined;
           if (typeof window.loadCashfree === "function") {
             cfInstance = await window.loadCashfree({ mode: data.cashfree.mode });
           } else if (window.Cashfree) {
@@ -191,7 +194,7 @@ export function CheckoutForm() {
             });
             return;
           }
-        } catch (cfErr: any) {
+        } catch (cfErr) {
           console.error("Cashfree checkout execution error:", cfErr);
           setError("Could not launch Cashfree payment. Please try again or choose Cash on Delivery.");
           setBusy(false);

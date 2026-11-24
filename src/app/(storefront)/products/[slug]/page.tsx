@@ -73,7 +73,7 @@ export default async function ProductPage({
     description: product.summary,
     brand: {
       "@type": "Brand",
-      name: (product as any).brand || "RESHMAM",
+      name: product.brand || "RESHMAM",
     },
     category: category?.name,
     offers: product.variants.map((v) => ({

@@ -67,6 +67,14 @@ function fakeSupabase() {
   };
 }
 
+// The code catalogue is empty now that products live in Firestore, so the sync's known-product check gets a
+// small catalogue here. Wishlist slugs outside it are still dropped, as the database would reject them.
+vi.mock("@storefront/_lib/products", async (orig) => {
+  const actual = await orig<typeof import("@storefront/_lib/products")>();
+  const product = (slug: string) => ({ ...({} as import("@storefront/_lib/products").Product), slug });
+  return { ...actual, products: [product("gingelly-oil"), product("coconut-oil")] };
+});
+
 // The stores and the sync use `window` and `document`, which Node doesn't have.
 const doc = Object.assign(new EventTarget(), { visibilityState: "visible" });
 beforeAll(() => {

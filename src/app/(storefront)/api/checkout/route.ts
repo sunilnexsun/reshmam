@@ -93,13 +93,13 @@ export async function POST(req: Request) {
             mode: cf.env,
           },
         });
-      } catch (cfErr: any) {
+      } catch (cfErr) {
         console.error("Cashfree order creation error:", cfErr);
         await markOrderFailed(null, order.id);
         return NextResponse.json(
           {
             ok: false,
-            error: cfErr?.message || "We couldn't initiate Cashfree payment. Please try again or choose Cash on Delivery.",
+            error: (cfErr instanceof Error && cfErr.message) || "We couldn't initiate Cashfree payment. Please try again or choose Cash on Delivery.",
           },
           { status: 502 }
         );

@@ -16,11 +16,16 @@ describe("proxy", () => {
   const rewritesTo404 = (path: string) =>
     proxy(new NextRequest(`https://www.reshmam.com${path}`)).headers.get("x-middleware-rewrite")?.endsWith("/__not-found") ?? false;
 
-  it("returns 404 for unknown or malformed product and blog slugs", () => {
+  it("lets any product slug through to the page, which looks it up in Firestore", () => {
     expect(rewritesTo404("/products/gingelly-oil")).toBe(false);
-    expect(rewritesTo404("/products/no-such-oil")).toBe(true);
+    expect(rewritesTo404("/products/mwp4imchxuzgq")).toBe(false);
+  });
+
+  it("returns 404 for malformed product paths and unknown or malformed blog slugs", () => {
     expect(rewritesTo404("/products/%E0")).toBe(true);
     expect(rewritesTo404("/products/gingelly-oil/extra")).toBe(true);
+    expect(rewritesTo404("/blog/no-such-post")).toBe(true);
+    expect(rewritesTo404("/blog/%E0")).toBe(true);
   });
 
   it("serves the admin demo in production unless DISABLE_ADMIN_DEMO=1", () => {

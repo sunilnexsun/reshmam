@@ -161,7 +161,7 @@ export function ProductCatalog({
 
   const list = q
     ? allProducts.filter((p) =>
-        [p.name, p.shortName, p.summary, p.category, (p as any).brand || ""].join(" ").toLowerCase().includes(q.toLowerCase())
+        [p.name, p.shortName, p.summary, p.category, p.brand || ""].join(" ").toLowerCase().includes(q.toLowerCase())
       )
     : allProducts.filter(
         (p) =>
