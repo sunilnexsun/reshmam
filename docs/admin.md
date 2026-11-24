@@ -27,6 +27,9 @@ role may see and change is set in **Settings → Roles** and enforced by the Fir
 password. "Forgot Password?" on the login screen sends Firebase's reset email. Passwords are never stored in
 Firestore or the browser.
 
+Staff created before this change (with passwords in Firestore) are moved over once by
+`scripts/migrate-admin-users.mjs`; see [`firebase-go-live.md`](firebase-go-live.md) step 4.
+
 Settings → Danger zone → **Reset demo data** restores the original sample data.
 
 If the browser's storage fills up (images are stored in it), changes can no longer be saved: a red banner

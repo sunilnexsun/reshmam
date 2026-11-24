@@ -5,7 +5,7 @@ the admin panel (`/admin`, see [admin.md](admin.md)); this guide covers the stor
 `@storefront/…` for this folder, e.g. `import { site } from "@storefront/_lib/site"`.
 *Pure Oils. Brighter Days.*
 
-**Stack:** Next.js 16 (App Router, TypeScript, Cache Components) · React 19 · Tailwind CSS 4 · Lucide icons · Zod · Supabase (optional) · Razorpay (optional) · Resend (optional). Fonts are self-hosted via Fontsource (Playfair Display + Inter), so no build-time calls to Google Fonts.
+**Stack:** Next.js 16 (App Router, TypeScript, Cache Components) · React 19 · Tailwind CSS 4 · Lucide icons · Zod · Firebase (catalogue, orders, customer accounts) · Supabase (optional) · Razorpay (optional) · Resend (optional). Fonts are self-hosted via Fontsource (Playfair Display + Inter), so no build-time calls to Google Fonts.
 
 ---
 
@@ -27,7 +27,7 @@ Without credentials the full storefront works (browsing, filters, variants, sear
 | Enquiry / bulk forms | Validates, then shows “not connected yet” + phone/email (HTTP 503) | Stored in Supabase and/or emailed via Resend |
 | Checkout | Order review works; “Online ordering coming soon”, button disabled | COD orders placed; online payment via Razorpay |
 | Track order / confirmation | “Not enabled yet” message | Looks up order by number + email (or token) |
-| Account | “Accounts being set up” + quick links | Supabase magic-link sign-in; order history; cart and wishlist saved to the account |
+| Account | Mobile number + SMS code sign-in (Firebase Phone Auth, works out of the box once Phone is enabled in Firebase) | Profile, orders placed while logged in, prefilled checkout, cart and wishlist saved to the account |
 | Cart / wishlist | Kept in this browser | Also saved to the signed-in customer’s account and shared across devices (`_lib/account-sync.ts`) |
 | Our Story videos | Poster + “Video coming soon” label | Set `site.videos.*` in `src/app/(storefront)/_lib/site.ts` |
 
@@ -124,8 +124,9 @@ supabase/
 1. Create a project at supabase.com.
 2. Apply the schema: `supabase link --project-ref <ref> && supabase db push`, or paste `supabase/migrations/*.sql` into the SQL editor.
 3. Load data: run `supabase/seed.sql` in the SQL editor (re-running is safe — it never overwrites live stock).
-4. Copy the project URL, anon key and service-role key into `.env.local`.
-5. Auth → URL configuration: add `https://<your-domain>/account` as a redirect URL for magic links.
+4. Copy the project URL and service-role key into `.env.local`.
+
+Customer accounts use Firebase, not Supabase: see [`firebase-go-live.md`](firebase-go-live.md).
 
 ## Razorpay setup
 
@@ -141,7 +142,8 @@ The admin panel at `/admin` is for staff only: they sign in with Firebase Auth, 
 
 ## Credentials still required
 
-- Supabase project (URL, anon key, service-role key)
+- Firebase service account (`FIREBASE_SERVICE_ACCOUNT`), with Phone and Email/Password sign-in enabled
+- Supabase project (URL, service-role key) for enquiries and the Razorpay webhook
 - Razorpay merchant account (key ID, secret, webhook secret)
 - Resend account + verified sending domain (or swap `sendEmail()` for your SMTP provider)
 - Amazon, Zepto, Swiggy Instamart and JioMart listing URLs and official logo files (`site.marketplaces`), shown in the home page's "Also Available On" section
