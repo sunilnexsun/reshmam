@@ -27,6 +27,10 @@ export async function generateStaticParams() {
   return dynamic.map((p) => ({ slug: p.slug }));
 }
 
+// Product slugs live in Firestore, so unknown slugs must call notFound() before streaming a shell
+// in order to return HTTP 404. That top-level params read/notFound() cannot pass instant validation.
+export const instant = false;
+
 export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {

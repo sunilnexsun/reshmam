@@ -13,11 +13,17 @@ const WRONG_CREDENTIALS = new Set([
   'auth/user-disabled',
 ])
 
-/** The signed-in staff member's record, or null if they aren't active staff. */
-export async function fetchMe() {
+async function requestMe() {
   const res = await fetch('/api/admin/me', { cache: 'no-store', headers: await authHeader() })
   const json = await res.json().catch(() => ({}))
-  return res.ok && json.ok && json.user ? json.user : null
+  const user = res.ok && json.ok && json.user ? json.user : null
+  return { res, json, user }
+}
+
+/** The signed-in staff member's record, or null if they aren't active staff. */
+export async function fetchMe() {
+  const { user } = await requestMe()
+  return user
 }
 
 export async function signInStaff(email, password) {
@@ -28,9 +34,12 @@ export async function signInStaff(email, password) {
     if (e?.code === 'auth/too-many-requests') throw new Error('Too many attempts. Please wait a few minutes and try again.')
     throw new Error('Could not sign in. Check your connection and try again.')
   }
-  const user = await fetchMe()
+  const { res, json, user } = await requestMe()
   if (!user) {
     await signOut(auth).catch(() => {})
+    if (res.status >= 500) {
+      throw new Error(json?.error || `Server error (HTTP ${res.status}) while verifying staff access. Check Vercel logs and Node.js version (22.x).`)
+    }
     throw new Error(NOT_STAFF)
   }
   return user

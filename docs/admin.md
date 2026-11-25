@@ -27,6 +27,10 @@ role may see and change is set in **Settings → Roles** and enforced by the Fir
 password. "Forgot Password?" on the login screen sends Firebase's reset email. Passwords are never stored in
 Firestore or the browser.
 
+**Local demo.** `npm run dev:demo` runs the whole app against the Firebase emulators with the sample data
+and the demo logins (`admin@reshmam.com` / `Admin@123`, `manager@reshmam.com` / `Manager@123`,
+`staff@reshmam.com` / `Staff@123`). They exist only in the emulators on your computer, never on the live site.
+
 Staff created before this change (with passwords in Firestore) are moved over once by
 `scripts/migrate-admin-users.mjs`; see [`firebase-go-live.md`](firebase-go-live.md) step 4.
 

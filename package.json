@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22"
+  },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "^5.9.6"
+    }
   },
   "scripts": {
     "dev": "next dev",
@@ -12,7 +17,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:seed:generate": "node scripts/generate-seed.mts",
-    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-reshmam 'vitest run -c vitest.rules.config.mts'"
+    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-reshmam 'vitest run -c vitest.rules.config.mts'",
+    "dev:demo": "METADATA_SERVER_DETECTION=none firebase emulators:exec --only auth,firestore,storage --project reshmam-oil --ui \"node scripts/seed-demo.mjs && NEXT_PUBLIC_FIREBASE_EMULATORS=1 next dev\""
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
