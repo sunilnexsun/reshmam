@@ -363,9 +363,8 @@ export function startFirestoreSync() {
   })
 }
 
-if (typeof window !== 'undefined' && !globalThis?.process?.env?.VITEST) {
-  startFirestoreSync()
-}
+// The sync starts only once staff have signed in (see _lib/auth.jsx): before that every request is refused,
+// and since it starts only once, an early start would leave signed-in staff without live updates.
 
 // ---------------------------------------------------------------------------
 // Generic collection helpers. `col` is a top-level array key, e.g. 'customers'.
