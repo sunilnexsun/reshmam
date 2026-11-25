@@ -50,6 +50,11 @@ describe('signInStaff', () => {
     await expect(signInStaff('c@x.com', 'pw')).rejects.toThrow('This account is not staff or is inactive.')
     expect(fa.signOut).toHaveBeenCalled()
   })
+  it('reports server errors instead of blaming the staff account', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }))
+    await expect(signInStaff('a@x.com', 'pw')).rejects.toThrow('Server error (HTTP 500)')
+    expect(fa.signOut).toHaveBeenCalled()
+  })
   it('turns a wrong password into a plain message', async () => {
     fa.signInWithEmailAndPassword.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'auth/invalid-credential' }))
     await expect(signInStaff('a@x.com', 'bad')).rejects.toThrow('Invalid email or password.')
