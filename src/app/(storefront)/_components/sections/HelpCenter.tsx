@@ -23,7 +23,7 @@ const groups = [
 /** Left-hand menu shared by the help and policy pages. */
 function HelpNav({ current }: { current: string }) {
   return (
-    <nav aria-label="Help and policies" className="min-w-0 lg:sticky lg:top-28">
+    <nav aria-label="Help and  policies" className="min-w-0 lg:sticky lg:top-28">
       <div className="flex flex-col gap-5 rounded-2xl border border-beige-300/80 bg-white p-3 shadow-card sm:p-4">
         {groups.map((g) => (
           <div key={g.title}>
