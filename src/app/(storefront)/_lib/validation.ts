@@ -61,6 +61,7 @@ export const checkoutSchema = z.object({
     pincode: z.string().trim().regex(/^\d{6}$/, "Please enter a 6-digit PIN code."),
   }),
   paymentMethod: z.enum(["online", "cod"]),
+  couponCode: z.string().trim().max(40).optional(),
   items: z
     .array(z.object({ variantId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(50) }))
     .min(1, "Your cart is empty.")

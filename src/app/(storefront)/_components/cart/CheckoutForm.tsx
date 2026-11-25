@@ -74,6 +74,10 @@ export function CheckoutForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; description: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
   const [testModal, setTestModal] = useState<{ orderId: string; token: string; orderNumber: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   // The unpaid online order from the last attempt. Retrying with the same details reopens its
@@ -89,6 +93,61 @@ export function CheckoutForm() {
       })
       .catch(() => setStatus({ ordering: false, onlinePayments: false }));
   }, []);
+
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    let active = true;
+    fetch("/api/coupons/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: appliedCoupon.code, subtotal }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!active) return;
+        if (data.ok && data.coupon) {
+          setAppliedCoupon(data.coupon);
+          setCouponError(null);
+        } else {
+          setAppliedCoupon(null);
+          setCouponError(data.error || "Coupon is no longer valid for this cart.");
+        }
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, [subtotal]);
+
+  async function applyCoupon() {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter a coupon code.");
+      return;
+    }
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, subtotal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.coupon) {
+        setAppliedCoupon(data.coupon);
+        setCouponInput(data.coupon.code);
+        setCouponError(null);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon code.");
+      }
+    } catch {
+      setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+      setCouponBusy(false);
+    }
+  }
 
   if (!lines.length) {
     return (
@@ -131,6 +190,7 @@ export function CheckoutForm() {
         pincode: g("address.pincode"),
       },
       paymentMethod: method,
+      couponCode: appliedCoupon?.code || undefined,
       items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
     };
     const parsed = checkoutSchema.safeParse(payload);
@@ -407,7 +467,61 @@ export function CheckoutForm() {
         </fieldset>
       </div>
 
-      <OrderSummary subtotal={subtotal} state={state}>
+      <OrderSummary subtotal={subtotal} state={state} discount={appliedCoupon?.discount ?? 0} couponCode={appliedCoupon?.code}>
+        <div className="mt-4 border-t border-beige-300 pt-4">
+          <label htmlFor="coupon-code-input" className="block text-xs font-semibold uppercase tracking-wider text-forest-800">
+            Have a coupon code?
+          </label>
+          {appliedCoupon ? (
+            <div className="mt-2 flex items-center justify-between rounded-md border border-leaf-600/40 bg-leaf-100/70 px-3 py-2 text-xs text-forest-900">
+              <div>
+                <span className="font-bold">{appliedCoupon.code}</span> applied (−{formatINR(appliedCoupon.discount)})
+                {appliedCoupon.description && <p className="text-[11px] text-ink-soft">{appliedCoupon.description}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppliedCoupon(null);
+                  setCouponInput("");
+                  setCouponError(null);
+                }}
+                className="font-semibold text-red-700 hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <input
+                id="coupon-code-input"
+                type="text"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void applyCoupon();
+                  }
+                }}
+                placeholder="Enter code (e.g. FESTIVE5)"
+                className="min-w-0 flex-1 rounded-md border border-beige-300 bg-white px-3 py-2 text-sm uppercase focus:border-forest-800 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={couponBusy}
+                onClick={() => void applyCoupon()}
+                className="rounded-md bg-forest-800 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-950 disabled:opacity-50"
+              >
+                {couponBusy ? "…" : "Apply"}
+              </button>
+            </div>
+          )}
+          {couponError && (
+            <p role="alert" className="mt-1.5 text-xs font-medium text-red-700">
+              {couponError}
+            </p>
+          )}
+        </div>
         <ul className="mt-5 space-y-2 border-t border-beige-300 pt-4 text-sm">
           {lines.map((l) => (
             <li key={l.variantId} className="flex justify-between gap-3">

@@ -4,6 +4,7 @@ import { priceCart } from "@storefront/_lib/pricing";
 import { clientIp, cashfreeConfig, razorpayConfig, rateLimit } from "@storefront/_lib/server/integrations";
 import { fetchLiveVariants, fetchDynamicProducts } from "@storefront/_lib/server/catalogue";
 import { createOrder, markOrderFailed, OutOfStockError } from "@storefront/_lib/server/orders";
+import { validateAndCalculateCoupon } from "@storefront/_lib/server/coupons";
 import { createCashfreeOrder } from "@/lib/cashfree";
 import { verifyIdToken } from "@/lib/firebase-admin";
 import { updateDocData } from "@storefront/_lib/server/firestore-store";
@@ -43,6 +44,27 @@ export async function POST(req: Request) {
     const pricing = priceCart(input.items, input.address.state, { live, products: dynamicProducts });
     if (!pricing.ok) return NextResponse.json({ ok: false, error: pricing.error }, { status: 409 });
 
+    let discount = 0;
+    let couponCode: string | undefined;
+    let couponId: string | undefined;
+
+    if (input.couponCode && input.couponCode.trim()) {
+      const couponRes = await validateAndCalculateCoupon(input.couponCode, pricing.subtotal);
+      if (!couponRes.ok) {
+        return NextResponse.json({ ok: false, error: couponRes.error }, { status: 400 });
+      }
+      discount = couponRes.coupon.discount;
+      couponCode = couponRes.coupon.code;
+      couponId = couponRes.coupon.id;
+    }
+
+    const finalTotal = Math.max(0, pricing.subtotal - discount + pricing.shipping);
+    const finalPricing = {
+      ...pricing,
+      discount,
+      total: finalTotal,
+    };
+
     // A signed-in customer (valid Firebase ID token with a verified phone) gets the order on their account;
     // anything else, including an expired or forged token, is a guest order.
     const token = await verifyIdToken(req);
@@ -50,11 +72,13 @@ export async function POST(req: Request) {
 
     const order = await createOrder(
       input,
-      pricing,
+      finalPricing,
       {
         customer,
         branchId: "br_rs",
         paymentMethod: input.paymentMethod === "cod" ? "Cash on Delivery" : cf ? "UPI (Cashfree)" : "UPI (Razorpay)",
+        couponCode,
+        couponId,
       }
     );
 
@@ -71,7 +95,7 @@ export async function POST(req: Request) {
         const cfOrder = await createCashfreeOrder({
           orderId: order.id,
           orderNumber: order.orderNumber,
-          amount: pricing.total,
+          amount: finalTotal,
           customer: {
             id: order.id,
             name: input.customer.name,
@@ -121,7 +145,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: pricing.total * 100,
+          amount: finalTotal * 100,
           currency: "INR",
           receipt: order.orderNumber,
           notes: { order_id: order.id },

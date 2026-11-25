@@ -7,6 +7,7 @@ import {
   setDocData,
   updateDocData,
 } from "@storefront/_lib/server/firestore-store";
+import { incrementCouponUsage } from "@storefront/_lib/server/coupons";
 
 /** The date part of an order number, in India time. */
 const IST_DATE = new Intl.DateTimeFormat("en-CA", {
@@ -54,7 +55,7 @@ export type OrderCustomer = { uid: string; phone: string };
 export async function createOrder(
   input: CheckoutInput,
   pricing: { lines: PricedLine[]; subtotal: number; shipping: number; total: number; discount?: number; tax?: number },
-  options: { paymentMethod?: string; branchId?: string; customer?: OrderCustomer | null } = {}
+  options: { paymentMethod?: string; branchId?: string; customer?: OrderCustomer | null; couponCode?: string; couponId?: string } = {}
 ) {
   const orderNumber = newOrderNumber();
   const accessToken = newAccessToken();
@@ -77,6 +78,7 @@ export async function createOrder(
     customerName: input.customer.name,
     customerPhone: customer?.phone ?? input.customer.phone,
     discount,
+    ...(options.couponCode ? { couponCode: options.couponCode } : {}),
     id,
     items: pricing.lines.map((l) => ({
       name: l.productName,
@@ -117,6 +119,10 @@ export async function createOrder(
   };
 
   await setDocData("orders", id, orderDoc);
+
+  if (options.couponId) {
+    await incrementCouponUsage(options.couponId);
+  }
 
   // Stock deduction in Firestore variants
   for (const line of pricing.lines) {

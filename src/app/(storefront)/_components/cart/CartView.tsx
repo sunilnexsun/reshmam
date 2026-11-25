@@ -13,14 +13,19 @@ import { ButtonLink } from "@storefront/_components/ui/primitives";
 export function OrderSummary({
   subtotal,
   state,
+  discount = 0,
+  couponCode,
   children,
 }: {
   subtotal: number;
   state?: string;
+  discount?: number;
+  couponCode?: string;
   children?: React.ReactNode;
 }) {
   const shipping = shippingFee(subtotal, state);
   const remaining = site.shipping.freeThreshold - subtotal;
+  const total = Math.max(0, subtotal - discount + shipping);
   return (
     <aside aria-label="Order summary" className="h-fit rounded-xl border border-beige-300/80 bg-white p-6 shadow-card lg:sticky lg:top-28">
       <h2 className="font-serif text-2xl font-bold text-forest-800">Order Summary</h2>
@@ -29,13 +34,19 @@ export function OrderSummary({
           <dt className="text-ink-soft">Subtotal</dt>
           <dd className="font-medium">{formatINR(subtotal)}</dd>
         </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-leaf-600 font-medium">
+            <dt>Coupon {couponCode ? `(${couponCode})` : ""}</dt>
+            <dd>−{formatINR(discount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt className="text-ink-soft">Delivery {state ? `(${state})` : "(Tamil Nadu)"}</dt>
           <dd className="font-medium">{shipping === 0 ? "Free" : formatINR(shipping)}</dd>
         </div>
         <div className="flex justify-between border-t border-beige-300 pt-3 text-base">
           <dt className="font-semibold">Total</dt>
-          <dd className="font-bold">{formatINR(subtotal + shipping)}</dd>
+          <dd className="font-bold">{formatINR(total)}</dd>
         </div>
       </dl>
       {(!state || state === site.shipping.homeState) && remaining > 0 && subtotal > 0 && (

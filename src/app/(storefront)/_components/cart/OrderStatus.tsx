@@ -15,6 +15,8 @@ export type OrderView = {
   paymentMethod: "online" | "cod";
   paymentStatus: string;
   subtotal: number;
+  discount?: number;
+  couponCode?: string;
   shipping: number;
   total: number;
   createdAt: string;
@@ -90,6 +92,12 @@ export function OrderDetails({ order }: { order: OrderView }) {
       </ul>
       <dl className="mt-3 space-y-1 text-sm">
         <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
+        {(order.discount ?? 0) > 0 && (
+          <div className="flex justify-between text-leaf-600 font-medium">
+            <dt>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</dt>
+            <dd>−{formatINR(order.discount!)}</dd>
+          </div>
+        )}
         <div className="flex justify-between"><dt>Delivery</dt><dd>{order.shipping ? formatINR(order.shipping) : "Free"}</dd></div>
         <div className="flex justify-between font-bold"><dt>Total</dt><dd>{formatINR(order.total)}</dd></div>
       </dl>

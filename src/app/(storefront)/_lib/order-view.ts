@@ -31,6 +31,8 @@ export type OrderRow = {
   paymentStatus?: string;
   subtotal_inr?: number;
   subtotal?: number;
+  discount?: number;
+  couponCode?: string;
   shipping_inr?: number;
   shipping?: number;
   total_inr?: number;
@@ -59,6 +61,8 @@ export function toOrderView(row: OrderRow) {
     paymentMethod: row.payment_method || row.paymentMethod || "Cash on Delivery",
     paymentStatus: row.payment_status || row.paymentStatus || "Pending",
     subtotal: Number(row.subtotal_inr || row.subtotal || 0),
+    discount: Number(row.discount || 0),
+    couponCode: row.couponCode || undefined,
     shipping: Number(row.shipping_inr || row.shipping || 0),
     total: Number(row.total_inr || row.total || 0),
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
