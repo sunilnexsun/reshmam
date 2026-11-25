@@ -1,7 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { initializeFirestore, getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore'
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { connectAuthEmulator, getAuth } from 'firebase/auth'
+import { connectFirestoreEmulator, initializeFirestore, getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { connectStorageEmulator, getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDWfC3Z-5nYzmDKIoLRwRCAkCQhIKQH8LI",
@@ -27,6 +27,18 @@ try {
 }
 export const db = firestoreInstance
 export const storage = getStorage(app)
+
+/**
+ * Local demo (`npm run dev:demo`): sign-in, data and uploads use the Firebase emulators on this computer, where
+ * the sample staff logins (admin@reshmam.com / Admin@123, …) exist. Never on in a production build.
+ */
+export const demoMode = process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === '1' && process.env.NODE_ENV !== 'production'
+if (demoMode && !globalThis.__reshmamAdminEmulators) {
+  globalThis.__reshmamAdminEmulators = true
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  connectStorageEmulator(storage, '127.0.0.1', 9199)
+}
 
 /** Authorization header carrying the signed-in staff member's Firebase ID token ({} when signed out). */
 export async function authHeader() {
