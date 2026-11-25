@@ -38,6 +38,19 @@ npm run dev
 
 Staff sign in to `/admin` with their own Firebase Auth email and password (see [`docs/admin.md`](docs/admin.md)).
 
+**Local demo with sample data:** `npm run dev:demo` (needs Java 21) starts the Firebase emulators, loads the admin
+panel's sample data and runs the app. The demo logins work only there, on this computer:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@reshmam.com` | `Admin@123` |
+| Manager | `manager@reshmam.com` | `Manager@123` |
+| Staff | `staff@reshmam.com` | `Staff@123` |
+
+The login screen has buttons that fill these in. Demo changes are lost when you stop it, and customer sign-in
+codes appear in the emulator UI at http://127.0.0.1:4000 instead of being sent by SMS. The storefront still
+shows the live product catalogue.
+
 ---
 
 ## Storefront (`/`)

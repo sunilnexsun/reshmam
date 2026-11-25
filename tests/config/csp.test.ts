@@ -26,6 +26,6 @@ describe("Content Security Policy", () => {
   });
   it("allows the local emulators in development when switched on", async () => {
     const p = await csp({ NODE_ENV: "development", NEXT_PUBLIC_FIREBASE_EMULATORS: "1" });
-    expect(p["connect-src"]).toEqual(expect.arrayContaining(["http://127.0.0.1:9099", "http://127.0.0.1:8080"]));
+    expect(p["connect-src"]).toEqual(expect.arrayContaining(["http://127.0.0.1:9099", "http://127.0.0.1:8080", "http://127.0.0.1:9199"]));
   });
 });

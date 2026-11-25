@@ -35,7 +35,7 @@ const csp = [
     "https://*.firebaseapp.com",
     "wss://*.firebaseio.com",
     "https://www.google.com",
-    emulators ? "http://127.0.0.1:9099 http://127.0.0.1:8080" : "",
+    emulators ? "http://127.0.0.1:9099 http://127.0.0.1:8080 http://127.0.0.1:9199" : "",
   ].filter(Boolean).join(" "),
   "frame-src https://*.razorpay.com https://*.firebaseapp.com https://maps.google.com https://www.google.com https://recaptcha.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "object-src 'none'",

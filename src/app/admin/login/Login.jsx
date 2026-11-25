@@ -4,8 +4,16 @@ import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from '@admin/_lib/navigation'
 import { Eye, EyeOff, Leaf, Lock, Mail } from 'lucide-react'
 import { useAuth } from '@admin/_lib/auth'
+import { demoMode } from '@admin/_lib/firebase'
 import { Button, Checkbox, Field, Input, Modal, useToast } from '@admin/_components/ui'
 import hero from '@admin/_assets/login-hero.webp'
+
+/** Sample staff logins that exist only in the local emulators (`npm run dev:demo`). */
+const DEMO_LOGINS = [
+  { role: 'Admin', email: 'admin@reshmam.com', password: 'Admin@123' },
+  { role: 'Manager', email: 'manager@reshmam.com', password: 'Manager@123' },
+  { role: 'Staff', email: 'staff@reshmam.com', password: 'Staff@123' },
+]
 
 const REMEMBER_KEY = 'reshmam-admin-remember'
 
@@ -98,6 +106,25 @@ export default function Login() {
           <div className="card p-7 sm:p-9">
             <h2 className="text-2xl font-bold tracking-tight">Welcome Back</h2>
             <p className="mt-1 text-sm text-muted">Login to your admin account</p>
+            {demoMode && (
+              <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                <p className="font-semibold">Local demo — sample data on this computer only</p>
+                <p className="mt-0.5 text-xs">Pick a demo login to fill the form:</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {DEMO_LOGINS.map((d) => (
+                    <button
+                      key={d.role}
+                      type="button"
+                      onClick={() => reset({ email: d.email, password: d.password, remember: true })}
+                      className="rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium hover:bg-amber-100"
+                      title={`${d.email} / ${d.password}`}
+                    >
+                      {d.role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {error && <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
               <Field label="Email Address" htmlFor="email" error={errors.email}>
