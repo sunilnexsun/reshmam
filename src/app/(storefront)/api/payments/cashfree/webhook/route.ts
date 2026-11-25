@@ -1,6 +1,6 @@
 import { NextResponse, connection } from "next/server";
 import { getCashfreeConfig, verifyCashfreeWebhookSignature } from "@/lib/cashfree";
-import { adminDb } from "@/lib/firebase-admin";
+import { getDocData, updateDocData } from "@storefront/_lib/server/firestore-store";
 import { markOrderPaid } from "@storefront/_lib/server/orders";
 
 /**
@@ -33,16 +33,15 @@ export async function POST(req: Request) {
     const amount = Number(data?.payment?.payment_amount ?? data?.order?.order_amount ?? NaN);
 
     if (orderId && (paymentStatus === "SUCCESS" || payload?.type === "PAYMENT_SUCCESS_WEBHOOK")) {
-      const oRef = adminDb().collection("orders").doc(String(orderId));
-      const snap = await oRef.get();
-      const order = snap.data();
+      const snap = await getDocData("orders", String(orderId));
+      const order = snap.data;
       if (snap.exists && order && order.paymentStatus !== "Paid") {
         if (amount !== Number(order.total)) {
           console.error("Cashfree webhook amount does not match the order", { orderId, amount, total: order.total });
           return NextResponse.json({ ok: true });
         }
         await markOrderPaid(String(orderId), String(cfPaymentId), "UPI (Cashfree)");
-        await oRef.update({ webhookReceivedAt: new Date().toISOString() });
+        await updateDocData("orders", String(orderId), { webhookReceivedAt: new Date().toISOString() });
       }
     }
 

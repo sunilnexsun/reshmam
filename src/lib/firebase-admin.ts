@@ -25,17 +25,26 @@ let app: App | null = null;
 
 function adminApp(): App {
   if (app) return app;
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  const emulators =
-    process.env.NODE_ENV !== "production" && Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST);
-  if (!raw && !emulators) throw new FirebaseAdminNotConfigured();
   const existing = getApps().find((a) => a.name === APP_NAME);
-  app =
-    existing ??
-    (raw
-      ? initializeApp({ credential: cert(JSON.parse(raw)) }, APP_NAME)
-      : initializeApp({ projectId: process.env.GCLOUD_PROJECT || "reshmam-oil" }, APP_NAME));
-  return app;
+  if (existing) {
+    app = existing;
+    return app;
+  }
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const isEmulator =
+    process.env.NODE_ENV !== "production" &&
+    Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST);
+
+  if (raw) {
+    app = initializeApp({ credential: cert(JSON.parse(raw)) }, APP_NAME);
+    return app;
+  }
+  if (isEmulator) {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || "reshmam-oil";
+    app = initializeApp({ projectId }, APP_NAME);
+    return app;
+  }
+  throw new FirebaseAdminNotConfigured();
 }
 
 export const adminDb = (): Firestore => getFirestore(adminApp());

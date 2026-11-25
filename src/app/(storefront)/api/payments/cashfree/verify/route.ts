@@ -1,6 +1,6 @@
 import { NextResponse, connection } from "next/server";
 import { verifyCashfreeOrder } from "@/lib/cashfree";
-import { adminDb } from "@/lib/firebase-admin";
+import { getDocData, updateDocData } from "@storefront/_lib/server/firestore-store";
 import { markOrderPaid, markOrderFailed } from "@storefront/_lib/server/orders";
 
 /**
@@ -23,9 +23,8 @@ async function handleVerification(req: Request) {
   }
 
   try {
-    const oRef = adminDb().collection("orders").doc(orderId);
-    const snap = await oRef.get();
-    const orderData = snap.data();
+    const snap = await getDocData("orders", orderId);
+    const orderData = snap.data;
     if (!snap.exists || !orderData) {
       return NextResponse.redirect(new URL("/cart?error=order_not_found", req.url));
     }
@@ -45,7 +44,7 @@ async function handleVerification(req: Request) {
 
     if (verification.isPaid && fullAmount) {
       await markOrderPaid(orderId, verification.cfOrderId || `cf_${Date.now()}`, "UPI (Cashfree)");
-      await oRef.update({
+      await updateDocData("orders", orderId, {
         cashfreeVerifiedAt: new Date().toISOString(),
         cashfreeAmount: verification.orderAmount,
         cashfreeCurrency: verification.orderCurrency,

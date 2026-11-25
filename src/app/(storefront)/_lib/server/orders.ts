@@ -2,7 +2,11 @@ import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PricedLine } from "@storefront/_lib/pricing";
 import type { CheckoutInput } from "@storefront/_lib/validation";
-import { adminDb } from "@/lib/firebase-admin";
+import {
+  getDocData,
+  setDocData,
+  updateDocData,
+} from "@storefront/_lib/server/firestore-store";
 
 /** The date part of an order number, in India time. */
 const IST_DATE = new Intl.DateTimeFormat("en-CA", {
@@ -52,7 +56,6 @@ export async function createOrder(
   pricing: { lines: PricedLine[]; subtotal: number; shipping: number; total: number; discount?: number; tax?: number },
   options: { paymentMethod?: string; branchId?: string; customer?: OrderCustomer | null } = {}
 ) {
-  const db = adminDb();
   const orderNumber = newOrderNumber();
   const accessToken = newAccessToken();
   const id = `o_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -113,17 +116,16 @@ export async function createOrder(
     access_token: accessToken,
   };
 
-  await db.collection("orders").doc(id).set(orderDoc);
+  await setDocData("orders", id, orderDoc);
 
   // Stock deduction in Firestore variants
   for (const line of pricing.lines) {
     try {
-      const vRef = db.collection("variants").doc(line.variantId);
-      const vSnap = await vRef.get();
+      const vSnap = await getDocData("variants", line.variantId);
       if (vSnap.exists) {
-        const vData = vSnap.data() ?? {};
+        const vData = vSnap.data ?? {};
         const currentStock = typeof vData.stock === "number" ? vData.stock : 0;
-        await vRef.update({
+        await updateDocData("variants", line.variantId, {
           stock: Math.max(0, currentStock - line.quantity),
           updatedAt: now,
         });
@@ -135,7 +137,9 @@ export async function createOrder(
 
   // Guest customer record (a signed-in customer's own profile at customers/{uid} is left alone).
   if (!customer) try {
-    await db.collection("customers").doc(customerId).set(
+    await setDocData(
+      "customers",
+      customerId,
       {
         id: customerId,
         name: input.customer.name,
@@ -160,7 +164,7 @@ export async function createOrder(
   // Activity log sync in Firestore activities
   try {
     const actId = `ac_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    await db.collection("activities").doc(actId).set({
+    await setDocData("activities", actId, {
       id: actId,
       type: "orders",
       message: `New order ${orderNumber} placed by ${input.customer.name} (₹${pricing.total})`,
@@ -177,14 +181,12 @@ export async function createOrder(
 /** Marks an order paid in Firestore. */
 export async function markOrderPaid(orderId: string, paymentId: string, method = "UPI (Cashfree)") {
   const now = new Date().toISOString();
-  const db = adminDb();
   try {
-    const oRef = db.collection("orders").doc(orderId);
-    const snap = await oRef.get();
+    const snap = await getDocData("orders", orderId);
     if (snap.exists) {
-      const data = snap.data() ?? {};
+      const data = snap.data ?? {};
       const timeline = Array.isArray(data.timeline) ? data.timeline : [];
-      await oRef.update({
+      await updateDocData("orders", orderId, {
         paymentStatus: "Paid",
         payment_status: "Paid",
         status: "Processing",
@@ -205,7 +207,7 @@ export async function markOrderPaid(orderId: string, paymentId: string, method =
 
       try {
         const actId = `ac_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        await db.collection("activities").doc(actId).set({
+        await setDocData("activities", actId, {
           id: actId,
           type: "orders",
           message: `Order ${data.number || orderId} payment confirmed via ${method} (₹${data.total})`,
@@ -225,7 +227,7 @@ export async function markOrderPaid(orderId: string, paymentId: string, method =
 /** Records a failed online payment in Firestore. */
 export async function markOrderFailed(orderId: string) {
   try {
-    await adminDb().collection("orders").doc(orderId).update({
+    await updateDocData("orders", orderId, {
       paymentStatus: "Failed",
       payment_status: "Failed",
       updatedAt: new Date().toISOString(),

@@ -16,7 +16,7 @@ const emulators = isDev && process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === "1";
  */
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://sdk.cashfree.com https://checkout.razorpay.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
@@ -28,6 +28,7 @@ const csp = [
     "connect-src 'self'",
     "https://*.supabase.co",
     supabase.endsWith(".supabase.co") ? "" : supabase,
+    "https://*.cashfree.com",
     "https://*.razorpay.com",
     "https://*.googleapis.com",
     "https://*.firebaseio.com",
@@ -37,10 +38,10 @@ const csp = [
     "https://www.google.com",
     emulators ? "http://127.0.0.1:9099 http://127.0.0.1:8080" : "",
   ].filter(Boolean).join(" "),
-  "frame-src https://*.razorpay.com https://*.firebaseapp.com https://maps.google.com https://www.google.com https://recaptcha.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+  "frame-src https://*.cashfree.com https://*.razorpay.com https://*.firebaseapp.com https://maps.google.com https://www.google.com https://recaptcha.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  "form-action 'self' https://*.cashfree.com",
   "frame-ancestors 'none'",
   // No upgrade-insecure-requests: opened over plain http on anything but localhost (a LAN address, a server
   // without TLS yet) it made browsers fetch every script and stylesheet over https, so pages broke. On the

@@ -5,7 +5,8 @@ import { clientIp, cashfreeConfig, razorpayConfig, rateLimit } from "@storefront
 import { fetchLiveVariants, fetchDynamicProducts } from "@storefront/_lib/server/catalogue";
 import { createOrder, markOrderFailed, OutOfStockError } from "@storefront/_lib/server/orders";
 import { createCashfreeOrder } from "@/lib/cashfree";
-import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
+import { verifyIdToken } from "@/lib/firebase-admin";
+import { updateDocData } from "@storefront/_lib/server/firestore-store";
 
 export async function POST(req: Request) {
   if (!rateLimit(`checkout:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
           returnUrl,
         });
 
-        await adminDb().collection("orders").doc(order.id).update({
+        await updateDocData("orders", order.id, {
           cashfreeOrderId: cfOrder.orderId,
           cashfreeCfOrderId: cfOrder.cfOrderId,
           cashfreePaymentSessionId: cfOrder.paymentSessionId,
@@ -139,7 +140,7 @@ export async function POST(req: Request) {
     const rzpOrder = (await res.json()) as { id: string; amount: number; currency: string };
 
     try {
-      await adminDb().collection("orders").doc(order.id).update({
+      await updateDocData("orders", order.id, {
         razorpay_order_id: rzpOrder.id,
         razorpayOrderId: rzpOrder.id,
       });

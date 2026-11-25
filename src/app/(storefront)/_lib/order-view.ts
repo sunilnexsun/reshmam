@@ -9,6 +9,8 @@ export type OrderRowItem = {
   size?: string;
   quantity?: number;
   qty?: number;
+  price?: number;
+  subtotal?: number;
   line_total?: number;
   total?: number;
 };
@@ -61,11 +63,15 @@ export function toOrderView(row: OrderRow) {
     total: Number(row.total_inr || row.total || 0),
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
     customerName: cust.name,
-    items: (row.items || []).map((item) => ({
-      product_name: item.product_name || item.name || "Product",
-      variant_label: item.variant_label || item.size || "Standard",
-      quantity: item.quantity || item.qty || 1,
-      line_total_inr: item.line_total || item.total || 0,
-    })),
+    items: (row.items || []).map((item) => {
+      const qty = item.quantity ?? item.qty ?? 1;
+      const lineTotal = item.line_total ?? item.subtotal ?? item.total ?? (item.price ? item.price * qty : 0);
+      return {
+        product_name: item.product_name || item.name || "Product",
+        variant_label: item.variant_label || item.size || "Standard",
+        quantity: qty,
+        line_total_inr: Number(lineTotal),
+      };
+    }),
   };
 }

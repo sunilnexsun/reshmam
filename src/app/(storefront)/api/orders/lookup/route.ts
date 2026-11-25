@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@storefront/_lib/server/integrations";
 import { orderCustomer, safeEqual, toOrderView, type OrderRow } from "@storefront/_lib/server/orders";
-import { adminDb } from "@/lib/firebase-admin";
+import { findDocByField, getDocData } from "@storefront/_lib/server/firestore-store";
 
 const schema = z.union([
   z.object({ orderNumber: z.string().trim().min(5).max(40), token: z.string().min(10).max(80) }),
@@ -26,25 +26,24 @@ export async function POST(req: Request) {
     let order: OrderRow | null = null;
 
     // 1. Try finding by order_number
-    const orders = adminDb().collection("orders");
-    let snap = await orders.where("order_number", "==", num).limit(1).get();
-    if (!snap.empty) {
-      order = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    let found = await findDocByField("orders", "order_number", num);
+    if (found) {
+      order = { id: found.id, ...found.data };
     }
 
     // 2. Try finding by number
     if (!order) {
-      snap = await orders.where("number", "==", num).limit(1).get();
-      if (!snap.empty) {
-        order = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      found = await findDocByField("orders", "number", num);
+      if (found) {
+        order = { id: found.id, ...found.data };
       }
     }
 
     // 3. Try finding by document id
     if (!order) {
-      const docSnap = await orders.doc(q.orderNumber.trim()).get();
-      if (docSnap.exists) {
-        order = { id: docSnap.id, ...docSnap.data() };
+      const docSnap = await getDocData("orders", q.orderNumber.trim());
+      if (docSnap.exists && docSnap.data) {
+        order = { id: docSnap.id, ...docSnap.data };
       }
     }
 
