@@ -137,13 +137,13 @@ body {
 /* Sign-in dialog headings: Bookman Old Style Bold Italic where installed, else TeX Gyre Bonum (a free Bookman clone). */
 @font-face {
   font-family: "TeX Gyre Bonum";
-  font-style: italic;
+  font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: local("TeX Gyre Bonum Bold Italic"), local("TeXGyreBonum-BoldItalic"), url("/fonts/texgyrebonum-bolditalic.woff2") format("woff2");
+  src: local("TeX Gyre Bonum Bold"), local("TeXGyreBonum-Bold"), url("/fonts/texgyrebonum-bold.woff2") format("woff2");
 }
 @utility font-bookman {
   font-family: "Bookman Old Style", "TeX Gyre Bonum", "URW Bookman", serif;
-  font-style: italic;
+  font-style: normal;
   font-weight: 700;
 }

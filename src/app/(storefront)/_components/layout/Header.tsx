@@ -13,6 +13,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Logo } from "./Logo";
+import { BilingualName } from "@storefront/_components/ui/BilingualName";
 import { navLinks } from "@storefront/_lib/site";
 import { useDynamicCatalogue } from "@storefront/_lib/use-catalogue";
 import { useWishlist } from "@storefront/_lib/store";
@@ -121,7 +122,7 @@ function ProductsMenu({ active }: { active: boolean }) {
                   height={28}
                   className="h-8 w-10 rounded bg-white object-contain"
                 />
-                {c.name}
+                <BilingualName name={c.name} tamilClassName="mt-0.5" />
               </Link>
             </li>
           ))}
