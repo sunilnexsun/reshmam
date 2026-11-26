@@ -28,6 +28,7 @@ import {
   SectionHeading,
 } from "@storefront/_components/ui/primitives";
 import { LeafSprig } from "@storefront/_components/ui/decor";
+import { BilingualName } from "@storefront/_components/ui/BilingualName";
 import { openGraphBase } from "@storefront/_lib/site";
 
 export const metadata: Metadata = {
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
 
 const productBenefits = [
   {
-    name: "Gingelly Oil (Sesame Oil)",
+    name: "Gingelly Oil (Sesame Oil) ( நல்லெண்ணெய் )",
     image: "/images/products/bottle-gingelly-1l.webp",
     alt: "Bottle of RESHMAM cold pressed gingelly oil",
     // Products come from Firestore with their own links, so point at the category.
@@ -52,7 +53,7 @@ const productBenefits = [
     ],
   },
   {
-    name: "Groundnut Oil (Peanut Oil)",
+    name: "Groundnut Oil (Peanut Oil) ( கடலை எண்ணெய் )",
     image: "/images/products/bottle-groundnut-1l.webp",
     alt: "Bottle of RESHMAM cold pressed groundnut oil",
     // Products come from Firestore with their own links, so point at the category.
@@ -64,7 +65,7 @@ const productBenefits = [
     ],
   },
   {
-    name: "Coconut Oil",
+    name: "Coconut Oil ( தேங்காய் எண்ணெய் )",
     image: "/images/products/bottle-coconut-1l.webp",
     alt: "Bottle of RESHMAM cold pressed coconut oil",
     // Products come from Firestore with their own links, so point at the category.
@@ -165,8 +166,8 @@ export default function HealthBenefitsPage() {
                   className="aspect-[29/20] w-full bg-white object-contain p-4"
                 />
                 <div className="flex flex-1 flex-col p-5">
-                  <h3 className="font-serif text-xl font-bold text-forest-800">
-                    {p.name}
+                  <h3 className="font-serif text-2xl font-bold text-forest-800">
+                    <BilingualName name={p.name} tamilClassName="mt-1" />
                   </h3>
                   <ul className="mt-3 space-y-1.5 text-sm text-ink-soft">
                     {p.points.map((pt) => (
