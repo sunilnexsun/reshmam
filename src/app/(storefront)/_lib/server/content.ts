@@ -15,6 +15,15 @@ export type Testimonial = {
   order?: number;
 };
 
+// Cache lifetime for the Firestore content fetchers below. Keep this at
+// "minutes" (like the catalogue fetchers), not "seconds": the built-in cache
+// handler drops entries once `revalidate` passes, and the "seconds" profile's
+// 1s revalidate let entries vanish between the cache-warming and final
+// prerender passes on slow CI runners. That made `next build` fail at random
+// with "Unexpected cache miss after cache warming phase" (/blog, /testimonials)
+// and "A "use cache" function took too long" (/blog/[slug]). Admin edits still
+// show up immediately because the admin API calls revalidatePath for these
+// routes.
 const DEFAULT_BLOG_IMAGE = "/images/blog-hero.webp";
 
 function normalizeBlogImage(raw: unknown): string {
@@ -49,7 +58,7 @@ function normalizeBody(rawBody: unknown, rawContent: unknown, excerpt: string): 
  */
 export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
   "use cache";
-  cacheLife("seconds");
+  cacheLife("minutes");
   try {
     const snap = await getDocs(collection(db, "blogs"));
     const items: BlogPost[] = [];
@@ -90,7 +99,7 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
 
 export async function fetchDynamicBlogBySlug(slug: string): Promise<BlogPost | null> {
   "use cache";
-  cacheLife("seconds");
+  cacheLife("minutes");
   const all = await fetchDynamicBlogs();
   return all.find((p) => p.slug === slug) || null;
 }
@@ -100,7 +109,7 @@ export async function fetchDynamicBlogBySlug(slug: string): Promise<BlogPost | n
  */
 export async function fetchDynamicTestimonials(): Promise<Testimonial[]> {
   "use cache";
-  cacheLife("seconds");
+  cacheLife("minutes");
   try {
     const snap = await getDocs(collection(db, "testimonials"));
     const items: Testimonial[] = [];
