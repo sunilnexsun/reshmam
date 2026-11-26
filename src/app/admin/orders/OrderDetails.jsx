@@ -10,6 +10,7 @@ import { useAuth } from '@admin/_lib/auth'
 import { cn, dateTime, inr } from '@admin/_lib/format'
 import NotFound from '@admin/_components/NotFound'
 import { addressLines, allowedNext, canRefund, gstBreakdown, isCod, itemLineTotal, willRestock } from './orderUtils'
+import { resolveInvoiceLogo } from './invoiceLogo'
 import { downloadInvoicePdf } from './invoicePdf'
 import InvoicePrint from './InvoicePrint'
 import UpdateStatusModal from './UpdateStatusModal'
@@ -31,16 +32,24 @@ export default function OrderDetails() {
   const order = db.orders.find((o) => o.id === id)
   const [statusOpen, setStatusOpen] = useState(false)
   const [refundOpen, setRefundOpen] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [notes, setNotes] = useState(null)
 
-  // /orders/:id?print=1 (from the list's Print action) opens the print dialog once the page renders.
+  // /orders/:id?print=1 (from the list's Print action) waits briefly for the logo to decode, then opens Print.
   const autoPrint = params.get('print') === '1'
   useEffect(() => {
     if (!autoPrint || !order) return
     setParams((p) => { p.delete('print'); return p }, { replace: true })
-    const t = setTimeout(() => window.print(), 350)
-    return () => clearTimeout(t)
-  }, [autoPrint, order, setParams])
+    let cancelled = false
+    Promise.race([
+      resolveInvoiceLogo(db?.settings?.company?.logo || order.invoice?.company?.logo),
+      new Promise((r) => setTimeout(r, 600)),
+    ]).then(() => {
+      if (cancelled) return
+      setTimeout(() => { if (!cancelled) window.print() }, 120)
+    })
+    return () => { cancelled = true }
+  }, [autoPrint, order, db?.settings?.company?.logo, setParams])
 
   const customer = useMemo(() => db.customers.find((c) => c.id === order?.customerId), [db.customers, order?.customerId])
   if (!order) return <NotFound title="Order not found" text="This order does not exist or was removed." back="/orders" backLabel="Back to Orders" />
@@ -68,8 +77,23 @@ export default function OrderDetails() {
     if (res?.skippedItems) toast.warning(`${res.skippedItems} item${res.skippedItems === 1 ? '' : 's'} could not be restocked because the product size no longer exists.`)
     if (!cod && order.paymentStatus === 'Paid') toast.info('Payment was collected online. Use Refund to record the refund.')
   }
-  const onDownload = () => {
-    try { downloadInvoicePdf(order, db); toast.success(`Invoice for ${order.number} downloaded`) } catch (e) { toast.error(`Could not create the PDF: ${e.message}`) }
+  const onPrint = async () => {
+    await Promise.race([
+      resolveInvoiceLogo(db?.settings?.company?.logo || order.invoice?.company?.logo),
+      new Promise((r) => setTimeout(r, 500)),
+    ])
+    requestAnimationFrame(() => window.print())
+  }
+  const onDownload = async () => {
+    setDownloading(true)
+    try {
+      await downloadInvoicePdf(order, db)
+      toast.success(`Invoice for ${order.number || order.order_number || order.id} downloaded`)
+    } catch (e) {
+      toast.error(`Could not create the PDF: ${e.message}`)
+    } finally {
+      setDownloading(false)
+    }
   }
   const saveNotes = () => { updateOrder(order.id, { notes: notes.trim() }); setNotes(null); toast.success('Internal notes saved') }
 
@@ -79,8 +103,8 @@ export default function OrderDetails() {
         subtitle={<span className="flex flex-wrap items-center gap-2"><StatusBadge status={order.status} /><StatusBadge status={order.paymentStatus} /><span>Placed {dateTime(order.createdAt)} · {branch?.name}</span></span>}
         actions={<>
           {canManage && next.length > 0 && <Button icon={RefreshCw} onClick={() => setStatusOpen(true)}>Update Status</Button>}
-          <Button variant="outline" icon={Printer} onClick={() => window.print()}>Print Invoice</Button>
-          <Button variant="outline" icon={FileDown} onClick={onDownload}>Download Invoice</Button>
+          <Button variant="outline" icon={Printer} onClick={onPrint}>Print Invoice</Button>
+          <Button variant="outline" icon={FileDown} loading={downloading} onClick={onDownload}>Download Invoice</Button>
           {canManage && canRefund(order) && <Button variant="outline" icon={Undo2} onClick={() => setRefundOpen(true)}>Refund</Button>}
           {canManage && next.includes('Cancelled') && <Button variant="danger-outline" icon={Ban} onClick={onCancel}>Cancel Order</Button>}
         </>} />

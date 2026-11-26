@@ -1,17 +1,41 @@
-// Print-only invoice. Rendered into <body> via a portal; on screen it is hidden, and when printing
-// everything else on the page is hidden so only the invoice is printed (window.print()).
+// Print-only invoice. Rendered into <body> via a portal; hidden off-screen so images decode eagerly,
+// and on print everything else on the page is hidden so only the invoice is printed (window.print()).
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { date, inr } from '@admin/_lib/format'
 import { resolveOrderInvoice } from '@admin/_lib/invoice'
 import { refundedAmount } from '@admin/_lib/orderActions'
+import { DEFAULT_INVOICE_LOGO, resolveInvoiceLogo } from './invoiceLogo'
 import { addressLines, companyLines, gstBreakdown, itemLineTotal } from './orderUtils'
 
 const PRINT_CSS = `
-.invoice-print { display: none; }
+.invoice-print {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 190mm;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
 @media print {
   @page { size: A4; margin: 14mm; }
   body > *:not(.invoice-print) { display: none !important; }
-  .invoice-print { display: block !important; color: #202b27; font-size: 11px; }
+  .invoice-print {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    display: block !important;
+    color: #202b27;
+    font-size: 11px;
+  }
+  .invoice-print img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .invoice-print table { width: 100%; border-collapse: collapse; }
   .invoice-print th, .invoice-print td { padding: 6px 8px; border-bottom: 1px solid #e3e8e6; text-align: left; vertical-align: top; }
   .invoice-print th { background: #064e3b !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: 600; }
@@ -22,6 +46,24 @@ const PRINT_CSS = `
 /** Prints the invoice for an order (issued invoice when confirmed, or proforma before that). */
 export default function InvoicePrint({ order, db }) {
   const resolved = resolveOrderInvoice(order, db?.settings)
+  const rawLogo = db?.settings?.company?.logo || resolved?.invoice?.company?.logo || ''
+  const [logoSrc, setLogoSrc] = useState(DEFAULT_INVOICE_LOGO)
+  const [logoFailed, setLogoFailed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    resolveInvoiceLogo(rawLogo).then((res) => {
+      if (!active) return
+      if (res?.dataUrl) {
+        setLogoSrc(res.dataUrl)
+        setLogoFailed(false)
+      } else {
+        setLogoSrc(DEFAULT_INVOICE_LOGO)
+      }
+    })
+    return () => { active = false }
+  }, [rawLogo])
+
   if (!resolved) return null
   const { invoice, isProforma } = resolved
   const company = invoice.company || db?.settings?.company || {}
@@ -39,7 +81,24 @@ export default function InvoicePrint({ order, db }) {
       <style>{PRINT_CSS}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, borderBottom: '2px solid #064e3b', paddingBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#064e3b' }}>{company.brand || 'RESHMAM'}</div>
+          {!logoFailed ? (
+            <img
+              src={logoSrc}
+              alt={company.brand || 'RESHMAM'}
+              loading="eager"
+              decoding="sync"
+              onError={() => {
+                if (logoSrc !== DEFAULT_INVOICE_LOGO) {
+                  setLogoSrc(DEFAULT_INVOICE_LOGO)
+                } else {
+                  setLogoFailed(true)
+                }
+              }}
+              style={{ height: 52, width: 'auto', maxWidth: 180, objectFit: 'contain', marginBottom: 6, display: 'block' }}
+            />
+          ) : (
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#064e3b' }}>{company.brand || 'RESHMAM'}</div>
+          )}
           {company.legalName && <div style={{ fontWeight: 600 }}>{company.legalName}</div>}
           {companyLines(company).map((l) => <div key={l}>{l}</div>)}
           {gstin && <div><b>GSTIN:</b> {gstin}</div>}

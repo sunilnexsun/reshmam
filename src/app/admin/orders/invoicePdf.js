@@ -3,6 +3,7 @@ import { jsPDF, autoTable, rs } from '@admin/_lib/export'
 import { date } from '@admin/_lib/format'
 import { resolveOrderInvoice } from '@admin/_lib/invoice'
 import { refundedAmount } from '@admin/_lib/orderActions'
+import { resolveInvoiceLogo } from './invoiceLogo'
 import { addressLines, companyLines, gstBreakdown, itemLineTotal } from './orderUtils'
 
 const GREEN = [6, 78, 59]
@@ -10,7 +11,7 @@ const INK = [32, 43, 39]
 const MUTED = [100, 113, 108]
 
 /** Downloads a real PDF invoice for an order (Tax Invoice / Bill of Supply / Proforma). */
-export function downloadInvoicePdf(order, db) {
+export async function downloadInvoicePdf(order, db) {
   const resolved = resolveOrderInvoice(order, db?.settings)
   if (!resolved) throw new Error('Order data is missing.')
   const { invoice, isProforma } = resolved
@@ -22,15 +23,28 @@ export function downloadInvoicePdf(order, db) {
   const products = Object.fromEntries((db?.products || []).map((p) => [p.id, p]))
   const orderNo = order.number || order.order_number || order.id
   const items = order.items || []
+  const logo = await resolveInvoiceLogo(db?.settings?.company?.logo || company.logo)
+
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const W = doc.internal.pageSize.getWidth()
   const M = 40
 
-  // Header — seller
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(...GREEN)
-  doc.text(company.brand || 'RESHMAM', M, 50)
+  // Header — seller logo + company details
+  let y = 50
+  if (logo) {
+    const maxH = 38
+    const maxW = 130
+    const ratio = Math.min(maxW / logo.width, maxH / logo.height)
+    const drawW = Math.round(logo.width * ratio)
+    const drawH = Math.round(logo.height * ratio)
+    doc.addImage(logo.dataUrl, 'PNG', M, 28, drawW, drawH)
+    y = 28 + drawH + 14
+  } else {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(...GREEN)
+    doc.text(company.brand || 'RESHMAM', M, y)
+    y += 14
+  }
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED)
-  let y = 64
   ;[company.legalName, ...companyLines(company), gstin && `GSTIN: ${gstin}`, company.fssai && `FSSAI Lic. No: ${company.fssai}`].filter(Boolean).forEach((l) => { doc.text(String(l), M, y); y += 12 })
 
   // Header — invoice meta
