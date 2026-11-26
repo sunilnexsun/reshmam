@@ -65,7 +65,7 @@ function BrandPanel() {
         </p>
       </div>
       {/* Tablets and up: the full brand panel. */}
-      <div className="relative hidden h-full min-h-[560px] flex-col items-center px-6 pb-44 pt-7 md:flex">
+      <div className="relative hidden h-full min-h-[560px] flex-col items-center pb-44 pl-6 pr-[calc(18%+0.5rem)] pt-7 md:flex">
         <CornerLeaves />
         <Image src="/images/logo-light.webp" alt="Reshmam" width={150} height={80} className="relative h-[4.5rem] w-auto" priority />
         <p className={`mt-2 text-[0.68rem] font-bold uppercase tracking-[0.08em] ${PANEL_GOLD}`}>Pure. Traditional. Trusted.</p>
@@ -105,12 +105,17 @@ function BrandPanel() {
   );
 }
 
-/** The curved gold-edged seam between the green panel and the form, as in the design. */
+/**
+ * The curved, gold-edged seam between the green panel and the form, traced from the design: the green reaches
+ * 41.5% of the card at the top, swings in to 34% a third of the way down, out to 38% at three quarters, and back
+ * to 33% at the bottom. The SVG spans 33%–41.5% of the card, so its x runs 0–100 across that band.
+ */
+const SEAM = "M100 0C55 8 12 22 14 40C16 52 58 64 58 76C56 86 22 95 4 100";
 function Seam() {
   return (
-    <svg viewBox="0 0 40 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-y-0 -left-10 hidden h-full w-11 md:block" aria-hidden>
-      <path d="M40 0H30C14 22 34 46 20 68 12 82 18 94 24 100h16Z" fill="var(--color-cream)" />
-      <path d="M30 0C14 22 34 46 20 68 12 82 18 94 24 100" fill="none" stroke="#d9a63c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-y-0 left-[33%] z-10 hidden h-full w-[calc(8.5%+2px)] md:block" aria-hidden>
+      <path d={`${SEAM}H100Z`} fill="var(--color-cream)" />
+      <path d={SEAM} fill="none" stroke="#d9a63c" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -446,10 +451,10 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-[820px] overflow-hidden rounded-2xl border border-beige-300 bg-cream p-0 text-ink shadow-2xl backdrop:bg-forest-950/60"
     >
-      <div className="grid max-h-[calc(100dvh-2rem)] overflow-y-auto md:grid-cols-[38%_1fr]">
+      <div className="relative grid max-h-[calc(100dvh-2rem)] overflow-y-auto md:grid-cols-[41.5%_1fr]">
+        <Seam />
         <BrandPanel />
-        <div className="relative flex flex-col px-5 pb-8 pt-6 sm:px-9 md:pl-8">
-          <Seam />
+        <div className="relative flex flex-col px-5 pb-8 pt-6 sm:px-9 md:pl-5">
           <button type="button" onClick={close} aria-label="Close" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full text-forest-900 hover:bg-beige">
             <X className="h-5 w-5" aria-hidden />
           </button>
