@@ -57,6 +57,8 @@ export function formatProduct(raw: FirestoreRawProduct, rawVariants: FirestoreRa
   const images = Array.isArray(raw.images) && raw.images.length > 0 ? raw.images : ["/images/product-gingelly.webp"];
   const primaryIdx = typeof raw.primaryImage === "number" && raw.primaryImage < images.length ? raw.primaryImage : 0;
   const image = images[primaryIdx] || images[0];
+  // Every photo for the product page's gallery, the primary one first.
+  const gallery = [image, ...images.filter((src, i) => src && src !== image && images.indexOf(src) === i)];
 
   const summary = typeof raw.description === "string" ? raw.description : Array.isArray(raw.description) ? raw.description[0] || "" : "";
   const description = Array.isArray(raw.description)
@@ -107,6 +109,7 @@ export function formatProduct(raw: FirestoreRawProduct, rawVariants: FirestoreRa
     kind: isCombo ? "combo" : isPack ? "pack" : "single",
     branch: raw.branch || "reshmam",
     image,
+    images: gallery,
     // Admin uploads are product packshots (bottles on white): show them whole, never cropped.
     imageFit: "contain",
     imageAlt: name,

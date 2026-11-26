@@ -60,6 +60,8 @@ export type Product = {
   kind: "single" | "pack" | "combo";
   branch: BranchSlug;
   image: string;
+  /** Every photo of the product, the main one (`image`) first. */
+  images?: string[];
   imageAlt: string;
   summary: string;
   description: string[];
