@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 
 const productBenefits = [
   {
-    name: "Gingelly Oil (Sesame Oil) ( நல்லெண்ணெய் )",
+    name: "Gingelly Oil ( நல்லெண்ணெய் )",
     image: "/images/products/bottle-gingelly-1l.webp",
     alt: "Bottle of RESHMAM cold pressed gingelly oil",
     // Products come from Firestore with their own links, so point at the category.
@@ -53,7 +53,7 @@ const productBenefits = [
     ],
   },
   {
-    name: "Groundnut Oil (Peanut Oil) ( கடலை எண்ணெய் )",
+    name: "Groundnut Oil ( கடலை எண்ணெய் )",
     image: "/images/products/bottle-groundnut-1l.webp",
     alt: "Bottle of RESHMAM cold pressed groundnut oil",
     // Products come from Firestore with their own links, so point at the category.
