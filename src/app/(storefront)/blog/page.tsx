@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { BlogCard, Breadcrumbs } from "@storefront/_components/sections/Misc";
-import { Container, SampleBadge } from "@storefront/_components/ui/primitives";
+import { Container } from "@storefront/_components/ui/primitives";
 import { posts } from "@storefront/_lib/blog";
 import { openGraphBase } from "@storefront/_lib/site";
 
@@ -47,7 +47,6 @@ export default function BlogPage() {
             <h2 id="posts-heading" className="scroll-mt-28 font-serif text-3xl font-bold text-forest-800">
               Latest Articles
             </h2>
-            <SampleBadge>Sample articles — to be replaced with approved content</SampleBadge>
           </div>
           <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => (
