@@ -124,7 +124,7 @@ export default async function HomePage() {
                     className="aspect-[29/20] w-full bg-white object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                   <span className="flex flex-1 flex-col p-5">
-                    <BilingualName name={c.name} className="font-serif text-xl font-bold text-forest-800" tamilClassName="mt-1 text-base" />
+                    <BilingualName name={c.name} className="font-serif text-2xl font-bold text-forest-800" tamilClassName="mt-1" />
                     <span className="mt-1.5 text-sm text-ink-soft">{c.description}</span>
                     <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-forest-800">
                       Explore <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
