@@ -25,7 +25,7 @@ import { ButtonLink, Container, Eyebrow, IconBadge, SectionHeading, LeafFlourish
 import { LeafOutline, LeafSprig } from "./_components/ui/decor";
 import { categories, getProduct, type Product } from "./_lib/products";
 import { fetchDynamicProducts, fetchDynamicCategories } from "./_lib/server/catalogue";
-import { splitBilingualName } from "./_lib/bilingual-name";
+import { BilingualName } from "./_components/ui/BilingualName";
 import { posts } from "./_lib/blog";
 import { formatINR } from "./_lib/pricing";
 import { site } from "./_lib/site";
@@ -124,7 +124,7 @@ export default async function HomePage() {
                     className="aspect-[29/20] w-full bg-white object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                   <span className="flex flex-1 flex-col p-5">
-                    <CategoryName name={c.name} />
+                    <BilingualName name={c.name} className="font-serif text-xl font-bold text-forest-800" tamilClassName="mt-1 text-base" />
                     <span className="mt-1.5 text-sm text-ink-soft">{c.description}</span>
                     <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-forest-800">
                       Explore <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
@@ -283,17 +283,3 @@ export default async function HomePage() {
   );
 }
 
-/** English on the first line and the Tamil, still in its brackets, on the second. */
-function CategoryName({ name }: { name: string }) {
-  const { english, tamil } = splitBilingualName(name);
-  return (
-    <span className="font-serif text-xl font-bold text-forest-800">
-      <span className="block">{english}</span>
-      {tamil && (
-        <span lang="ta" className="mt-1 block text-base">
-          ( {tamil} )
-        </span>
-      )}
-    </span>
-  );
-}
