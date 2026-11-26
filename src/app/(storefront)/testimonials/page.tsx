@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { ArrowRight, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { Breadcrumbs, Testimonials } from "@storefront/_components/sections/Misc";
-import { ButtonLink, Container } from "@storefront/_components/ui/primitives";
+import { Container } from "@storefront/_components/ui/primitives";
 import { fetchDynamicTestimonials } from "@storefront/_lib/server/content";
 import { openGraphBase } from "@storefront/_lib/site";
 
@@ -96,25 +96,6 @@ export default async function TestimonialsPage() {
               items={testimonials}
               emptyText="No customer testimonials have been published yet. Check back soon!"
             />
-          </div>
-
-          <div className="mt-12 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-beige-300/80 bg-white p-6 shadow-card">
-            <div>
-              <h3 className="font-serif text-xl font-bold text-forest-900">
-                Taste the Cold-Pressed Difference
-              </h3>
-              <p className="mt-1 text-sm text-ink-soft">
-                Explore fresh small-batch gingelly, groundnut, and coconut oils.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <ButtonLink href="/products" variant="primary">
-                Shop Pure Oils <ArrowRight className="h-4 w-4" aria-hidden />
-              </ButtonLink>
-              <ButtonLink href="/contact" variant="outline">
-                Share Your Feedback
-              </ButtonLink>
-            </div>
           </div>
         </Container>
       </section>
