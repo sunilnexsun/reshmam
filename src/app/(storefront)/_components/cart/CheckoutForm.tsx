@@ -65,7 +65,7 @@ export function CheckoutForm() {
   const router = useRouter();
   const { lines, subtotal } = useCartLines();
   // Signed in: details are prefilled, the mobile is the verified one, and the order is linked to the account.
-  const { user, profile } = useCustomer();
+  const { user, profile, loading: accountLoading } = useCustomer();
   const { open: openSignIn } = useSignInDialog();
   const verifiedPhone = user?.phoneNumber ?? null;
   const [state, setState] = useState<string>(site.shipping.homeState);
@@ -178,6 +178,8 @@ export function CheckoutForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    // Wait until a returning customer's login has been restored, so they're never asked to log in again.
+    if (accountLoading) return;
     // Only customers with an account can check out: ask a signed-out visitor to log in first.
     if (!user) {
       openSignIn("login");
@@ -548,7 +550,7 @@ export function CheckoutForm() {
         )}
         <button
           type="submit"
-          disabled={busy || orderingOff || status === null}
+          disabled={busy || orderingOff || status === null || accountLoading}
           className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-forest-800 px-6 font-semibold text-white hover:bg-forest-950 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
