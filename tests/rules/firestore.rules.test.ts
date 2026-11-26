@@ -15,7 +15,7 @@ const INACTIVE = { uid: "inactive1" };
 const now = "2026-11-24T00:00:00.000Z";
 const ownProfile = (uid: string, email: string, phone = "+919876543210") => ({
   id: uid,
-  name: "",
+  name: "Test Customer",
   email,
   phone,
   createdAt: now,
@@ -63,10 +63,11 @@ describe("customer", () => {
     await seedDb().doc("customers/cust1").delete();
     await allowed(setDoc(doc(client(CUST1).db, "customers/cust1"), ownProfile("cust1", CUST1.email)));
   });
-  it("can't claim another email, or create with a bad mobile number, another uid or extra fields", async () => {
+  it("can't claim another email, or create with no name, a bad mobile number, another uid or extra fields", async () => {
     await seedDb().doc("customers/cust1").delete();
     const { db } = client(CUST1);
     await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", "someone@example.com")));
+    await denied(setDoc(doc(db, "customers/cust1"), { ...ownProfile("cust1", CUST1.email), name: "" }));
     await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", CUST1.email, "9876543210")));
     await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", CUST1.email, "+911234567890")));
     await denied(setDoc(doc(db, "customers/someoneelse"), ownProfile("someoneelse", CUST1.email)));

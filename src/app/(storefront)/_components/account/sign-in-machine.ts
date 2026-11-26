@@ -11,7 +11,7 @@ export type Outcome = "created" | "loggedIn" | "resetSent";
 
 /** The Firebase call the dialog should make next. */
 export type Request =
-  | { kind: "create"; email: string; phone: string; password: string }
+  | { kind: "create"; name: string; email: string; phone: string; password: string }
   | { kind: "login"; email: string; password: string }
   | { kind: "reset"; email: string };
 
@@ -27,7 +27,7 @@ export type SignInState = {
 };
 
 export type SignInEvent =
-  | { type: "CREATE_SUBMITTED"; email: string; phone: string; password: string; confirm: string }
+  | { type: "CREATE_SUBMITTED"; name: string; email: string; phone: string; password: string; confirm: string }
   | { type: "LOGIN_SUBMITTED"; email: string; password: string }
   | { type: "RESET_SUBMITTED"; email: string }
   | { type: "SUCCEEDED" }
@@ -35,6 +35,7 @@ export type SignInEvent =
   | { type: "ERROR"; message: string }
   | { type: "RESET"; mode: Mode };
 
+export const NEEDS_NAME = "Please enter your full name.";
 export const INVALID_MOBILE = "Enter a valid 10-digit mobile number.";
 export const SHORT_PASSWORD = `Your password needs at least ${MIN_PASSWORD_LENGTH} characters.`;
 export const PASSWORDS_DIFFER = "The two passwords don't match.";
@@ -62,13 +63,15 @@ const start = (state: SignInState, request: Request, email: string): SignInState
 export function signInReducer(state: SignInState, event: SignInEvent): SignInState {
   switch (event.type) {
     case "CREATE_SUBMITTED": {
+      const name = event.name.trim();
+      if (!name) return fail(state, NEEDS_NAME, event.email);
       const email = parseEmail(event.email);
       if (!email) return fail(state, INVALID_EMAIL, event.email);
       const phone = normalizeIndianMobile(event.phone);
       if (!phone) return fail(state, INVALID_MOBILE, event.email);
       if (event.password.length < MIN_PASSWORD_LENGTH) return fail(state, SHORT_PASSWORD, event.email);
       if (event.password !== event.confirm) return fail(state, PASSWORDS_DIFFER, event.email);
-      return start(state, { kind: "create", email, phone, password: event.password }, event.email);
+      return start(state, { kind: "create", name, email, phone, password: event.password }, event.email);
     }
     case "LOGIN_SUBMITTED": {
       const email = parseEmail(event.email);

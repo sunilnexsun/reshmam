@@ -57,14 +57,14 @@ export async function getProfile(uid: string): Promise<CustomerProfile | null> {
 }
 
 /**
- * A new account's customers/{uid}: the email it signs in with (the rules check it matches the sign-in) and
- * the mobile number as typed (10 digits). The name is added later, at checkout or on My Account.
+ * A new account's customers/{uid}: the customer's name, the email it signs in with (the rules check it matches
+ * the sign-in) and the mobile number as typed (10 digits).
  */
-export async function createProfile(uid: string, { email, phone }: { email: string; phone: string }): Promise<void> {
+export async function createProfile(uid: string, { name, email, phone }: { name: string; email: string; phone: string }): Promise<void> {
   const now = new Date().toISOString();
   const profile: Required<CustomerProfile> = {
     id: uid,
-    name: "",
+    name: name.trim(),
     email,
     phone: toE164(phone),
     cart: [],
@@ -88,10 +88,10 @@ export const signOutCustomer = (): Promise<void> => signOut(customerAuth);
  * Creates the Firebase account and its profile. If the profile can't be saved, the account is removed again,
  * so the customer can simply try again (rather than being left with an account that has no profile).
  */
-export async function createAccount(email: string, password: string, phone: string): Promise<void> {
+export async function createAccount({ name, email, phone, password }: { name: string; email: string; phone: string; password: string }): Promise<void> {
   const { user } = await createUserWithEmailAndPassword(customerAuth, email, password);
   try {
-    await createProfile(user.uid, { email, phone });
+    await createProfile(user.uid, { name, email, phone });
   } catch (e) {
     await user.delete().catch(() => signOut(customerAuth));
     throw e;

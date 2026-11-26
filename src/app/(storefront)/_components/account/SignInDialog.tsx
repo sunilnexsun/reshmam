@@ -172,7 +172,7 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
 
   async function run(request: Request) {
     try {
-      if (request.kind === "create") await createAccount(request.email, request.password, request.phone);
+      if (request.kind === "create") await createAccount(request);
       else if (request.kind === "login") await logIn(request.email, request.password);
       else await sendPasswordReset(request.email);
       dispatch({ type: "SUCCEEDED" });
@@ -271,11 +271,14 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
-          send({ type: "CREATE_SUBMITTED", email: text(f, "email"), phone: text(f, "phone"), password: text(f, "password"), confirm: text(f, "confirm") });
+          send({ type: "CREATE_SUBMITTED", name: text(f, "name"), email: text(f, "email"), phone: text(f, "phone"), password: text(f, "password"), confirm: text(f, "confirm") });
         }}
         className="space-y-4"
       >
         <Heading id={titleId} title="Create Your Account" text="Get started in just a few steps." />
+        <Field label="Full Name" icon={User}>
+          <input name="name" autoComplete="name" placeholder="Your full name" className={inputCls} aria-describedby={describedBy} />
+        </Field>
         {emailField}
         <Field label="Mobile Number" icon={Phone}>
           <span className="font-bold">+91</span>

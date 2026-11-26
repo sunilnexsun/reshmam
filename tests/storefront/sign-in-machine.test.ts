@@ -1,9 +1,10 @@
-// The sign-in dialog: Create Account (email, mobile, password, confirm), Log In (email, password) and
+// The sign-in dialog: Create Account (name, email, mobile, password, confirm), Log In (email, password) and
 // Forgot password (email). The reducer checks what was typed before any Firebase call.
 import { describe, expect, it } from "vitest";
 import {
   initialSignInState,
   INVALID_MOBILE,
+  NEEDS_NAME,
   PASSWORDS_DIFFER,
   SHORT_PASSWORD,
   signInReducer,
@@ -15,6 +16,7 @@ import { INVALID_EMAIL } from "@/app/(storefront)/_lib/account-identity";
 const run = (state: SignInState, ...events: SignInEvent[]) => events.reduce(signInReducer, state);
 const create = (over: Partial<Extract<SignInEvent, { type: "CREATE_SUBMITTED" }>> = {}): SignInEvent => ({
   type: "CREATE_SUBMITTED",
+  name: "  Ravi Kumar ",
   email: " Ravi@Example.com ",
   phone: "98765 43210",
   password: "secret123",
@@ -23,13 +25,14 @@ const create = (over: Partial<Extract<SignInEvent, { type: "CREATE_SUBMITTED" }>
 });
 
 describe("signInReducer", () => {
-  it("create asks for the account with a tidied email and the mobile as 10 digits", () => {
+  it("create asks for the account with a trimmed name, a tidied email and the mobile as 10 digits", () => {
     const s = run(initialSignInState("create"), create());
     expect(s).toMatchObject({ pending: true, error: null });
-    expect(s.request).toEqual({ kind: "create", email: "ravi@example.com", phone: "9876543210", password: "secret123" });
+    expect(s.request).toEqual({ kind: "create", name: "Ravi Kumar", email: "ravi@example.com", phone: "9876543210", password: "secret123" });
     expect(run(s, { type: "SUCCEEDED" })).toMatchObject({ pending: false, request: null, outcome: "created" });
   });
   it.each([
+    ["a blank name", { name: "   " }, NEEDS_NAME],
     ["a username instead of an email", { email: "priya_k" }, INVALID_EMAIL],
     ["a bad email", { email: "ravi@example" }, INVALID_EMAIL],
     ["a bad mobile number", { phone: "12345" }, INVALID_MOBILE],

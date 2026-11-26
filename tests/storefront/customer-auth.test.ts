@@ -44,20 +44,20 @@ describe("authErrorMessage", () => {
 });
 
 describe("createProfile", () => {
-  it("writes only the allowed fields: the login email, the mobile in E.164, no name yet", async () => {
-    await createProfile("u1", { email: "ravi@example.com", phone: "9876543210" });
+  it("writes only the allowed fields: the name, the login email and the mobile in E.164", async () => {
+    await createProfile("u1", { name: "  Ravi Kumar ", email: "ravi@example.com", phone: "9876543210" });
     expect(setDoc).toHaveBeenCalledTimes(1);
     const [ref, data] = setDoc.mock.calls[0] as unknown as [{ path: string }, Record<string, unknown>];
     expect(ref.path).toBe("customers/u1");
     expect(Object.keys(data).sort()).toEqual(["cart", "createdAt", "email", "id", "name", "phone", "source", "updatedAt", "wishlist"]);
-    expect(data).toMatchObject({ id: "u1", name: "", email: "ravi@example.com", phone: "+919876543210", source: "website", cart: [], wishlist: [] });
+    expect(data).toMatchObject({ id: "u1", name: "Ravi Kumar", email: "ravi@example.com", phone: "+919876543210", source: "website", cart: [], wishlist: [] });
     expect(data.createdAt).toBe(data.updatedAt);
   });
 });
 
 describe("createAccount", () => {
   it("signs up with the email and password, then saves the profile", async () => {
-    await createAccount("ravi@example.com", "secret123", "9876543210");
+    await createAccount({ name: "Ravi", email: "ravi@example.com", phone: "9876543210", password: "secret123" });
     expect(auth.createUserWithEmailAndPassword).toHaveBeenCalledWith(expect.anything(), "ravi@example.com", "secret123");
     expect((setDoc.mock.calls[0] as unknown as [{ path: string }])[0].path).toBe("customers/new1");
     expect(deleteUser).not.toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe("createAccount", () => {
 
   it("removes the new account again if its profile can't be saved", async () => {
     setDoc.mockRejectedValueOnce(new Error("permission-denied"));
-    await expect(createAccount("ravi@example.com", "secret123", "9876543210")).rejects.toThrow();
+    await expect(createAccount({ name: "Ravi", email: "ravi@example.com", phone: "9876543210", password: "secret123" })).rejects.toThrow();
     expect(deleteUser).toHaveBeenCalledTimes(1);
   });
 });
