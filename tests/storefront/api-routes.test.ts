@@ -228,42 +228,46 @@ describe("POST /api/checkout", () => {
     paymentMethod: method,
     items: [{ variantId: "GIN-1L", quantity: 2 }],
   });
+  // Checkout needs a signed-in customer, so every order here is sent with a valid ID token.
+  const send = (body: unknown) => checkout(post(body, { authorization: "Bearer good-token" }));
 
   it("rejects invalid input and reports when online payment isn't set up", async () => {
-    expect((await checkout(post({}))).status).toBe(400);
+    expect((await send({})).status).toBe(400);
     config.rzp = null;
-    const res = await checkout(post(order("online")));
+    const res = await send(order("online"));
     expect(res.status).toBe(503);
     expect(orderFns.createOrder).not.toHaveBeenCalled();
   });
   it("places a cash-on-delivery order priced from the database", async () => {
-    const res = await checkout(post(order("cod")));
+    const res = await send(order("cod"));
     expect(res.status).toBe(200);
     const pricing = orderFns.createOrder.mock.calls[0][1] as { subtotal: number };
     expect(pricing.subtotal).toBe(1200); // 2 × the live price of 600, not the catalogue's 999
   });
-  it("places a guest order when no one is signed in", async () => {
-    await checkout(post(order("cod")));
-    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: null });
+  it("refuses to check out when no one is signed in", async () => {
+    const res = await checkout(post(order("cod")));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ ok: false, code: "login_required" });
+    expect(orderFns.createOrder).not.toHaveBeenCalled();
   });
   it("links the order to a signed-in customer, using the verified phone over the form's", async () => {
-    await checkout(post(order("cod"), { authorization: "Bearer good-token" }));
+    await send(order("cod"));
     expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: { uid: "u1", phone: "+919999999999" } });
   });
-  it("treats an expired or forged token as a guest order, not an error", async () => {
+  it("refuses an expired or forged token", async () => {
     const res = await checkout(post(order("cod"), { authorization: "Bearer forged" }));
-    expect(res.status).toBe(200);
-    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: null });
+    expect(res.status).toBe(401);
+    expect(orderFns.createOrder).not.toHaveBeenCalled();
   });
   it("refuses more than the database has in stock", async () => {
-    const res = await checkout(post({ ...order("cod"), items: [{ variantId: "GIN-1L", quantity: 21 }] }));
+    const res = await send({ ...order("cod"), items: [{ variantId: "GIN-1L", quantity: 21 }] });
     expect(res.status).toBe(409);
     expect(orderFns.createOrder).not.toHaveBeenCalled();
   });
   it("starts a Cashfree payment and saves its session on the order", async () => {
     config.cf = { env: "sandbox" };
     cashfree.createCashfreeOrder.mockResolvedValue({ orderId: "order-uuid", cfOrderId: "cf_1", paymentSessionId: "session_1" });
-    const data = await (await checkout(post(order("online")))).json();
+    const data = await (await send(order("online"))).json();
     expect(data).toMatchObject({ ok: true, gateway: "cashfree", cashfree: { paymentSessionId: "session_1", mode: "sandbox" } });
     expect(cashfree.createCashfreeOrder).toHaveBeenCalledWith(expect.objectContaining({ amount: 1260 })); // 1200 + ₹60 Tamil Nadu delivery
     expect(store.updates).toContainEqual({ path: "orders/order-uuid", value: expect.objectContaining({ cashfreePaymentSessionId: "session_1" }) });
@@ -271,19 +275,19 @@ describe("POST /api/checkout", () => {
   it("marks the order failed when Cashfree can't start the payment", async () => {
     config.cf = { env: "sandbox" };
     cashfree.createCashfreeOrder.mockRejectedValue(new Error("Cashfree is down"));
-    const res = await checkout(post(order("online")));
+    const res = await send(order("online"));
     expect(res.status).toBe(502);
     expect(orderFns.markOrderFailed).toHaveBeenCalledWith("order-uuid");
   });
   it("falls back to Razorpay without Cashfree, and marks the order failed when Razorpay can't be reached", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
-    const res = await checkout(post(order("online")));
+    const res = await send(order("online"));
     expect(res.status).toBe(502);
     expect(orderFns.markOrderFailed).toHaveBeenCalledWith("order-uuid");
   });
   it("links the Razorpay order and returns it for an online payment", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ id: "order_rzp_1", amount: 120000, currency: "INR" })));
-    const data = await (await checkout(post(order("online")))).json();
+    const data = await (await send(order("online"))).json();
     expect(data).toMatchObject({ ok: true, razorpay: { orderId: "order_rzp_1", amount: 120000 } });
     expect(store.updates).toContainEqual({ path: "orders/order-uuid", value: expect.objectContaining({ razorpay_order_id: "order_rzp_1" }) });
   });

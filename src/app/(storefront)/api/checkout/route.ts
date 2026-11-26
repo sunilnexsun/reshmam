@@ -13,6 +13,16 @@ export async function POST(req: Request) {
   if (!rateLimit(`checkout:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   }
+  // Only signed-in customers can order: a valid Firebase ID token with a verified phone. A missing, expired or
+  // forged token is refused, and the order is always linked to the account.
+  const token = await verifyIdToken(req);
+  if (!token?.phone_number) {
+    return NextResponse.json(
+      { ok: false, code: "login_required", error: "Please log in to place your order." },
+      { status: 401 },
+    );
+  }
+  const customer = { uid: token.uid, phone: token.phone_number };
   const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
@@ -64,11 +74,6 @@ export async function POST(req: Request) {
       discount,
       total: finalTotal,
     };
-
-    // A signed-in customer (valid Firebase ID token with a verified phone) gets the order on their account;
-    // anything else, including an expired or forged token, is a guest order.
-    const token = await verifyIdToken(req);
-    const customer = token?.phone_number ? { uid: token.uid, phone: token.phone_number } : null;
 
     const order = await createOrder(
       input,
