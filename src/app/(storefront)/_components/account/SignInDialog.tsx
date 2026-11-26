@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
-import { ArrowLeft, ArrowRight, Check, Heart, Info, Leaf, Loader2, Mail, Package, Phone, ShoppingCart, User, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Heart, Info, Loader2, Mail, Package, Phone, ShoppingCart, User, X } from "lucide-react";
 import { customerAuth } from "@storefront/_lib/customer-firebase";
 import { authErrorMessage, createProfile, getProfile, signOutCustomer } from "@storefront/_lib/customer-auth";
 import { toE164 } from "@storefront/_lib/phone";
@@ -23,44 +23,95 @@ const FEATURES = [
 const formatPhone = (tenDigits: string) => `+91 ${tenDigits.slice(0, 5)} ${tenDigits.slice(5)}`;
 const errorCode = (e: unknown) => (e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "");
 
+/** The brighter gold of the brand panel in the design (decorative text on dark green: 7:1 contrast). */
+const PANEL_GOLD = "text-[#e9bb45]";
+
+/** Two-leaf sprout above each heading. */
+function Sprout({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 32" className={className} aria-hidden>
+      <defs>
+        <linearGradient id="sprout-leaf" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#6fb43f" />
+          <stop offset="1" stopColor="#2f7d32" />
+        </linearGradient>
+      </defs>
+      <path d="M23 30C21 18 12 9 1 9c1 12 10 20 22 21Z" fill="url(#sprout-leaf)" />
+      <path d="M25 30c2-12 11-21 22-21-1 12-10 20-22 21Z" fill="url(#sprout-leaf)" />
+      <path d="M24 31V22" stroke="#2f7d32" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Soft leaves tucked into the panel's top-left corner. */
+function CornerLeaves() {
+  return (
+    <svg viewBox="0 0 120 90" className="pointer-events-none absolute -left-3 -top-3 h-24 w-32" aria-hidden>
+      <path d="M0 8c26-6 52 4 62 30C36 46 10 36 0 8Z" fill="#5a9e3a" opacity=".85" />
+      <path d="M8 0c20 10 30 30 22 54C12 44 2 24 8 0Z" fill="#78b84a" opacity=".7" />
+      <path d="M40 0c22 2 40 14 44 36-22 0-40-12-44-36Z" fill="#3f8a34" opacity=".6" />
+    </svg>
+  );
+}
+
 function BrandPanel() {
   return (
-    <div className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_0%_0%,var(--color-forest-700),var(--color-forest-950))] text-white">
+    <div className="relative overflow-hidden bg-[radial-gradient(130%_80%_at_20%_0%,var(--color-forest-700),var(--color-forest-950))] text-white">
       {/* Phones: a compact header. */}
-      <div className="flex items-center gap-3 px-5 py-4 md:hidden">
-        <span className="inline-flex rounded-lg bg-cream px-2 py-1">
-          <Image src="/images/logo.png" alt="Reshmam" width={96} height={51} className="h-8 w-auto" />
-        </span>
-        <p className="font-bookman text-lg leading-tight">
-          Create Your <span className="text-gold">Account</span>
+      <div className="flex items-center gap-3 px-5 py-3 md:hidden">
+        <Image src="/images/logo-light.webp" alt="Reshmam" width={96} height={51} className="h-10 w-auto" />
+        <p className="font-bookman text-xl leading-tight">
+          Create Your <span className={PANEL_GOLD}>Account</span>
         </p>
       </div>
       {/* Tablets and up: the full brand panel. */}
-      <div className="hidden h-full flex-col px-7 py-8 md:flex">
-        {/* The logo's green lettering needs a light background to read on green (as in the footer). */}
-        <span className="inline-flex w-fit rounded-xl bg-cream px-3 py-2 shadow-sm">
-          <Image src="/images/logo.png" alt="Reshmam" width={150} height={80} className="h-14 w-auto" />
-        </span>
-        <p className="mt-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-gold">Pure. Traditional. Trusted.</p>
-        <p className="font-bookman mt-6 text-3xl leading-tight">
+      <div className="relative hidden h-full min-h-[560px] flex-col items-center px-6 pb-44 pt-7 md:flex">
+        <CornerLeaves />
+        <Image src="/images/logo-light.webp" alt="Reshmam" width={150} height={80} className="relative h-[4.5rem] w-auto" priority />
+        <p className={`mt-2 text-[0.68rem] font-bold uppercase tracking-[0.08em] ${PANEL_GOLD}`}>Pure. Traditional. Trusted.</p>
+        <span className="mt-1.5 h-px w-8 bg-[#e9bb45]/70" aria-hidden />
+        <p className="font-bookman mt-4 text-center text-[2.15rem] leading-[1.1]">
           Create Your
           <br />
-          <span className="text-gold">Account</span>
+          <span className={PANEL_GOLD}>Account</span>
         </p>
-        <ul className="mt-6 space-y-4">
+        <svg viewBox="0 0 160 10" className="mt-1 h-2.5 w-36 text-[#e9bb45]" aria-hidden>
+          <path d="M2 7C50 1 110 1 158 5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        <ul className="mt-6 w-full space-y-3">
           {FEATURES.map(({ icon: Icon, title, text }) => (
-            <li key={title} className="flex items-start gap-3">
-              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
-              <span className="text-sm leading-snug">
-                <span className="block font-semibold">{title}</span>
-                <span className="text-white/75">{text}</span>
+            <li key={title} className="flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/10 ring-1 ring-white/10">
+                <Icon className={`h-5 w-5 ${PANEL_GOLD}`} aria-hidden />
+              </span>
+              <span className="text-[0.82rem] leading-snug">
+                <span className="block font-bold">{title}</span>
+                <span className="text-white/80">{text}</span>
               </span>
             </li>
           ))}
         </ul>
-        <Leaf className="pointer-events-none absolute -bottom-6 -right-6 h-40 w-40 rotate-12 text-white/5" aria-hidden />
+        {/* Oil pouring into a bowl, fading up into the green. */}
+        <Image
+          src="/images/banner-story-right.webp"
+          alt=""
+          width={618}
+          height={360}
+          sizes="320px"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-44 w-full object-cover object-[35%_60%] [mask-image:linear-gradient(to_top,black_55%,transparent)]"
+        />
       </div>
     </div>
+  );
+}
+
+/** The curved gold-edged seam between the green panel and the form, as in the design. */
+function Seam() {
+  return (
+    <svg viewBox="0 0 40 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-y-0 -left-10 hidden h-full w-11 md:block" aria-hidden>
+      <path d="M40 0H30C14 22 34 46 20 68 12 82 18 94 24 100h16Z" fill="var(--color-cream)" />
+      <path d="M30 0C14 22 34 46 20 68 12 82 18 94 24 100" fill="none" stroke="#d9a63c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
@@ -72,18 +123,22 @@ function Progress({ step }: { step: SignInState["step"] }) {
   ] as const;
   const current = steps.findIndex((s) => s.key === step);
   return (
-    <ol className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-soft" aria-label="Steps">
+    <ol className="flex flex-wrap items-center gap-x-2 gap-y-2 text-xs text-ink" aria-label="Steps">
       {steps.map((s, i) => {
         const done = i < current;
         const active = i === current;
         return (
-          <li key={s.key} className="flex items-center gap-1.5" aria-current={active ? "step" : undefined}>
+          <li
+            key={s.key}
+            className={`flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 ${active ? "bg-beige" : ""}`}
+            aria-current={active ? "step" : undefined}
+          >
             <span
-              className={`grid h-5 w-5 place-items-center rounded-full text-[0.65rem] font-bold ${
-                done ? "bg-forest-700 text-white" : active ? "bg-forest-800 text-white" : "bg-beige text-forest-900"
+              className={`grid h-6 w-6 place-items-center rounded-full text-[0.7rem] font-bold ${
+                done ? "bg-[#3f9a3c] text-white" : active ? "bg-forest-800 text-white" : "bg-beige text-forest-900"
               }`}
             >
-              {done ? <Check className="h-3 w-3" aria-hidden /> : i + 1}
+              {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : i + 1}
             </span>
             <span className={active ? "font-semibold text-forest-900" : ""}>{s.label}</span>
           </li>
@@ -93,9 +148,28 @@ function Progress({ step }: { step: SignInState["step"] }) {
   );
 }
 
+/** Green tick with a ring of gold rays, for the success screens. */
+function SuccessBadge() {
+  const rays = Array.from({ length: 12 }, (_, i) => i * 30);
+  return (
+    <span className="relative grid h-36 w-36 place-items-center">
+      <svg viewBox="0 0 144 144" className="absolute inset-0" aria-hidden>
+        {rays.map((deg) => (
+          <line key={deg} x1="72" y1="6" x2="72" y2="17" stroke="#d4b62c" strokeWidth="3.5" strokeLinecap="round" transform={`rotate(${deg} 72 72)`} />
+        ))}
+      </svg>
+      <span className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#5cb84a,#2f8a35)] text-white shadow-md">
+        <Check className="h-11 w-11" aria-hidden strokeWidth={3.25} />
+      </span>
+    </span>
+  );
+}
+
 const primaryBtn =
-  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-forest-800 px-5 font-semibold text-white hover:bg-forest-900 disabled:opacity-60";
-const fieldBox = "flex min-h-12 items-center gap-2 rounded-lg border border-beige-300 bg-white px-3 focus-within:border-forest-800 focus-within:ring-2 focus-within:ring-forest-800/20";
+  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-forest-800 px-5 text-[1.02rem] font-semibold text-white shadow-sm hover:bg-forest-900 disabled:opacity-60";
+const fieldBox =
+  "flex min-h-12 items-center gap-3 rounded-lg border border-beige-300 bg-white px-3.5 text-ink focus-within:border-forest-800 focus-within:ring-2 focus-within:ring-forest-800/20";
+const fieldLabel = "mb-1.5 block text-sm font-bold text-ink";
 
 export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onClose: () => void }) {
   const router = useRouter();
@@ -192,6 +266,7 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
     }
   }
 
+  const showProgress = state.mode === "create" && state.step !== "done" && !state.verified;
   const resendIn = Math.max(0, Math.ceil((resendAt - now) / 1000));
   const titleId = "sign-in-title";
   const errorId = "sign-in-error";
@@ -204,26 +279,24 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
   let body: React.ReactNode;
   if (state.step === "done") {
     const copy = {
-      created: { title: "Account Created Successfully!", text: "Welcome to Reshmam!" },
-      loggedIn: { title: "Logged In Successfully!", text: "Welcome back to Reshmam!" },
-      welcomeBack: { title: "Welcome Back!", text: "You already have an account with this number, so we've logged you in." },
+      created: { title: "Account Created Successfully!", text: <>Welcome to <strong>Reshmam!</strong></> },
+      loggedIn: { title: "Logged In Successfully!", text: <>Welcome back to <strong>Reshmam!</strong></> },
+      welcomeBack: { title: "Welcome Back!", text: <>You already have an account with this number, so we&apos;ve logged you in.</> },
     }[state.outcome ?? "loggedIn"];
     body = (
       <div className="flex flex-col items-center text-center">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-forest-700 text-white shadow-[0_0_0_8px_rgba(201,149,67,0.18)]">
-          <Check className="h-9 w-9" aria-hidden strokeWidth={3} />
-        </span>
-        <h2 id={titleId} className="font-bookman mt-6 text-2xl text-forest-800 sm:text-3xl">
+        <SuccessBadge />
+        <h2 id={titleId} className="font-bookman mt-4 max-w-xs text-[1.9rem] leading-tight text-forest-900">
           {copy.title}
         </h2>
-        <p className="mt-3 text-ink-soft">{copy.text}</p>
-        <div className="mt-8 grid w-full gap-3">
+        <p className="mt-4 text-ink">{copy.text}</p>
+        <div className="mt-10 grid w-full gap-3">
           <button type="button" className={primaryBtn} onClick={close} autoFocus>
             Continue Shopping <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-beige-300 bg-white font-semibold text-forest-900 hover:border-forest-800"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-ink/25 bg-white text-[1.02rem] font-semibold text-ink hover:border-forest-800"
             onClick={() => {
               close();
               router.push("/account");
@@ -247,21 +320,21 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
       >
         <Heading id={titleId} title="Create Your Account" text={state.verified ? `No account yet for ${formatPhone(state.phone)}. Add your name to finish.` : "Get started in just a few steps."} />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-forest-900">
+          <span className={fieldLabel}>
             Full Name <span className="text-red-600">*</span>
           </span>
           <span className={fieldBox}>
-            <User className="h-4 w-4 text-ink-soft" aria-hidden />
-            <input name="name" required defaultValue={state.name} autoComplete="name" placeholder="Enter your full name" className="w-full bg-transparent outline-none" autoFocus aria-describedby={state.error ? errorId : undefined} />
+            <User className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+            <input name="name" required defaultValue={state.name} autoComplete="name" placeholder="Enter your full name" className="w-full bg-transparent outline-none placeholder:text-ink-soft" autoFocus aria-describedby={state.error ? errorId : undefined} />
           </span>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-forest-900">
+          <span className={fieldLabel}>
             Email Address <span className="font-normal text-ink-soft">(Optional)</span>
           </span>
           <span className={fieldBox}>
-            <Mail className="h-4 w-4 text-ink-soft" aria-hidden />
-            <input name="email" type="email" defaultValue={state.email} autoComplete="email" placeholder="Enter your email address" className="w-full bg-transparent outline-none" />
+            <Mail className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+            <input name="email" type="email" defaultValue={state.email} autoComplete="email" placeholder="Enter your email address" className="w-full bg-transparent outline-none placeholder:text-ink-soft" />
           </span>
         </label>
         {error}
@@ -289,12 +362,12 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
           text={create ? "We'll use this number to verify your account." : "Welcome back! Please enter your registered mobile number."}
         />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-forest-900">
+          <span className={fieldLabel}>
             Mobile Number {create && <span className="text-red-600">*</span>}
           </span>
           <span className={fieldBox}>
-            <Phone className="h-4 w-4 text-ink-soft" aria-hidden />
-            <span className="font-semibold text-forest-900">+91</span>
+            <Phone className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+            <span className="font-bold">+91</span>
             <input
               name="phone"
               type="tel"
@@ -302,7 +375,7 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
               autoComplete="tel-national"
               defaultValue={state.phone}
               placeholder="Enter your 10-digit mobile number"
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent outline-none placeholder:text-ink-soft"
               autoFocus
               aria-invalid={Boolean(state.error) || undefined}
               aria-describedby={state.error ? errorId : undefined}
@@ -314,8 +387,8 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
           {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null} Send OTP {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
         </button>
         {create ? (
-          <p className="flex gap-2 rounded-lg border border-gold/40 bg-beige/60 p-3 text-xs text-ink-soft">
-            <Info className="h-4 w-4 shrink-0 text-gold-700" aria-hidden /> We&apos;ll send a one-time password (OTP) to verify your mobile number.
+          <p className="flex items-center gap-3 rounded-lg border border-beige-300 bg-beige/50 px-3.5 py-3 text-xs leading-relaxed text-ink">
+            <Info className="h-5 w-5 shrink-0 text-[#d9a63c]" aria-hidden /> We&apos;ll send a one-time password (OTP) to verify your mobile number.
           </p>
         ) : (
           <SwitchMode text="New to Reshmam?" action="Create an account" onClick={() => send({ type: "SWITCH_MODE", mode: "create" })} />
@@ -338,10 +411,10 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
           <OtpInput value={state.code} onChange={(code) => dispatch({ type: "CODE_CHANGED", code })} disabled={state.pending} autoFocus invalid={Boolean(state.error)} />
         </div>
         {error}
-        <p className="text-center text-sm text-ink-soft">
+        <p className="text-center text-sm text-ink">
           {resendIn > 0 ? (
             <>
-              Resend OTP in <span className="font-semibold text-forest-900">00:{String(resendIn).padStart(2, "0")}</span>
+              Resend OTP in <span className="font-bold text-forest-900">00:{String(resendIn).padStart(2, "0")}</span>
             </>
           ) : (
             <button type="button" className="font-semibold text-forest-800 underline underline-offset-2" disabled={state.pending} onClick={() => send({ type: "MOBILE_SUBMITTED", phone: state.phone })}>
@@ -353,7 +426,7 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
           {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           {state.mode === "create" ? "Verify & Continue" : "Log In"} {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
         </button>
-        <button type="button" className="mx-auto flex items-center gap-2 text-sm font-semibold text-forest-800" onClick={() => send({ type: "CHANGE_NUMBER" })}>
+        <button type="button" className="mx-auto flex items-center gap-2 text-sm font-semibold text-forest-800 hover:underline" onClick={() => send({ type: "CHANGE_NUMBER" })}>
           <ArrowLeft className="h-4 w-4" aria-hidden /> Change Mobile Number
         </button>
       </form>
@@ -371,20 +444,21 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
       onClick={(e) => {
         if (e.target === dialogRef.current) close();
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-[880px] overflow-hidden rounded-2xl bg-cream p-0 text-ink shadow-2xl backdrop:bg-forest-950/60"
+      className="m-auto w-[calc(100%-2rem)] max-w-[820px] overflow-hidden rounded-2xl border border-beige-300 bg-cream p-0 text-ink shadow-2xl backdrop:bg-forest-950/60"
     >
-      <div className="grid max-h-[calc(100dvh-2rem)] overflow-y-auto md:grid-cols-[2fr_3fr]">
+      <div className="grid max-h-[calc(100dvh-2rem)] overflow-y-auto md:grid-cols-[38%_1fr]">
         <BrandPanel />
-        <div className="relative px-5 pb-8 pt-6 sm:px-10">
+        <div className="relative flex flex-col px-5 pb-8 pt-6 sm:px-9 md:pl-8">
+          <Seam />
           <button type="button" onClick={close} aria-label="Close" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full text-forest-900 hover:bg-beige">
             <X className="h-5 w-5" aria-hidden />
           </button>
-          {state.mode === "create" && state.step !== "done" && !state.verified && (
+          {showProgress && (
             <div className="mb-6 pr-10">
               <Progress step={state.step} />
             </div>
           )}
-          <div className={state.step === "done" ? "py-6" : ""}>{body}</div>
+          <div className={showProgress ? "mt-2 w-full" : "my-auto w-full py-2"}>{body}</div>
           {/* Invisible reCAPTCHA Firebase needs before it sends an SMS. */}
           <div ref={recaptchaRef} />
         </div>
@@ -396,11 +470,11 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
 function Heading({ id, title, text }: { id: string; title: string; text: string }) {
   return (
     <div className="mb-2 text-center">
-      <Leaf className="mx-auto h-7 w-7 text-forest-700" aria-hidden />
-      <h2 id={id} className="font-bookman mt-2 text-2xl text-forest-800 sm:text-[1.7rem]">
+      <Sprout className="mx-auto h-8 w-12" />
+      <h2 id={id} className="font-bookman mt-2 text-[1.65rem] leading-tight text-forest-900 sm:text-[1.8rem]">
         {title}
       </h2>
-      <p className="mt-2 text-sm text-ink-soft">{text}</p>
+      <p className="mt-2 text-[0.95rem] text-ink">{text}</p>
     </div>
   );
 }
