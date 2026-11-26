@@ -1,81 +1,98 @@
+import { INVALID_EMAIL, MIN_PASSWORD_LENGTH, parseEmail } from "@storefront/_lib/account-identity";
 import { normalizeIndianMobile } from "@storefront/_lib/phone";
 
-/** The sign-in dialog's steps as a pure reducer; the dialog does the Firebase calls and dispatches results. */
+/**
+ * The sign-in dialog as a pure reducer: it checks what was typed and, when it's fine, sets `pending` and
+ * `request` so the dialog makes the Firebase call and dispatches the result.
+ */
 
-export type Mode = "create" | "login";
-export type Step = "details" | "mobile" | "otp" | "done";
-export type Outcome = "created" | "loggedIn" | "welcomeBack";
+export type Mode = "create" | "login" | "forgot";
+export type Outcome = "created" | "loggedIn" | "resetSent";
+
+/** The Firebase call the dialog should make next. */
+export type Request =
+  | { kind: "create"; name: string; email: string; phone: string; password: string }
+  | { kind: "login"; email: string; password: string }
+  | { kind: "reset"; email: string };
 
 export type SignInState = {
   mode: Mode;
-  step: Step;
-  name: string;
+  /** What was typed in Email, kept when switching between modes. */
   email: string;
-  /** 10 digits once accepted. */
-  phone: string;
-  code: string;
-  /** Waiting on Firebase (sending the SMS, checking the code or saving the profile). */
+  /** Waiting on Firebase. */
   pending: boolean;
+  request: Request | null;
   error: string | null;
-  /** The phone number is verified and the customer is signed in, but has no profile yet. */
-  verified: boolean;
   outcome: Outcome | null;
 };
 
 export type SignInEvent =
-  | { type: "DETAILS_SUBMITTED"; name: string; email: string }
-  | { type: "MOBILE_SUBMITTED"; phone: string }
-  | { type: "OTP_SENT" }
-  | { type: "CODE_CHANGED"; code: string }
-  | { type: "OTP_SUBMITTED" }
-  | { type: "OTP_CONFIRMED"; hasProfile: boolean }
-  | { type: "CHANGE_NUMBER" }
+  | { type: "CREATE_SUBMITTED"; name: string; email: string; phone: string; password: string; confirm: string }
+  | { type: "LOGIN_SUBMITTED"; email: string; password: string }
+  | { type: "RESET_SUBMITTED"; email: string }
+  | { type: "SUCCEEDED" }
   | { type: "SWITCH_MODE"; mode: Mode }
   | { type: "ERROR"; message: string }
   | { type: "RESET"; mode: Mode };
 
+export const NEEDS_NAME = "Please enter your full name.";
 export const INVALID_MOBILE = "Enter a valid 10-digit mobile number.";
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const SHORT_PASSWORD = `Your password needs at least ${MIN_PASSWORD_LENGTH} characters.`;
+export const PASSWORDS_DIFFER = "The two passwords don't match.";
 
-export function initialSignInState(mode: Mode): SignInState {
-  return { mode, step: mode === "create" ? "details" : "mobile", name: "", email: "", phone: "", code: "", pending: false, error: null, verified: false, outcome: null };
+export function initialSignInState(mode: Mode, email = ""): SignInState {
+  return { mode, email, pending: false, request: null, error: null, outcome: null };
 }
+
+const fail = (state: SignInState, error: string, email: string): SignInState => ({
+  ...state,
+  email,
+  pending: false,
+  request: null,
+  error,
+});
+
+const start = (state: SignInState, request: Request, email: string): SignInState => ({
+  ...state,
+  email,
+  pending: true,
+  request,
+  error: null,
+});
 
 export function signInReducer(state: SignInState, event: SignInEvent): SignInState {
   switch (event.type) {
-    case "DETAILS_SUBMITTED": {
+    case "CREATE_SUBMITTED": {
       const name = event.name.trim();
-      const email = event.email.trim();
-      if (!name) return { ...state, error: "Please enter your full name." };
-      if (email && !EMAIL.test(email)) return { ...state, error: "Enter a valid email address, or leave it blank." };
-      // Already verified (came from Log In with no account): the dialog saves the profile next.
-      if (state.verified) return { ...state, name, email, pending: true, error: null };
-      return { ...state, name, email, step: "mobile", error: null };
-    }
-    case "MOBILE_SUBMITTED": {
+      if (!name) return fail(state, NEEDS_NAME, event.email);
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
       const phone = normalizeIndianMobile(event.phone);
-      if (!phone) return { ...state, pending: false, error: INVALID_MOBILE };
-      return { ...state, phone, pending: true, error: null };
+      if (!phone) return fail(state, INVALID_MOBILE, event.email);
+      if (event.password.length < MIN_PASSWORD_LENGTH) return fail(state, SHORT_PASSWORD, event.email);
+      if (event.password !== event.confirm) return fail(state, PASSWORDS_DIFFER, event.email);
+      return start(state, { kind: "create", name, email, phone, password: event.password }, event.email);
     }
-    case "OTP_SENT":
-      return { ...state, step: "otp", code: "", pending: false, error: null };
-    case "CODE_CHANGED":
-      return { ...state, code: event.code, error: null };
-    case "OTP_SUBMITTED":
-      if (!/^\d{6}$/.test(state.code)) return { ...state, error: "Enter the 6-digit code from the SMS." };
-      return { ...state, pending: true, error: null };
-    case "OTP_CONFIRMED": {
-      const base = { ...state, pending: false, error: null, code: "" };
-      if (event.hasProfile) return { ...base, step: "done", outcome: state.mode === "create" ? "welcomeBack" : "loggedIn" };
-      if (state.mode === "create") return { ...base, step: "done", outcome: "created" };
-      return { ...base, mode: "create", step: "details", verified: true };
+    case "LOGIN_SUBMITTED": {
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
+      if (!event.password) return fail(state, "Enter your password.", event.email);
+      return start(state, { kind: "login", email, password: event.password }, event.email);
     }
-    case "CHANGE_NUMBER":
-      return { ...state, step: "mobile", code: "", pending: false, error: null };
+    case "RESET_SUBMITTED": {
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
+      return start(state, { kind: "reset", email }, event.email);
+    }
+    case "SUCCEEDED": {
+      const outcome: Outcome = state.mode === "create" ? "created" : state.mode === "forgot" ? "resetSent" : "loggedIn";
+      return { ...state, pending: false, request: null, error: null, outcome };
+    }
     case "SWITCH_MODE":
+      return initialSignInState(event.mode, state.email);
     case "RESET":
       return initialSignInState(event.mode);
     case "ERROR":
-      return { ...state, pending: false, error: event.message };
+      return { ...state, pending: false, request: null, error: event.message };
   }
 }

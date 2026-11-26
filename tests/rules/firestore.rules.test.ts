@@ -5,18 +5,18 @@ import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, 
 import { DEFAULT_ROLES } from "@/lib/staff-permissions";
 import { allowed, clearFirestore, client, closeClients, denied, seedDb } from "./helpers";
 
-const CUST1 = { uid: "cust1", phone: "+919876543210" };
-const CUST2 = { uid: "cust2", phone: "+919000000002" };
+const CUST1 = { uid: "cust1", email: "priya@example.com" };
+const CUST2 = { uid: "cust2", email: "ravi@example.com" };
 const ADMIN = { uid: "admin1" };
 const MANAGER = { uid: "manager1" };
 const STAFF = { uid: "staff1" };
 const INACTIVE = { uid: "inactive1" };
 
 const now = "2026-11-24T00:00:00.000Z";
-const ownProfile = (uid: string, phone: string) => ({
+const ownProfile = (uid: string, email: string, phone = "+919876543210") => ({
   id: uid,
   name: "Test Customer",
-  email: "t@example.com",
+  email,
   phone,
   createdAt: now,
   updatedAt: now,
@@ -34,8 +34,8 @@ beforeEach(async () => {
   await db.doc("products/p1").set({ name: "Gingelly Oil", status: "Active" });
   await db.doc("variants/v1").set({ productId: "p1", size: "1 L", price: 600, mrp: 650, stock: 10, alertStock: 2 });
   await db.doc("coupons/c1").set({ code: "FESTIVE5" });
-  await db.doc("customers/cust1").set(ownProfile("cust1", CUST1.phone));
-  await db.doc("customers/cust2").set(ownProfile("cust2", CUST2.phone));
+  await db.doc("customers/cust1").set(ownProfile("cust1", CUST1.email));
+  await db.doc("customers/cust2").set(ownProfile("cust2", CUST2.email));
   await db.doc("orders/o1").set({ customerId: "cust1", total: 600, createdAt: now });
   await db.doc("orders/o2").set({ customerId: "cust2", total: 900, createdAt: now });
 });
@@ -59,29 +59,32 @@ describe("signed out", () => {
 });
 
 describe("customer", () => {
-  it("can create their own profile with the allowed fields and their verified phone", async () => {
+  it("can create their own profile with the email they log in with", async () => {
+    await seedDb().doc("customers/cust1").delete();
+    await allowed(setDoc(doc(client(CUST1).db, "customers/cust1"), ownProfile("cust1", CUST1.email)));
+  });
+  it("can't claim another email, or create with no name, a bad mobile number, another uid or extra fields", async () => {
     await seedDb().doc("customers/cust1").delete();
     const { db } = client(CUST1);
-    await allowed(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", CUST1.phone)));
+    await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", "someone@example.com")));
+    await denied(setDoc(doc(db, "customers/cust1"), { ...ownProfile("cust1", CUST1.email), name: "" }));
+    await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", CUST1.email, "9876543210")));
+    await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", CUST1.email, "+911234567890")));
+    await denied(setDoc(doc(db, "customers/someoneelse"), ownProfile("someoneelse", CUST1.email)));
+    await denied(setDoc(doc(db, "customers/cust1"), { ...ownProfile("cust1", CUST1.email), status: "VIP" }));
   });
-  it("can't create a profile with a different phone, another uid, or extra fields", async () => {
-    await seedDb().doc("customers/cust1").delete();
-    const { db } = client(CUST1);
-    await denied(setDoc(doc(db, "customers/cust1"), ownProfile("cust1", "+919111111111")));
-    await denied(setDoc(doc(db, "customers/someoneelse"), ownProfile("someoneelse", CUST1.phone)));
-    await denied(setDoc(doc(db, "customers/cust1"), { ...ownProfile("cust1", CUST1.phone), status: "VIP" }));
-  });
-  it("can update their name, email, cart and wishlist", async () => {
+  it("can update their name, cart and wishlist", async () => {
     const { db } = client(CUST1);
     await allowed(updateDoc(doc(db, "customers/cust1"), { name: "New Name", updatedAt: now }));
     await allowed(updateDoc(doc(db, "customers/cust1"), { cart: [{ variantId: "v1", quantity: 2 }], wishlist: ["p1"], updatedAt: now }));
   });
-  it("can't give themselves staff fields or change their phone", async () => {
+  it("can't give themselves staff fields or change their email or phone", async () => {
     const { db } = client(CUST1);
     await denied(updateDoc(doc(db, "customers/cust1"), { status: "Blocked" }));
     await denied(updateDoc(doc(db, "customers/cust1"), { role: "Admin" }));
     await denied(updateDoc(doc(db, "customers/cust1"), { notes: "x" }));
     await denied(updateDoc(doc(db, "customers/cust1"), { phone: "+919111111111" }));
+    await denied(updateDoc(doc(db, "customers/cust1"), { email: "someone@example.com" }));
   });
   it("can't read or change another customer", async () => {
     const { db } = client(CUST1);

@@ -41,12 +41,12 @@ export function hmacHex(secret: string, payload: string) {
 
 export class OutOfStockError extends Error {}
 
-/** A signed-in customer placing the order: their Firebase uid and verified phone (E.164). */
+/** A signed-in customer placing the order: their Firebase uid and the mobile number entered at checkout. */
 export type OrderCustomer = { uid: string; phone: string };
 
 /**
  * Saves the order (and, for a guest, a customer record) through the Firebase Admin SDK.
- * A signed-in customer's order is linked to their account (customerId = uid, phone = verified phone), so it
+ * A signed-in customer's order is linked to their account (customerId = uid), so it
  * shows in their order history; their own customers/{uid} profile is theirs, so no guest record is written.
  * Matches exact Firestore order schema: branchId, createdAt, customerEmail, customerId,
  * customerName, customerPhone, discount, id, items, number, paymentMethod, paymentStatus,

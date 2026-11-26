@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from "firebase/auth";
 import { doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { customerAuth, customerDb } from "./customer-firebase";
 import type { CartItem } from "./store";
+import { MIN_PASSWORD_LENGTH } from "./account-identity";
+import { toE164 } from "./phone";
 
 /** customers/{uid}: the fields the Firestore rules let a customer create and see. */
 export type CustomerProfile = {
   id: string;
   name: string;
   email?: string;
+  /** E.164, e.g. "+919876543210". Typed at sign-up, not verified. */
   phone: string;
   cart?: CartItem[];
   wishlist?: string[];
@@ -19,11 +29,18 @@ export type CustomerProfile = {
   source: "website";
 };
 
+const WRONG_LOGIN = "That email or password isn't right.";
 const MESSAGES: Record<string, string> = {
-  "auth/invalid-verification-code": "That code isn't right. Check the SMS and try again.",
-  "auth/code-expired": "That code has expired. Tap Resend OTP for a new one.",
+  "auth/invalid-credential": WRONG_LOGIN,
+  "auth/invalid-login-credentials": WRONG_LOGIN,
+  "auth/wrong-password": WRONG_LOGIN,
+  "auth/user-not-found": WRONG_LOGIN,
+  "auth/invalid-email": WRONG_LOGIN,
+  "auth/email-already-in-use": "That email already has an account. Try logging in instead.",
+  "auth/weak-password": `Choose a stronger password of at least ${MIN_PASSWORD_LENGTH} characters.`,
+  "auth/password-does-not-meet-requirements": `Choose a stronger password of at least ${MIN_PASSWORD_LENGTH} characters.`,
+  "auth/user-disabled": "This account has been turned off. Please contact us for help.",
   "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
-  "auth/invalid-phone-number": "Enter a valid 10-digit mobile number.",
   "auth/network-request-failed": "You seem to be offline. Check your connection and try again.",
 };
 
@@ -33,40 +50,68 @@ export function authErrorMessage(code: string): string {
 }
 
 const profileRef = (uid: string) => doc(customerDb, "customers", uid);
-const cleanEmail = (email?: string) => (email ?? "").trim().toLowerCase();
 
 export async function getProfile(uid: string): Promise<CustomerProfile | null> {
   const snap = await getDoc(profileRef(uid));
   return snap.exists() ? (snap.data() as CustomerProfile) : null;
 }
 
-/** First sign-in: creates customers/{uid} with the verified phone number (the rules check it matches). */
-export async function createProfile(user: User, { name, email }: { name: string; email?: string }): Promise<void> {
-  if (!user.phoneNumber) throw new Error("This account has no verified mobile number.");
+/**
+ * A new account's customers/{uid}: the customer's name, the email it signs in with (the rules check it matches
+ * the sign-in) and the mobile number as typed (10 digits).
+ */
+export async function createProfile(uid: string, { name, email, phone }: { name: string; email: string; phone: string }): Promise<void> {
   const now = new Date().toISOString();
   const profile: Required<CustomerProfile> = {
-    id: user.uid,
+    id: uid,
     name: name.trim(),
-    email: cleanEmail(email),
-    phone: user.phoneNumber,
+    email,
+    phone: toE164(phone),
     cart: [],
     wishlist: [],
     createdAt: now,
     updatedAt: now,
     source: "website",
   };
-  await setDoc(profileRef(user.uid), profile);
+  await setDoc(profileRef(uid), profile);
 }
 
-/** My Account edits: name and email only (the mobile number is the sign-in and can't change here). */
-export async function updateProfile(uid: string, changes: { name?: string; email?: string }): Promise<void> {
-  const data: Record<string, string> = { updatedAt: new Date().toISOString() };
-  if (changes.name !== undefined) data.name = changes.name.trim();
-  if (changes.email !== undefined) data.email = cleanEmail(changes.email);
+/** My Account edits: the name only (the email is the login, and the mobile number can't change here). */
+export async function updateProfile(uid: string, changes: { name: string }): Promise<void> {
+  const data: Record<string, string> = { updatedAt: new Date().toISOString(), name: changes.name.trim() };
   await updateDoc(profileRef(uid), data);
 }
 
 export const signOutCustomer = (): Promise<void> => signOut(customerAuth);
+
+/**
+ * Creates the Firebase account and its profile. If the profile can't be saved, the account is removed again,
+ * so the customer can simply try again (rather than being left with an account that has no profile).
+ */
+export async function createAccount({ name, email, phone, password }: { name: string; email: string; phone: string; password: string }): Promise<void> {
+  const { user } = await createUserWithEmailAndPassword(customerAuth, email, password);
+  try {
+    await createProfile(user.uid, { name, email, phone });
+  } catch (e) {
+    await user.delete().catch(() => signOut(customerAuth));
+    throw e;
+  }
+}
+
+export async function logIn(email: string, password: string): Promise<void> {
+  await signInWithEmailAndPassword(customerAuth, email, password);
+}
+
+/** Emails a password-reset link. */
+export async function sendPasswordReset(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(customerAuth, email);
+  } catch (e) {
+    // Don't reveal whether an account exists for this email.
+    if (e && typeof e === "object" && "code" in e && e.code === "auth/user-not-found") return;
+    throw e;
+  }
+}
 
 /** The signed-in customer and their profile, kept live. `loading` is true until both are known. */
 export function useCustomer(): { user: User | null; profile: CustomerProfile | null; loading: boolean } {

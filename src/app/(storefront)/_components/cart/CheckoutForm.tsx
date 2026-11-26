@@ -12,6 +12,7 @@ import { site } from "@storefront/_lib/site";
 import { ButtonLink, cn } from "@storefront/_components/ui/primitives";
 import { useSignInDialog } from "@storefront/_components/account/SignInDialogProvider";
 import { useCustomer } from "@storefront/_lib/customer-auth";
+import { normalizeIndianMobile } from "@storefront/_lib/phone";
 
 type Status = { ordering: boolean; onlinePayments: boolean } | null;
 
@@ -64,10 +65,9 @@ const inputCls =
 export function CheckoutForm() {
   const router = useRouter();
   const { lines, subtotal } = useCartLines();
-  // Signed in: details are prefilled, the mobile is the verified one, and the order is linked to the account.
+  // Signed in: details are prefilled from the account, and the order is linked to it.
   const { user, profile, loading: accountLoading } = useCustomer();
   const { open: openSignIn } = useSignInDialog();
-  const verifiedPhone = user?.phoneNumber ?? null;
   const [state, setState] = useState<string>(site.shipping.homeState);
   const [method, setMethod] = useState<"online" | "cod">("online");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -374,23 +374,14 @@ export function CheckoutForm() {
             </div>
             <div>
               <label htmlFor="c-phone" className="text-sm font-medium">Mobile number *</label>
-              {verifiedPhone ? (
-                <>
-                  <input
-                    id="c-phone"
-                    name="customer.phone"
-                    type="tel"
-                    readOnly
-                    value={verifiedPhone}
-                    {...field("customer.phone")}
-                    className={cn(inputCls, "border-beige-300 bg-beige/40 text-ink-soft")}
-                    aria-describedby="c-phone-note"
-                  />
-                  <p id="c-phone-note" className="mt-1 text-xs text-ink-soft">Your verified mobile number.</p>
-                </>
-              ) : (
-                <input id="c-phone" name="customer.phone" type="tel" autoComplete="tel" {...field("customer.phone")} />
-              )}
+              <input
+                id="c-phone"
+                name="customer.phone"
+                type="tel"
+                autoComplete="tel"
+                defaultValue={profile?.phone ? (normalizeIndianMobile(profile.phone) ?? profile.phone) : ""}
+                {...field("customer.phone")}
+              />
               {err("customer.phone")}
             </div>
           </div>

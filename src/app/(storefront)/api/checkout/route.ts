@@ -13,16 +13,15 @@ export async function POST(req: Request) {
   if (!rateLimit(`checkout:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   }
-  // Only signed-in customers can order: a valid Firebase ID token with a verified phone. A missing, expired or
-  // forged token is refused, and the order is always linked to the account.
+  // Only signed-in customers can order: a valid Firebase ID token. A missing, expired or forged token is
+  // refused, and the order is always linked to the account.
   const token = await verifyIdToken(req);
-  if (!token?.phone_number) {
+  if (!token) {
     return NextResponse.json(
       { ok: false, code: "login_required", error: "Please log in to place your order." },
       { status: 401 },
     );
   }
-  const customer = { uid: token.uid, phone: token.phone_number };
   const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
@@ -31,6 +30,8 @@ export async function POST(req: Request) {
     );
   }
   const input = parsed.data;
+  // The account's mobile number isn't verified, so the order uses the one entered at checkout.
+  const customer = { uid: token.uid, phone: input.customer.phone };
 
   const cf = cashfreeConfig();
   const rzp = razorpayConfig();

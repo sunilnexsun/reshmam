@@ -72,12 +72,10 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             const name = String(f.get("name") ?? "").trim();
-            const email = String(f.get("email") ?? "").trim();
             if (!name) return setMsg({ kind: "err", text: "Please enter your name." });
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setMsg({ kind: "err", text: "Enter a valid email address, or leave it blank." });
             setSaving(true);
             try {
-              await updateProfile(profile.id, { name, email });
+              await updateProfile(profile.id, { name });
               setEditing(false);
               setMsg({ kind: "ok", text: "Your details are saved." });
             } catch {
@@ -90,10 +88,6 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
           <label className="text-sm font-medium">
             Full name
             <input name="name" defaultValue={profile.name} autoComplete="name" required className={inputCls} />
-          </label>
-          <label className="text-sm font-medium">
-            Email <span className="font-normal text-ink-soft">(optional)</span>
-            <input name="email" type="email" defaultValue={profile.email ?? ""} autoComplete="email" className={inputCls} />
           </label>
           <div className="flex gap-3 sm:col-span-2">
             <button
@@ -112,7 +106,7 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-soft">Name</dt>
-            <dd className="mt-1 font-medium">{profile.name}</dd>
+            <dd className="mt-1 font-medium">{profile.name || <span className="text-ink-soft">Not added</span>}</dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-soft">Mobile</dt>
@@ -127,7 +121,11 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
       <p aria-live="polite" className={`mt-3 text-sm ${msg?.kind === "err" ? "text-red-700" : "text-forest-800"}`}>
         {msg?.text}
       </p>
-      {editing && <p className="text-xs text-ink-soft">Your mobile number is how you log in, so it can&apos;t be changed here.</p>}
+      {editing && (
+        <p className="text-xs text-ink-soft">
+          Your email is how you log in, so it can&apos;t be changed here. To change your mobile number, call {site.phone.display}.
+        </p>
+      )}
     </section>
   );
 }
@@ -160,8 +158,8 @@ export function AccountPanel() {
       <div className="max-w-xl rounded-xl border border-beige-300/80 bg-white p-6">
         <h2 className="font-serif text-2xl font-bold text-forest-800">Log in to your account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Log in with your mobile number — we&apos;ll text you a one-time code, no password needed. Your account keeps
-          your orders, cart and wishlist on every device you use.
+          Log in with your email and password. Your account keeps your orders, cart and wishlist on
+          every device you use.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button

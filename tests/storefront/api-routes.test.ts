@@ -33,8 +33,8 @@ const store = vi.hoisted(() => ({
   updates: [] as { path: string; value: unknown }[],
 }));
 // The order routes use the Firebase Admin SDK: a small stand-in over `store`, plus ID tokens by name.
-const idTokens: Record<string, { uid: string; phone_number?: string }> = {
-  "good-token": { uid: "u1", phone_number: "+919999999999" },
+const idTokens: Record<string, { uid: string; email?: string }> = {
+  "good-token": { uid: "u1", email: "priya@example.com" },
 };
 vi.mock("@/lib/firebase-admin", () => {
   type Row = Record<string, unknown>;
@@ -250,9 +250,9 @@ describe("POST /api/checkout", () => {
     expect(await res.json()).toMatchObject({ ok: false, code: "login_required" });
     expect(orderFns.createOrder).not.toHaveBeenCalled();
   });
-  it("links the order to a signed-in customer, using the verified phone over the form's", async () => {
+  it("links the order to the signed-in customer, with the mobile number entered at checkout", async () => {
     await send(order("cod"));
-    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: { uid: "u1", phone: "+919999999999" } });
+    expect(orderFns.createOrder.mock.calls[0][2]).toMatchObject({ customer: { uid: "u1", phone: "9876543210" } });
   });
   it("refuses an expired or forged token", async () => {
     const res = await checkout(post(order("cod"), { authorization: "Bearer forged" }));

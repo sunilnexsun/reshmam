@@ -24,7 +24,7 @@ describe("product images", () => {
   });
   it("Staff (products: view) and customers can't", async () => {
     await denied(upload(client({ uid: "staff1" }).storage, "products/test2.png"));
-    await denied(upload(client({ uid: "cust1", phone: "+919876543210" }).storage, "products/test3.png"));
+    await denied(upload(client({ uid: "cust1", email: "priya@example.com" }).storage, "products/test3.png"));
     await denied(upload(client(null).storage, "products/test4.png"));
   });
 });
