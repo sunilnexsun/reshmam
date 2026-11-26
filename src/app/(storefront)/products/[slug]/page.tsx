@@ -188,16 +188,6 @@ export default async function ProductPage({
                   <li key={u}>{u}</li>
                 ))}
               </ul>
-              <h3 className="mt-4 font-sans text-sm font-semibold text-forest-900">
-                Available sizes
-              </h3>
-              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
-                {product.variants.map((v) => (
-                  <li key={v.id} className="rounded-md bg-beige px-3 py-1.5">
-                    {v.label} · {formatINR(v.price)}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </Container>
