@@ -73,7 +73,7 @@ export default async function ProductPage({
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    image: absoluteUrl(product.image),
+    image: (product.images?.length ? product.images : [product.image]).map(absoluteUrl),
     description: product.summary,
     brand: {
       "@type": "Brand",
