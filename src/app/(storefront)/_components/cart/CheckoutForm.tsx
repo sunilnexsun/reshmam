@@ -178,6 +178,11 @@ export function CheckoutForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    // Only customers with an account can check out: ask a signed-out visitor to log in first.
+    if (!user) {
+      openSignIn("login");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     const g = (k: string) => String(fd.get(k) ?? "").trim();
     const payload = {
@@ -209,9 +214,8 @@ export function CheckoutForm() {
         data = pendingRef.current.data;
       } else {
         pendingRef.current = null;
-        // The server checks this token and links the order to the account (an expired or forged one makes
-        // it a guest order, so a failure here never blocks checkout).
-        const idToken = user ? await user.getIdToken().catch(() => null) : null;
+        // The server checks this token and links the order to the account; it refuses the order without one.
+        const idToken = await user.getIdToken().catch(() => null);
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
@@ -219,6 +223,11 @@ export function CheckoutForm() {
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok || !body.ok) {
+          if (body.code === "login_required") {
+            setBusy(false);
+            openSignIn("login");
+            return;
+          }
           if (body.fields) setErrors(body.fields);
           setError(body.error ?? "Something went wrong. Nothing was charged.");
           setBusy(false);
@@ -344,9 +353,9 @@ export function CheckoutForm() {
           <legend className="float-left mb-2 w-full font-serif text-xl font-bold text-forest-800 [&+*]:clear-both">Customer details</legend>
           {!user && (
             <p className="mt-1 text-sm text-ink-soft">
-              Have an account?{" "}
+              Please log in to place your order.{" "}
               <button type="button" onClick={() => openSignIn("login")} className="inline-flex items-center gap-1 font-semibold text-forest-800 underline underline-offset-2">
-                <LogIn className="h-3.5 w-3.5" aria-hidden /> Log in for faster checkout
+                <LogIn className="h-3.5 w-3.5" aria-hidden /> Log in or create an account
               </button>
             </p>
           )}
