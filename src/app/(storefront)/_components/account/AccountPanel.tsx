@@ -33,7 +33,6 @@ const inputCls =
 
 function ProfileCard({ profile }: { profile: CustomerProfile }) {
   const [editing, setEditing] = useState(false);
-  const emailLogin = !profile.username;
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
@@ -73,13 +72,10 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             const name = String(f.get("name") ?? "").trim();
-            // An email account logs in with its email, so only a username account can change it here.
-            const email = emailLogin ? undefined : String(f.get("email") ?? "").trim();
             if (!name) return setMsg({ kind: "err", text: "Please enter your name." });
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setMsg({ kind: "err", text: "Enter a valid email address, or leave it blank." });
             setSaving(true);
             try {
-              await updateProfile(profile.id, { name, email });
+              await updateProfile(profile.id, { name });
               setEditing(false);
               setMsg({ kind: "ok", text: "Your details are saved." });
             } catch {
@@ -93,12 +89,6 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
             Full name
             <input name="name" defaultValue={profile.name} autoComplete="name" required className={inputCls} />
           </label>
-          {!emailLogin && (
-            <label className="text-sm font-medium">
-              Email <span className="font-normal text-ink-soft">(optional)</span>
-              <input name="email" type="email" defaultValue={profile.email ?? ""} autoComplete="email" className={inputCls} />
-            </label>
-          )}
           <div className="flex gap-3 sm:col-span-2">
             <button
               type="submit"
@@ -114,12 +104,6 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
         </form>
       ) : (
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
-          {profile.username && (
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-ink-soft">Username</dt>
-              <dd className="mt-1 font-medium">{profile.username}</dd>
-            </div>
-          )}
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-soft">Name</dt>
             <dd className="mt-1 font-medium">{profile.name || <span className="text-ink-soft">Not added</span>}</dd>
@@ -139,7 +123,7 @@ function ProfileCard({ profile }: { profile: CustomerProfile }) {
       </p>
       {editing && (
         <p className="text-xs text-ink-soft">
-          Your {emailLogin ? "email" : "username"} is how you log in, so it can&apos;t be changed here. To change your mobile number, call {site.phone.display}.
+          Your email is how you log in, so it can&apos;t be changed here. To change your mobile number, call {site.phone.display}.
         </p>
       )}
     </section>
@@ -174,7 +158,7 @@ export function AccountPanel() {
       <div className="max-w-xl rounded-xl border border-beige-300/80 bg-white p-6">
         <h2 className="font-serif text-2xl font-bold text-forest-800">Log in to your account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Log in with your username or email and password. Your account keeps your orders, cart and wishlist on
+          Log in with your email and password. Your account keeps your orders, cart and wishlist on
           every device you use.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">

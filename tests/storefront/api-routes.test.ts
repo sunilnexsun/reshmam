@@ -34,7 +34,7 @@ const store = vi.hoisted(() => ({
 }));
 // The order routes use the Firebase Admin SDK: a small stand-in over `store`, plus ID tokens by name.
 const idTokens: Record<string, { uid: string; email?: string }> = {
-  "good-token": { uid: "u1", email: "priya_k@customers.reshmam.com" },
+  "good-token": { uid: "u1", email: "priya@example.com" },
 };
 vi.mock("@/lib/firebase-admin", () => {
   type Row = Record<string, unknown>;

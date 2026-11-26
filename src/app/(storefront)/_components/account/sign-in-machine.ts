@@ -1,4 +1,4 @@
-import { INVALID_IDENTIFIER, MIN_PASSWORD_LENGTH, parseIdentifier, type Identifier } from "@storefront/_lib/account-identity";
+import { INVALID_EMAIL, MIN_PASSWORD_LENGTH, parseEmail } from "@storefront/_lib/account-identity";
 import { normalizeIndianMobile } from "@storefront/_lib/phone";
 
 /**
@@ -11,14 +11,14 @@ export type Outcome = "created" | "loggedIn" | "resetSent";
 
 /** The Firebase call the dialog should make next. */
 export type Request =
-  | { kind: "create"; id: Identifier; phone: string; password: string }
-  | { kind: "login"; id: Identifier; password: string }
+  | { kind: "create"; email: string; phone: string; password: string }
+  | { kind: "login"; email: string; password: string }
   | { kind: "reset"; email: string };
 
 export type SignInState = {
   mode: Mode;
-  /** What was typed in "Username or email", kept when switching between modes. */
-  identifier: string;
+  /** What was typed in Email, kept when switching between modes. */
+  email: string;
   /** Waiting on Firebase. */
   pending: boolean;
   request: Request | null;
@@ -27,9 +27,9 @@ export type SignInState = {
 };
 
 export type SignInEvent =
-  | { type: "CREATE_SUBMITTED"; identifier: string; phone: string; password: string; confirm: string }
-  | { type: "LOGIN_SUBMITTED"; identifier: string; password: string }
-  | { type: "RESET_SUBMITTED"; identifier: string }
+  | { type: "CREATE_SUBMITTED"; email: string; phone: string; password: string; confirm: string }
+  | { type: "LOGIN_SUBMITTED"; email: string; password: string }
+  | { type: "RESET_SUBMITTED"; email: string }
   | { type: "SUCCEEDED" }
   | { type: "SWITCH_MODE"; mode: Mode }
   | { type: "ERROR"; message: string }
@@ -38,24 +38,22 @@ export type SignInEvent =
 export const INVALID_MOBILE = "Enter a valid 10-digit mobile number.";
 export const SHORT_PASSWORD = `Your password needs at least ${MIN_PASSWORD_LENGTH} characters.`;
 export const PASSWORDS_DIFFER = "The two passwords don't match.";
-export const RESET_NEEDS_EMAIL =
-  "Password reset links go to an email. If you signed up with a username, please call us and we'll help.";
 
-export function initialSignInState(mode: Mode, identifier = ""): SignInState {
-  return { mode, identifier, pending: false, request: null, error: null, outcome: null };
+export function initialSignInState(mode: Mode, email = ""): SignInState {
+  return { mode, email, pending: false, request: null, error: null, outcome: null };
 }
 
-const fail = (state: SignInState, error: string, identifier: string): SignInState => ({
+const fail = (state: SignInState, error: string, email: string): SignInState => ({
   ...state,
-  identifier,
+  email,
   pending: false,
   request: null,
   error,
 });
 
-const start = (state: SignInState, request: Request, identifier: string): SignInState => ({
+const start = (state: SignInState, request: Request, email: string): SignInState => ({
   ...state,
-  identifier,
+  email,
   pending: true,
   request,
   error: null,
@@ -64,32 +62,31 @@ const start = (state: SignInState, request: Request, identifier: string): SignIn
 export function signInReducer(state: SignInState, event: SignInEvent): SignInState {
   switch (event.type) {
     case "CREATE_SUBMITTED": {
-      const id = parseIdentifier(event.identifier);
-      if (!id) return fail(state, INVALID_IDENTIFIER, event.identifier);
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
       const phone = normalizeIndianMobile(event.phone);
-      if (!phone) return fail(state, INVALID_MOBILE, event.identifier);
-      if (event.password.length < MIN_PASSWORD_LENGTH) return fail(state, SHORT_PASSWORD, event.identifier);
-      if (event.password !== event.confirm) return fail(state, PASSWORDS_DIFFER, event.identifier);
-      return start(state, { kind: "create", id, phone, password: event.password }, event.identifier);
+      if (!phone) return fail(state, INVALID_MOBILE, event.email);
+      if (event.password.length < MIN_PASSWORD_LENGTH) return fail(state, SHORT_PASSWORD, event.email);
+      if (event.password !== event.confirm) return fail(state, PASSWORDS_DIFFER, event.email);
+      return start(state, { kind: "create", email, phone, password: event.password }, event.email);
     }
     case "LOGIN_SUBMITTED": {
-      const id = parseIdentifier(event.identifier);
-      if (!id) return fail(state, INVALID_IDENTIFIER, event.identifier);
-      if (!event.password) return fail(state, "Enter your password.", event.identifier);
-      return start(state, { kind: "login", id, password: event.password }, event.identifier);
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
+      if (!event.password) return fail(state, "Enter your password.", event.email);
+      return start(state, { kind: "login", email, password: event.password }, event.email);
     }
     case "RESET_SUBMITTED": {
-      const id = parseIdentifier(event.identifier);
-      if (!id) return fail(state, INVALID_IDENTIFIER, event.identifier);
-      if (id.kind !== "email") return fail(state, RESET_NEEDS_EMAIL, event.identifier);
-      return start(state, { kind: "reset", email: id.email }, event.identifier);
+      const email = parseEmail(event.email);
+      if (!email) return fail(state, INVALID_EMAIL, event.email);
+      return start(state, { kind: "reset", email }, event.email);
     }
     case "SUCCEEDED": {
       const outcome: Outcome = state.mode === "create" ? "created" : state.mode === "forgot" ? "resetSent" : "loggedIn";
       return { ...state, pending: false, request: null, error: null, outcome };
     }
     case "SWITCH_MODE":
-      return initialSignInState(event.mode, state.identifier);
+      return initialSignInState(event.mode, state.email);
     case "RESET":
       return initialSignInState(event.mode);
     case "ERROR":

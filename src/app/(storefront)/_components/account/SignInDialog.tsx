@@ -172,8 +172,8 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
 
   async function run(request: Request) {
     try {
-      if (request.kind === "create") await createAccount(request.id, request.password, request.phone);
-      else if (request.kind === "login") await logIn(request.id, request.password);
+      if (request.kind === "create") await createAccount(request.email, request.password, request.phone);
+      else if (request.kind === "login") await logIn(request.email, request.password);
       else await sendPasswordReset(request.email);
       dispatch({ type: "SUCCEEDED" });
     } catch (e) {
@@ -195,15 +195,17 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
       {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
     </button>
   );
-  const identifierField = (
-    <Field label="Username or Email" icon={User}>
+  const emailField = (
+    <Field label="Email" icon={Mail}>
       <input
-        name="identifier"
-        defaultValue={state.identifier}
-        autoComplete="username"
+        name="email"
+        type="email"
+        inputMode="email"
+        defaultValue={state.email}
+        autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}
-        placeholder="Username or email"
+        placeholder="Your email address"
         className={inputCls}
         aria-invalid={Boolean(state.error) || undefined}
         aria-describedby={describedBy}
@@ -269,12 +271,12 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
-          send({ type: "CREATE_SUBMITTED", identifier: text(f, "identifier"), phone: text(f, "phone"), password: text(f, "password"), confirm: text(f, "confirm") });
+          send({ type: "CREATE_SUBMITTED", email: text(f, "email"), phone: text(f, "phone"), password: text(f, "password"), confirm: text(f, "confirm") });
         }}
         className="space-y-4"
       >
         <Heading id={titleId} title="Create Your Account" text="Get started in just a few steps." />
-        {identifierField}
+        {emailField}
         <Field label="Mobile Number" icon={Phone}>
           <span className="font-bold">+91</span>
           <input
@@ -302,12 +304,12 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
-          send({ type: "LOGIN_SUBMITTED", identifier: text(f, "identifier"), password: text(f, "password") });
+          send({ type: "LOGIN_SUBMITTED", email: text(f, "email"), password: text(f, "password") });
         }}
         className="space-y-4"
       >
-        <Heading id={titleId} title="Log In to Your Account" text="Welcome back! Log in with your username or email." />
-        {identifierField}
+        <Heading id={titleId} title="Log In to Your Account" text="Welcome back! Log in with your email and password." />
+        {emailField}
         <PasswordField label="Password" name="password" autoComplete="current-password" placeholder="Your password" describedBy={describedBy} />
         <p className="-mt-2 text-right">
           <button type="button" className="text-sm font-semibold text-forest-800 underline underline-offset-2" onClick={() => send({ type: "SWITCH_MODE", mode: "forgot" })}>
@@ -326,12 +328,12 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          send({ type: "RESET_SUBMITTED", identifier: text(new FormData(e.currentTarget), "identifier") });
+          send({ type: "RESET_SUBMITTED", email: text(new FormData(e.currentTarget), "email") });
         }}
         className="space-y-4"
       >
         <Heading id={titleId} title="Reset Your Password" text="Enter the email on your account and we'll send you a link to choose a new password." />
-        {identifierField}
+        {emailField}
         {error}
         {submit("Send Reset Link")}
         <button type="button" className="mx-auto flex items-center gap-2 text-sm font-semibold text-forest-800 hover:underline" onClick={() => send({ type: "SWITCH_MODE", mode: "login" })}>
