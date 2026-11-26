@@ -12,7 +12,7 @@ const BUCKET = `${PROJECT_ID}.appspot.com`;
 const [FS_HOST, FS_PORT] = (process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080").split(":");
 const [ST_HOST, ST_PORT] = (process.env.FIREBASE_STORAGE_EMULATOR_HOST ?? "127.0.0.1:9199").split(":");
 
-export type Identity = { uid: string; phone?: string } | null;
+export type Identity = { uid: string; email?: string } | null;
 
 const apps: FirebaseApp[] = [];
 let n = 0;
@@ -21,7 +21,7 @@ let n = 0;
 export function client(who: Identity): { db: Firestore; storage: FirebaseStorage } {
   const app = initializeApp({ projectId: PROJECT_ID, apiKey: "fake-key", storageBucket: BUCKET }, `rules-${n++}`);
   apps.push(app);
-  const token = who ? { sub: who.uid, user_id: who.uid, ...(who.phone ? { phone_number: who.phone } : {}) } : undefined;
+  const token = who ? { sub: who.uid, user_id: who.uid, ...(who.email ? { email: who.email } : {}) } : undefined;
   const db = getFirestore(app);
   connectFirestoreEmulator(db, FS_HOST, Number(FS_PORT), token ? { mockUserToken: token } : {});
   const storage = getStorage(app);

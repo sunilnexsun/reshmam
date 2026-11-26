@@ -2,16 +2,11 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
-import { ArrowLeft, ArrowRight, Check, Heart, Info, Loader2, Mail, Package, Phone, ShoppingCart, User, X } from "lucide-react";
-import { customerAuth } from "@storefront/_lib/customer-firebase";
-import { authErrorMessage, createProfile, getProfile, signOutCustomer } from "@storefront/_lib/customer-auth";
-import { toE164 } from "@storefront/_lib/phone";
-import { OtpInput } from "./OtpInput";
-import { initialSignInState, signInReducer, type Mode, type SignInEvent, type SignInState } from "./sign-in-machine";
-
-export const RESEND_SECONDS = 30;
+import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Heart, Loader2, Lock, Mail, Package, Phone, ShoppingCart, User, X } from "lucide-react";
+import { authErrorMessage, createAccount, logIn, sendPasswordReset } from "@storefront/_lib/customer-auth";
+import { MIN_PASSWORD_LENGTH } from "@storefront/_lib/account-identity";
+import { initialSignInState, signInReducer, type Mode, type Request, type SignInEvent } from "./sign-in-machine";
 
 const FEATURES = [
   { icon: ShoppingCart, title: "Place Orders", text: "for your favourite oils" },
@@ -20,7 +15,6 @@ const FEATURES = [
   { icon: User, title: "Manage Your Profile", text: "and addresses" },
 ];
 
-const formatPhone = (tenDigits: string) => `+91 ${tenDigits.slice(0, 5)} ${tenDigits.slice(5)}`;
 const errorCode = (e: unknown) => (e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "");
 
 /** The brighter gold of the brand panel in the design (decorative text on dark green: 7:1 contrast). */
@@ -120,39 +114,6 @@ function Seam() {
   );
 }
 
-function Progress({ step }: { step: SignInState["step"] }) {
-  const steps = [
-    { key: "details", label: "Your Details" },
-    { key: "mobile", label: "Mobile" },
-    { key: "otp", label: "Verify OTP" },
-  ] as const;
-  const current = steps.findIndex((s) => s.key === step);
-  return (
-    <ol className="flex flex-wrap items-center gap-x-2 gap-y-2 text-xs text-ink" aria-label="Steps">
-      {steps.map((s, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <li
-            key={s.key}
-            className={`flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 ${active ? "bg-beige" : ""}`}
-            aria-current={active ? "step" : undefined}
-          >
-            <span
-              className={`grid h-6 w-6 place-items-center rounded-full text-[0.7rem] font-bold ${
-                done ? "bg-[#3f9a3c] text-white" : active ? "bg-forest-800 text-white" : "bg-beige text-forest-900"
-              }`}
-            >
-              {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : i + 1}
-            </span>
-            <span className={active ? "font-semibold text-forest-900" : ""}>{s.label}</span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 /** Green tick with a ring of gold rays, for the success screens. */
 function SuccessBadge() {
   const rays = Array.from({ length: 12 }, (_, i) => i * 30);
@@ -179,16 +140,11 @@ const fieldLabel = "mb-1.5 block text-sm font-bold text-ink";
 export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onClose: () => void }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const recaptchaRef = useRef<HTMLDivElement>(null);
-  const verifierRef = useRef<RecaptchaVerifier | null>(null);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const [state, dispatch] = useReducer(signInReducer, initialMode, initialSignInState);
+  const [state, dispatch] = useReducer(signInReducer, initialMode, (m) => initialSignInState(m));
   const stateRef = useRef(state);
   useLayoutEffect(() => {
     stateRef.current = state;
   }, [state]);
-  const [resendAt, setResendAt] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
 
   // Open as a modal (focus trap, Esc, inert page behind) and give focus back to the opener on close.
   useEffect(() => {
@@ -197,97 +153,90 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
     dialog?.showModal();
     // showModal() focuses the first button (×); start on the first field instead.
     dialog?.querySelector<HTMLElement>("form input")?.focus();
-    return () => {
-      verifierRef.current?.clear();
-      verifierRef.current = null;
-      opener?.focus?.();
-    };
+    return () => opener?.focus?.();
   }, []);
 
+  // Each mode's form starts on its first field.
   useEffect(() => {
-    if (state.step !== "otp" || resendAt <= now) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [state.step, resendAt, now]);
-
-  const close = () => {
-    // Verified but never finished their details: no account was made, so don't leave them half signed in.
-    if (stateRef.current.verified && stateRef.current.step !== "done") void signOutCustomer();
-    onClose();
-  };
+    if (state.outcome) return;
+    dialogRef.current?.querySelector<HTMLElement>("form input")?.focus();
+  }, [state.mode, state.outcome]);
 
   /** Runs the event through the reducer first, so validation lives in one place; only then calls Firebase. */
   const send = (event: SignInEvent) => {
     const next = signInReducer(stateRef.current, event);
     stateRef.current = next;
     dispatch(event);
-    if (!next.pending) return;
-    if (event.type === "MOBILE_SUBMITTED") void sendOtp(next.phone);
-    else if (event.type === "OTP_SUBMITTED") void verify(next);
-    else if (event.type === "DETAILS_SUBMITTED") void saveProfile(next);
+    if (next.pending && next.request) void run(next.request);
   };
 
-  const fail = (e: unknown) => dispatch({ type: "ERROR", message: authErrorMessage(errorCode(e)) });
-
-  async function sendOtp(phone: string) {
+  async function run(request: Request) {
     try {
-      // A reCAPTCHA token works for one SMS only, so every send (including Resend and a changed number) gets a
-      // fresh verifier on a fresh element; reusing a solved one leaves the request hanging.
-      verifierRef.current?.clear();
-      const host = document.createElement("div");
-      recaptchaRef.current!.replaceChildren(host);
-      verifierRef.current = new RecaptchaVerifier(customerAuth, host, { size: "invisible" });
-      confirmationRef.current = await signInWithPhoneNumber(customerAuth, toE164(phone), verifierRef.current);
-      setResendAt(Date.now() + RESEND_SECONDS * 1000);
-      setNow(Date.now());
-      dispatch({ type: "OTP_SENT" });
+      if (request.kind === "create") await createAccount(request.id, request.password, request.phone);
+      else if (request.kind === "login") await logIn(request.id, request.password);
+      else await sendPasswordReset(request.email);
+      dispatch({ type: "SUCCEEDED" });
     } catch (e) {
-      // A used or failed reCAPTCHA can't be reused; start a fresh one next time.
-      verifierRef.current?.clear();
-      verifierRef.current = null;
-      fail(e);
+      dispatch({ type: "ERROR", message: authErrorMessage(errorCode(e)) });
     }
   }
 
-  async function verify(s: SignInState) {
-    try {
-      const { user } = await confirmationRef.current!.confirm(s.code);
-      const profile = await getProfile(user.uid);
-      if (!profile && s.mode === "create") await createProfile(user, { name: s.name, email: s.email });
-      dispatch({ type: "OTP_CONFIRMED", hasProfile: Boolean(profile) });
-    } catch (e) {
-      fail(e);
-    }
-  }
-
-  async function saveProfile(s: SignInState) {
-    const user = customerAuth.currentUser;
-    if (!user) return dispatch({ type: "RESET", mode: "login" });
-    try {
-      await createProfile(user, { name: s.name, email: s.email });
-      dispatch({ type: "OTP_CONFIRMED", hasProfile: false });
-    } catch (e) {
-      fail(e);
-    }
-  }
-
-  const showProgress = state.mode === "create" && state.step !== "done" && !state.verified;
-  const resendIn = Math.max(0, Math.ceil((resendAt - now) / 1000));
   const titleId = "sign-in-title";
   const errorId = "sign-in-error";
+  const describedBy = state.error ? errorId : undefined;
   const error = state.error ? (
     <p id={errorId} role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
       {state.error}
     </p>
   ) : null;
+  const submit = (label: string) => (
+    <button type="submit" className={primaryBtn} disabled={state.pending}>
+      {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null} {label}{" "}
+      {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
+    </button>
+  );
+  const identifierField = (
+    <Field label="Username or Email" icon={User}>
+      <input
+        name="identifier"
+        defaultValue={state.identifier}
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder="Username or email"
+        className={inputCls}
+        aria-invalid={Boolean(state.error) || undefined}
+        aria-describedby={describedBy}
+      />
+    </Field>
+  );
+  const text = (f: FormData, k: string) => String(f.get(k) ?? "");
 
   let body: React.ReactNode;
-  if (state.step === "done") {
+  if (state.outcome === "resetSent") {
+    body = (
+      <div className="flex flex-col items-center text-center">
+        <span className="grid h-20 w-20 place-items-center rounded-full bg-beige text-forest-800">
+          <Mail className="h-9 w-9" aria-hidden />
+        </span>
+        <h2 id={titleId} className="font-bookman mt-4 text-[1.8rem] leading-tight text-forest-900">
+          Check Your Email
+        </h2>
+        <p className="mt-3 text-ink">
+          If there&apos;s an account for that email, we&apos;ve sent a link to choose a new password.
+        </p>
+        <div className="mt-8 w-full">
+          <button type="button" className={primaryBtn} onClick={() => send({ type: "SWITCH_MODE", mode: "login" })} autoFocus>
+            Back to Log In <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      </div>
+    );
+  } else if (state.outcome) {
     const copy = {
       created: { title: "Account Created Successfully!", text: <>Welcome to <strong>Reshmam!</strong></> },
       loggedIn: { title: "Logged In Successfully!", text: <>Welcome back to <strong>Reshmam!</strong></> },
-      welcomeBack: { title: "Welcome Back!", text: <>You already have an account with this number, so we&apos;ve logged you in.</> },
-    }[state.outcome ?? "loggedIn"];
+    }[state.outcome];
     body = (
       <div className="flex flex-col items-center text-center">
         <SuccessBadge />
@@ -296,14 +245,14 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         </h2>
         <p className="mt-4 text-ink">{copy.text}</p>
         <div className="mt-10 grid w-full gap-3">
-          <button type="button" className={primaryBtn} onClick={close} autoFocus>
+          <button type="button" className={primaryBtn} onClick={onClose} autoFocus>
             Continue Shopping <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-ink/25 bg-white text-[1.02rem] font-semibold text-ink hover:border-forest-800"
             onClick={() => {
-              close();
+              onClose();
               router.push("/account");
             }}
           >
@@ -312,127 +261,81 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         </div>
       </div>
     );
-  } else if (state.step === "details") {
+  } else if (state.mode === "create") {
     body = (
       <form
+        key="create"
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
-          send({ type: "DETAILS_SUBMITTED", name: String(f.get("name") ?? ""), email: String(f.get("email") ?? "") });
+          send({ type: "CREATE_SUBMITTED", identifier: text(f, "identifier"), phone: text(f, "phone"), password: text(f, "password"), confirm: text(f, "confirm") });
         }}
         className="space-y-4"
       >
-        <Heading id={titleId} title="Create Your Account" text={state.verified ? `No account yet for ${formatPhone(state.phone)}. Add your name to finish.` : "Get started in just a few steps."} />
-        <label className="block">
-          <span className={fieldLabel}>
-            Full Name <span className="text-red-600">*</span>
-          </span>
-          <span className={fieldBox}>
-            <User className="h-[1.1rem] w-[1.1rem]" aria-hidden />
-            <input name="name" required defaultValue={state.name} autoComplete="name" placeholder="Enter your full name" className="w-full bg-transparent outline-none placeholder:text-ink-soft" autoFocus aria-describedby={state.error ? errorId : undefined} />
-          </span>
-        </label>
-        <label className="block">
-          <span className={fieldLabel}>
-            Email Address <span className="font-normal text-ink-soft">(Optional)</span>
-          </span>
-          <span className={fieldBox}>
-            <Mail className="h-[1.1rem] w-[1.1rem]" aria-hidden />
-            <input name="email" type="email" defaultValue={state.email} autoComplete="email" placeholder="Enter your email address" className="w-full bg-transparent outline-none placeholder:text-ink-soft" />
-          </span>
-        </label>
+        <Heading id={titleId} title="Create Your Account" text="Get started in just a few steps." />
+        {identifierField}
+        <Field label="Mobile Number" icon={Phone}>
+          <span className="font-bold">+91</span>
+          <input
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder="10-digit mobile number"
+            className={inputCls}
+            aria-describedby={describedBy}
+          />
+        </Field>
+        <PasswordField label="Password" name="password" autoComplete="new-password" placeholder={`Min. ${MIN_PASSWORD_LENGTH} characters`} describedBy={describedBy} />
+        <PasswordField label="Confirm Password" name="confirm" autoComplete="new-password" placeholder="Re-enter password" describedBy={describedBy} />
         {error}
-        <button type="submit" className={primaryBtn} disabled={state.pending}>
-          {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          {state.verified ? "Create Account" : "Continue"} {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
-        </button>
-        {!state.verified && <SwitchMode text="Already have an account?" action="Log In" onClick={() => send({ type: "SWITCH_MODE", mode: "login" })} />}
+        {submit("Create Account")}
+        <SwitchMode text="Already have an account?" action="Log In" onClick={() => send({ type: "SWITCH_MODE", mode: "login" })} />
       </form>
     );
-  } else if (state.step === "mobile") {
-    const create = state.mode === "create";
+  } else if (state.mode === "login") {
     body = (
       <form
+        key="login"
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          send({ type: "MOBILE_SUBMITTED", phone: String(new FormData(e.currentTarget).get("phone") ?? "") });
+          const f = new FormData(e.currentTarget);
+          send({ type: "LOGIN_SUBMITTED", identifier: text(f, "identifier"), password: text(f, "password") });
         }}
         className="space-y-4"
       >
-        <Heading
-          id={titleId}
-          title={create ? "Enter Your Mobile Number" : "Log In to Your Account"}
-          text={create ? "We'll use this number to verify your account." : "Welcome back! Please enter your registered mobile number."}
-        />
-        <label className="block">
-          <span className={fieldLabel}>
-            Mobile Number {create && <span className="text-red-600">*</span>}
-          </span>
-          <span className={fieldBox}>
-            <Phone className="h-[1.1rem] w-[1.1rem]" aria-hidden />
-            <span className="font-bold">+91</span>
-            <input
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel-national"
-              defaultValue={state.phone}
-              placeholder="Enter your 10-digit mobile number"
-              className="w-full bg-transparent outline-none placeholder:text-ink-soft"
-              autoFocus
-              aria-invalid={Boolean(state.error) || undefined}
-              aria-describedby={state.error ? errorId : undefined}
-            />
-          </span>
-        </label>
+        <Heading id={titleId} title="Log In to Your Account" text="Welcome back! Log in with your username or email." />
+        {identifierField}
+        <PasswordField label="Password" name="password" autoComplete="current-password" placeholder="Your password" describedBy={describedBy} />
+        <p className="-mt-2 text-right">
+          <button type="button" className="text-sm font-semibold text-forest-800 underline underline-offset-2" onClick={() => send({ type: "SWITCH_MODE", mode: "forgot" })}>
+            Forgot password?
+          </button>
+        </p>
         {error}
-        <button type="submit" className={primaryBtn} disabled={state.pending}>
-          {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null} Send OTP {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
-        </button>
-        {create ? (
-          <p className="flex items-center gap-3 rounded-lg border border-beige-300 bg-beige/50 px-3.5 py-3 text-xs leading-relaxed text-ink">
-            <Info className="h-5 w-5 shrink-0 text-[#d9a63c]" aria-hidden /> We&apos;ll send a one-time password (OTP) to verify your mobile number.
-          </p>
-        ) : (
-          <SwitchMode text="New to Reshmam?" action="Create an account" onClick={() => send({ type: "SWITCH_MODE", mode: "create" })} />
-        )}
+        {submit("Log In")}
+        <SwitchMode text="New to Reshmam?" action="Create an account" onClick={() => send({ type: "SWITCH_MODE", mode: "create" })} />
       </form>
     );
   } else {
     body = (
       <form
+        key="forgot"
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          send({ type: "OTP_SUBMITTED" });
+          send({ type: "RESET_SUBMITTED", identifier: text(new FormData(e.currentTarget), "identifier") });
         }}
-        className="space-y-5"
+        className="space-y-4"
       >
-        <Heading id={titleId} title="Verify Your Mobile Number" text="Enter the 6-digit OTP sent to" />
-        <p className="-mt-3 text-center text-lg font-bold text-forest-900">{formatPhone(state.phone)}</p>
-        <div className="flex justify-center">
-          <OtpInput value={state.code} onChange={(code) => dispatch({ type: "CODE_CHANGED", code })} disabled={state.pending} autoFocus invalid={Boolean(state.error)} />
-        </div>
+        <Heading id={titleId} title="Reset Your Password" text="Enter the email on your account and we'll send you a link to choose a new password." />
+        {identifierField}
         {error}
-        <p className="text-center text-sm text-ink">
-          {resendIn > 0 ? (
-            <>
-              Resend OTP in <span className="font-bold text-forest-900">00:{String(resendIn).padStart(2, "0")}</span>
-            </>
-          ) : (
-            <button type="button" className="font-semibold text-forest-800 underline underline-offset-2" disabled={state.pending} onClick={() => send({ type: "MOBILE_SUBMITTED", phone: state.phone })}>
-              Resend OTP
-            </button>
-          )}
-        </p>
-        <button type="submit" className={primaryBtn} disabled={state.pending}>
-          {state.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          {state.mode === "create" ? "Verify & Continue" : "Log In"} {!state.pending && <ArrowRight className="h-4 w-4" aria-hidden />}
-        </button>
-        <button type="button" className="mx-auto flex items-center gap-2 text-sm font-semibold text-forest-800 hover:underline" onClick={() => send({ type: "CHANGE_NUMBER" })}>
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Change Mobile Number
+        {submit("Send Reset Link")}
+        <button type="button" className="mx-auto flex items-center gap-2 text-sm font-semibold text-forest-800 hover:underline" onClick={() => send({ type: "SWITCH_MODE", mode: "login" })}>
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to Log In
         </button>
       </form>
     );
@@ -444,10 +347,10 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
-        close();
+        onClose();
       }}
       onClick={(e) => {
-        if (e.target === dialogRef.current) close();
+        if (e.target === dialogRef.current) onClose();
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-[820px] overflow-hidden rounded-2xl border border-beige-300 bg-cream p-0 text-ink shadow-2xl backdrop:bg-forest-950/60"
     >
@@ -455,20 +358,48 @@ export function SignInDialog({ initialMode, onClose }: { initialMode: Mode; onCl
         <Seam />
         <BrandPanel />
         <div className="relative flex flex-col px-5 pb-8 pt-6 sm:px-9 md:pl-5">
-          <button type="button" onClick={close} aria-label="Close" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full text-forest-900 hover:bg-beige">
+          <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full text-forest-900 hover:bg-beige">
             <X className="h-5 w-5" aria-hidden />
           </button>
-          {showProgress && (
-            <div className="mb-6 pr-10">
-              <Progress step={state.step} />
-            </div>
-          )}
-          <div className={showProgress ? "mt-2 w-full" : "my-auto w-full py-2"}>{body}</div>
-          {/* Invisible reCAPTCHA Firebase needs before it sends an SMS. */}
-          <div ref={recaptchaRef} />
+          <div className="my-auto w-full py-2">{body}</div>
         </div>
       </div>
     </dialog>
+  );
+}
+
+const inputCls = "w-full bg-transparent outline-none placeholder:text-ink-soft";
+
+function Field({ label, icon: Icon, children }: { label: string; icon: typeof User; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className={fieldLabel}>
+        {label} <span className="text-red-600">*</span>
+      </span>
+      <span className={fieldBox}>
+        <Icon className="h-[1.1rem] w-[1.1rem] shrink-0" aria-hidden />
+        {children}
+      </span>
+    </label>
+  );
+}
+
+function PasswordField({ label, name, autoComplete, placeholder, describedBy }: { label: string; name: string; autoComplete: string; placeholder: string; describedBy?: string }) {
+  const [shown, setShown] = useState(false);
+  const inputId = useId();
+  return (
+    <div>
+      <label htmlFor={inputId} className={fieldLabel}>
+        {label} <span className="text-red-600">*</span>
+      </label>
+      <span className={fieldBox}>
+        <Lock className="h-[1.1rem] w-[1.1rem] shrink-0" aria-hidden />
+        <input id={inputId} name={name} type={shown ? "text" : "password"} autoComplete={autoComplete} placeholder={placeholder} className={inputCls} aria-describedby={describedBy} />
+        <button type="button" onClick={() => setShown((v) => !v)} aria-label={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} aria-pressed={shown} className="-mr-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-md text-ink-soft hover:text-forest-800">
+          {shown ? <EyeOff className="h-[1.1rem] w-[1.1rem]" aria-hidden /> : <Eye className="h-[1.1rem] w-[1.1rem]" aria-hidden />}
+        </button>
+      </span>
+    </div>
   );
 }
 

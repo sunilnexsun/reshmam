@@ -6,7 +6,7 @@ import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 import { firebaseConfig } from "@/lib/firebase-config";
 
 /**
- * The storefront's own Firebase app, so a customer's phone sign-in never mixes with an admin panel
+ * The storefront's own Firebase app, so a customer's sign-in never mixes with an admin panel
  * staff session open in the same browser.
  */
 const APP_NAME = "reshmam-customer";
@@ -18,7 +18,7 @@ export const customerAuth = getAuth(customerApp);
 export const customerDb = getFirestore(customerApp);
 
 // Local testing only: NEXT_PUBLIC_FIREBASE_EMULATORS=1 (with `firebase emulators:start`) signs customers in
-// against the Auth and Firestore emulators, where no real SMS is sent (codes appear in the emulator UI).
+// against the Auth and Firestore emulators (password-reset emails appear in the emulator UI).
 if (!existing && process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === "1" && process.env.NODE_ENV !== "production") {
   connectAuthEmulator(customerAuth, "http://127.0.0.1:9099", { disableWarnings: true });
   connectFirestoreEmulator(customerDb, "127.0.0.1", 8080);

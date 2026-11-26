@@ -3,7 +3,8 @@ rules_version = '2';
 // RESHMAM Firestore rules.
 //
 // Two kinds of signed-in users:
-//  - Customers: Firebase phone sign-in. They can read and edit only their own profile (limited fields)
+//  - Customers: Firebase email/password sign-in, with a username or an email (a username signs in as
+//    <username>@customers.reshmam.com). They can read and edit only their own profile (limited fields)
 //    and read only their own orders. They are never in adminUsers, so they get no staff rights.
 //  - Staff: Firebase email/password sign-in, with a record at adminUsers/{uid}. Each staff role's
 //    permissions (configs/settings.roles[role].permissions[module] = none | view | manage) are enforced
@@ -144,12 +145,23 @@ service cloud.firestore {
 
       allow read: if isOwner() || canView('customers');
 
+      // The profile's username or email must be the one this account signs in with (so nobody can claim
+      // someone else's). The mobile number is as typed: an Indian mobile in E.164 form.
+      function signsInAs(data) {
+        return data.username is string && data.email is string
+          && (data.username != ''
+            ? request.auth.token.email == data.username + '@customers.reshmam.com'
+            : request.auth.token.email == data.email && !data.email.matches('.*@customers[.]reshmam[.]com'));
+      }
+
       allow create: if canManage('customers') || (
         isOwner()
         && request.resource.data.keys().hasOnly(
-          ['id', 'name', 'email', 'phone', 'createdAt', 'updatedAt', 'source', 'cart', 'wishlist'])
+          ['id', 'name', 'username', 'email', 'phone', 'createdAt', 'updatedAt', 'source', 'cart', 'wishlist'])
         && request.resource.data.id == customerId
-        && request.resource.data.phone == request.auth.token.phone_number
+        && signsInAs(request.resource.data)
+        && request.resource.data.phone is string
+        && request.resource.data.phone.matches('[+]91[6-9][0-9]{9}')
         && request.resource.data.source == 'website'
         && request.resource.data.name is string
       );

@@ -1,75 +1,72 @@
-// The sign-in dialog's steps: Create Account (details → mobile → OTP → done) and Log In (mobile → OTP → done),
-// including a "log in" by someone with no account yet, and a "create" by someone who already has one.
+// The sign-in dialog: Create Account (username or email, mobile, password, confirm), Log In (username or email,
+// password) and Forgot password (email only). The reducer checks what was typed before any Firebase call.
 import { describe, expect, it } from "vitest";
-import { initialSignInState, signInReducer, type SignInEvent, type SignInState } from "@/app/(storefront)/_components/account/sign-in-machine";
+import {
+  initialSignInState,
+  INVALID_MOBILE,
+  PASSWORDS_DIFFER,
+  RESET_NEEDS_EMAIL,
+  SHORT_PASSWORD,
+  signInReducer,
+  type SignInEvent,
+  type SignInState,
+} from "@/app/(storefront)/_components/account/sign-in-machine";
+import { INVALID_IDENTIFIER } from "@/app/(storefront)/_lib/account-identity";
 
 const run = (state: SignInState, ...events: SignInEvent[]) => events.reduce(signInReducer, state);
+const create = (over: Partial<Extract<SignInEvent, { type: "CREATE_SUBMITTED" }>> = {}): SignInEvent => ({
+  type: "CREATE_SUBMITTED",
+  identifier: "Priya_K",
+  phone: "98765 43210",
+  password: "secret123",
+  confirm: "secret123",
+  ...over,
+});
 
 describe("signInReducer", () => {
-  it("create: details → mobile → otp → done (created)", () => {
-    let s = initialSignInState("create");
-    expect(s.step).toBe("details");
-    s = run(s, { type: "DETAILS_SUBMITTED", name: "Priya", email: "" });
-    expect(s).toMatchObject({ step: "mobile", name: "Priya" });
-    s = run(s, { type: "MOBILE_SUBMITTED", phone: "+91 98765 43210" });
-    expect(s).toMatchObject({ step: "mobile", phone: "9876543210", pending: true, error: null });
-    s = run(s, { type: "OTP_SENT" });
-    expect(s).toMatchObject({ step: "otp", pending: false });
-    s = run(s, { type: "CODE_CHANGED", code: "123456" }, { type: "OTP_CONFIRMED", hasProfile: false });
-    expect(s).toMatchObject({ step: "done", outcome: "created" });
+  it("create with a username asks for that account, with the mobile as 10 digits", () => {
+    const s = run(initialSignInState("create"), create());
+    expect(s).toMatchObject({ pending: true, error: null, identifier: "Priya_K" });
+    expect(s.request).toEqual({ kind: "create", id: { kind: "username", username: "priya_k" }, phone: "9876543210", password: "secret123" });
+    expect(run(s, { type: "SUCCEEDED" })).toMatchObject({ pending: false, request: null, outcome: "created" });
   });
-
-  it("create with an existing account → welcomeBack", () => {
-    const s = run(initialSignInState("create"), { type: "DETAILS_SUBMITTED", name: "P", email: "" }, { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "OTP_CONFIRMED", hasProfile: true });
-    expect(s).toMatchObject({ step: "done", outcome: "welcomeBack" });
+  it("create with an email", () => {
+    const s = run(initialSignInState("create"), create({ identifier: " Ravi@Example.com " }));
+    expect(s.request).toMatchObject({ kind: "create", id: { kind: "email", email: "ravi@example.com" } });
   });
-
-  it("login with an account → loggedIn", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "OTP_CONFIRMED", hasProfile: true });
-    expect(s).toMatchObject({ step: "done", outcome: "loggedIn" });
+  it.each([
+    ["a bad username or email", { identifier: "ab" }, INVALID_IDENTIFIER],
+    ["a bad email", { identifier: "ravi@example" }, INVALID_IDENTIFIER],
+    ["a bad mobile number", { phone: "12345" }, INVALID_MOBILE],
+    ["a short password", { password: "short", confirm: "short" }, SHORT_PASSWORD],
+    ["passwords that don't match", { confirm: "secret124" }, PASSWORDS_DIFFER],
+  ])("create refuses %s and calls nothing", (_, over, error) => {
+    const s = run(initialSignInState("create"), create(over));
+    expect(s).toMatchObject({ pending: false, request: null, error, outcome: null });
   });
-
-  it("login without an account → details in create mode, phone kept and already verified", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "OTP_CONFIRMED", hasProfile: false });
-    expect(s).toMatchObject({ step: "details", mode: "create", phone: "9876543210", verified: true, outcome: null });
+  it("log in with a username or email and a password", () => {
+    const s = run(initialSignInState("login"), { type: "LOGIN_SUBMITTED", identifier: "priya_k", password: "secret123" });
+    expect(s.request).toEqual({ kind: "login", id: { kind: "username", username: "priya_k" }, password: "secret123" });
+    expect(run(s, { type: "SUCCEEDED" }).outcome).toBe("loggedIn");
   });
-
-  it("details after a verified login go straight to saving, then created", () => {
-    let s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "OTP_CONFIRMED", hasProfile: false });
-    s = run(s, { type: "DETAILS_SUBMITTED", name: "Ravi", email: "" });
-    expect(s).toMatchObject({ step: "details", pending: true });
-    s = run(s, { type: "OTP_CONFIRMED", hasProfile: false });
-    expect(s).toMatchObject({ step: "done", outcome: "created" });
+  it("log in needs a password", () => {
+    const s = run(initialSignInState("login"), { type: "LOGIN_SUBMITTED", identifier: "priya_k", password: "" });
+    expect(s).toMatchObject({ pending: false, request: null, error: "Enter your password." });
   });
-
-  it("CHANGE_NUMBER from otp → mobile with the code cleared", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "CODE_CHANGED", code: "12" }, { type: "CHANGE_NUMBER" });
-    expect(s).toMatchObject({ step: "mobile", code: "" });
+  it("forgot password sends a link to an email, but not for a username", () => {
+    const sent = run(initialSignInState("forgot"), { type: "RESET_SUBMITTED", identifier: "Ravi@example.com" });
+    expect(sent.request).toEqual({ kind: "reset", email: "ravi@example.com" });
+    expect(run(sent, { type: "SUCCEEDED" }).outcome).toBe("resetSent");
+    const refused = run(initialSignInState("forgot"), { type: "RESET_SUBMITTED", identifier: "priya_k" });
+    expect(refused).toMatchObject({ pending: false, request: null, error: RESET_NEEDS_EMAIL });
   });
-
-  it("an invalid mobile number stays on mobile with an error and sends nothing", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "12345" });
-    expect(s).toMatchObject({ step: "mobile", pending: false, error: "Enter a valid 10-digit mobile number." });
-  });
-
-  it("needs a name; a bad email is refused, a blank one is fine", () => {
-    expect(run(initialSignInState("create"), { type: "DETAILS_SUBMITTED", name: "  ", email: "" })).toMatchObject({ step: "details", error: "Please enter your full name." });
-    expect(run(initialSignInState("create"), { type: "DETAILS_SUBMITTED", name: "P", email: "nope" })).toMatchObject({ step: "details", error: "Enter a valid email address, or leave it blank." });
-  });
-
-  it("OTP_SUBMITTED needs all six digits", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "OTP_SENT" }, { type: "CODE_CHANGED", code: "123" }, { type: "OTP_SUBMITTED" });
-    expect(s).toMatchObject({ pending: false, error: "Enter the 6-digit code from the SMS." });
-    expect(run(s, { type: "CODE_CHANGED", code: "123456" }, { type: "OTP_SUBMITTED" })).toMatchObject({ pending: true, error: null });
-  });
-
   it("ERROR shows the message and stops waiting", () => {
-    const s = run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "ERROR", message: "Boom" });
-    expect(s).toMatchObject({ pending: false, error: "Boom", step: "mobile" });
+    const s = run(initialSignInState("login"), { type: "LOGIN_SUBMITTED", identifier: "priya_k", password: "x" }, { type: "ERROR", message: "Nope" });
+    expect(s).toMatchObject({ pending: false, request: null, error: "Nope" });
   });
-
-  it("SWITCH_MODE and RESET start over", () => {
-    expect(run(initialSignInState("create"), { type: "SWITCH_MODE", mode: "login" })).toEqual(initialSignInState("login"));
-    expect(run(initialSignInState("login"), { type: "MOBILE_SUBMITTED", phone: "9876543210" }, { type: "RESET", mode: "create" })).toEqual(initialSignInState("create"));
+  it("SWITCH_MODE keeps what was typed in Username or Email; RESET clears it", () => {
+    const typed = run(initialSignInState("login"), { type: "LOGIN_SUBMITTED", identifier: "ravi@example.com", password: "" });
+    expect(run(typed, { type: "SWITCH_MODE", mode: "forgot" })).toEqual(initialSignInState("forgot", "ravi@example.com"));
+    expect(run(typed, { type: "RESET", mode: "create" })).toEqual(initialSignInState("create"));
   });
 });

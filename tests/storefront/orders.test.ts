@@ -35,7 +35,7 @@ describe("createOrder", () => {
     expect(fake.read("customers", String(order.customerId))).toMatchObject({ name: "Test Buyer" });
     expect(fake.read("variants", "GIN-1L")?.stock).toBe(8);
   });
-  it("links a signed-in customer's order to their account and verified phone, without a guest record", async () => {
+  it("links a signed-in customer's order to their account, without a guest record", async () => {
     const { id } = await createOrder(input, pricing, { customer: { uid: "u1", phone: "+919999999999" } });
     const order = fake.read("orders", id)!;
     expect(order.customerId).toBe("u1");
