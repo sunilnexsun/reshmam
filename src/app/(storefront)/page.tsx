@@ -283,7 +283,7 @@ export default async function HomePage() {
   );
 }
 
-/** English on the first line and the Tamil (written in brackets in the name) on the second. */
+/** English on the first line and the Tamil, still in its brackets, on the second. */
 function CategoryName({ name }: { name: string }) {
   const { english, tamil } = splitBilingualName(name);
   return (
@@ -291,7 +291,7 @@ function CategoryName({ name }: { name: string }) {
       <span className="block">{english}</span>
       {tamil && (
         <span lang="ta" className="mt-1 block text-base">
-          {tamil}
+          ( {tamil} )
         </span>
       )}
     </span>
