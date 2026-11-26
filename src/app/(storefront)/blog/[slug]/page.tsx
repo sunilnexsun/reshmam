@@ -58,7 +58,10 @@ export default async function BlogArticle({ params }: PageProps<"/blog/[slug]">)
             height={364}
             unoptimized={post.image.startsWith("data:") || post.image.startsWith("http")}
             priority
-            className="mt-8 aspect-[21/9] w-full rounded-2xl object-cover"
+            sizes="(min-width:1024px) 984px, 100vw"
+            // Uploaded banners come in any shape and often have text and products near the edges, so show the
+            // whole image at its own proportions rather than cropping it to a fixed frame.
+            className="mt-8 h-auto w-full rounded-2xl"
           />
           <div className="prose-reshmam mt-8 text-[17px] text-ink">
             {post.body.map((block, i) => (
