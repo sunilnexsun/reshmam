@@ -23,10 +23,10 @@ import { BlogCard, Testimonials } from "./_components/sections/Misc";
 import { AvailableOn } from "./_components/sections/AvailableOn";
 import { ButtonLink, Container, Eyebrow, IconBadge, SectionHeading, LeafFlourish } from "./_components/ui/primitives";
 import { LeafOutline, LeafSprig } from "./_components/ui/decor";
-import { categories, getProduct, type Product } from "./_lib/products";
+import { categories } from "./_lib/products";
 import { fetchDynamicProducts, fetchDynamicCategories } from "./_lib/server/catalogue";
+import { fetchDynamicBlogs, fetchDynamicTestimonials } from "./_lib/server/content";
 import { BilingualName } from "./_components/ui/BilingualName";
-import { posts } from "./_lib/blog";
 import { formatINR } from "./_lib/pricing";
 import { site } from "./_lib/site";
 
@@ -35,9 +35,11 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 export const instant = false;
 
 export default async function HomePage() {
-  const [dynamicProducts, dynamicCategories] = await Promise.all([
+  const [dynamicProducts, dynamicCategories, dynamicBlogs, dynamicTestimonials] = await Promise.all([
     fetchDynamicProducts(),
     fetchDynamicCategories(),
+    fetchDynamicBlogs(),
+    fetchDynamicTestimonials(),
   ]);
 
   const categoriesList = dynamicCategories.length > 0 ? dynamicCategories : categories;
@@ -254,9 +256,17 @@ export default async function HomePage() {
       <section aria-labelledby="testi-heading" className="relative overflow-hidden bg-paper py-16">
         <LeafOutline className="absolute left-2 top-8 h-40 w-28" />
         <Container className="relative">
-          <SectionHeading eyebrow="Testimonials" title={<span id="testi-heading">What Our Customers Say</span>} />
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeading eyebrow="Testimonials" title={<span id="testi-heading">What Our Customers Say</span>} align="left" />
+            <ButtonLink href="/testimonials" variant="outline">
+              View All Testimonials <ArrowRight className="h-4 w-4" aria-hidden />
+            </ButtonLink>
+          </div>
           <div className="mt-8">
-            <Testimonials />
+            <Testimonials
+              items={dynamicTestimonials.slice(0, 3)}
+              emptyText="Customer testimonials published from the admin panel will appear here."
+            />
           </div>
         </Container>
       </section>
@@ -270,13 +280,19 @@ export default async function HomePage() {
               View All Blog Posts <ArrowRight className="h-4 w-4" aria-hidden />
             </ButtonLink>
           </div>
-          <ul className="mt-8 grid gap-5 lg:grid-cols-3">
-            {posts.slice(0, 3).map((p) => (
-              <li key={p.slug}>
-                <BlogCard post={p} />
-              </li>
-            ))}
-          </ul>
+          {dynamicBlogs.length === 0 ? (
+            <div className="mt-8 rounded-xl border border-beige-300/80 bg-white p-6 text-center text-sm text-ink-soft shadow-card">
+              Blog articles published from the admin panel will appear here.
+            </div>
+          ) : (
+            <ul className="mt-8 grid gap-5 lg:grid-cols-3">
+              {dynamicBlogs.slice(0, 3).map((p) => (
+                <li key={p.slug}>
+                  <BlogCard post={p} />
+                </li>
+              ))}
+            </ul>
+          )}
         </Container>
       </section>
     </>

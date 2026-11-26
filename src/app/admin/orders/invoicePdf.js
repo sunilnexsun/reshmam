@@ -1,22 +1,27 @@
 // GST-inclusive tax invoice as a real PDF (jsPDF + autoTable). jsPDF fonts lack "₹" → rs().
 import { jsPDF, autoTable, rs } from '@admin/_lib/export'
 import { date } from '@admin/_lib/format'
+import { resolveOrderInvoice } from '@admin/_lib/invoice'
 import { refundedAmount } from '@admin/_lib/orderActions'
-import { addressLines, companyLines, gstBreakdown } from './orderUtils'
+import { addressLines, companyLines, gstBreakdown, itemLineTotal } from './orderUtils'
 
 const GREEN = [6, 78, 59]
 const INK = [32, 43, 39]
 const MUTED = [100, 113, 108]
 
-/** Downloads the invoice issued when the order was confirmed (order.invoice). Throws before that. */
+/** Downloads a real PDF invoice for an order (Tax Invoice / Bill of Supply / Proforma). */
 export function downloadInvoicePdf(order, db) {
-  const invoice = order.invoice
-  if (!invoice) throw new Error('An invoice is issued when the order is confirmed.')
-  const { company, tax } = invoice
-  const branch = db.branches.find((b) => b.id === order.branchId)
+  const resolved = resolveOrderInvoice(order, db?.settings)
+  if (!resolved) throw new Error('Order data is missing.')
+  const { invoice, isProforma } = resolved
+  const company = invoice.company || db?.settings?.company || {}
+  const tax = invoice.tax || db?.settings?.tax || {}
+  const branch = (db?.branches || []).find((b) => b.id === order.branchId)
   const gstin = tax.gstin
-  const showHsn = tax.gstEnabled && tax.hsnOnInvoice
-  const products = Object.fromEntries(db.products.map((p) => [p.id, p]))
+  const showHsn = tax.gstEnabled !== false && tax.hsnOnInvoice !== false
+  const products = Object.fromEntries((db?.products || []).map((p) => [p.id, p]))
+  const orderNo = order.number || order.order_number || order.id
+  const items = order.items || []
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const W = doc.internal.pageSize.getWidth()
   const M = 40
@@ -26,16 +31,16 @@ export function downloadInvoicePdf(order, db) {
   doc.text(company.brand || 'RESHMAM', M, 50)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED)
   let y = 64
-  ;[company.legalName, ...companyLines(company), gstin && `GSTIN: ${gstin}`, company.fssai && `FSSAI Lic. No: ${company.fssai}`].filter(Boolean).forEach((l) => { doc.text(l, M, y); y += 12 })
+  ;[company.legalName, ...companyLines(company), gstin && `GSTIN: ${gstin}`, company.fssai && `FSSAI Lic. No: ${company.fssai}`].filter(Boolean).forEach((l) => { doc.text(String(l), M, y); y += 12 })
 
   // Header — invoice meta
   doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...INK)
-  doc.text(tax.gstEnabled ? 'TAX INVOICE' : 'BILL OF SUPPLY', W - M, 50, { align: 'right' })
+  doc.text(isProforma ? 'PROFORMA INVOICE' : tax.gstEnabled !== false ? 'TAX INVOICE' : 'BILL OF SUPPLY', W - M, 50, { align: 'right' })
   if (['Cancelled', 'Returned'].includes(order.status)) {
     doc.setFontSize(9); doc.setTextColor(185, 28, 28); doc.text(`ORDER ${order.status.toUpperCase()}`, W - M - 120, 50, { align: 'right' }); doc.setTextColor(...INK)
   }
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...INK)
-  const meta = [['Invoice No', invoice.number], ['Order No', order.number], ['Order Date', date(order.createdAt)], ['Invoice Date', date(invoice.date)], ['Branch', branch?.name || '—'], ['Payment', `${order.paymentMethod} (${order.paymentStatus})`]]
+  const meta = [['Invoice No', invoice.number], ['Order No', orderNo], ['Order Date', date(order.createdAt)], ['Invoice Date', date(invoice.date)], ['Branch', branch?.name || '—'], ['Payment', `${order.paymentMethod || '—'} (${order.paymentStatus || '—'})`]]
   meta.forEach(([k, v], i) => {
     doc.setTextColor(...MUTED); doc.text(`${k}:`, W - M - 190, 66 + i * 12)
     doc.setTextColor(...INK); doc.text(String(v), W - M, 66 + i * 12, { align: 'right' })
@@ -50,13 +55,13 @@ export function downloadInvoicePdf(order, db) {
   doc.text('BILL TO / SHIP TO', M, y)
   doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK)
   y += 13
-  ;[order.customerName, ...addressLines(a), order.customerPhone && `Phone: ${order.customerPhone}`, order.customerEmail && `Email: ${order.customerEmail}`].filter(Boolean).forEach((l) => { doc.text(l, M, y); y += 12 })
+  ;[order.customerName, ...addressLines(a), order.customerPhone && `Phone: ${order.customerPhone}`, order.customerEmail && `Email: ${order.customerEmail}`].filter(Boolean).forEach((l) => { doc.text(String(l), M, y); y += 12 })
   doc.setTextColor(...MUTED); doc.text(`Place of supply: ${a.state || tax.placeOfSupply || '—'}`, W - M, y - 12, { align: 'right' })
 
   // Items
   const g = gstBreakdown(order, invoice)
   const head = ['#', 'Item', ...(showHsn ? ['HSN'] : []), 'Qty', 'Rate', ...(g.gstEnabled ? ['GST'] : []), 'Amount']
-  const body = order.items.map((it, i) => [i + 1, `${it.name} – ${it.size}\nSKU: ${it.sku}`, ...(showHsn ? [products[it.productId]?.hsn || '—'] : []), it.qty, rs(it.price), ...(g.gstEnabled ? [`${it.gst}%`] : []), rs(it.total)])
+  const body = items.map((it, i) => [i + 1, `${it.name || 'Product'} – ${it.size || ''}\nSKU: ${it.sku || '—'}`, ...(showHsn ? [products[it.productId]?.hsn || '—'] : []), it.qty || 1, rs(it.price), ...(g.gstEnabled ? [`${Number(it.gst) || 0}%`] : []), rs(itemLineTotal(it))])
   autoTable(doc, {
     head: [head], body, startY: y + 6, margin: { left: M, right: M },
     styles: { fontSize: 9, cellPadding: 5, textColor: INK, lineColor: [227, 232, 230], lineWidth: 0.5 },
@@ -107,5 +112,5 @@ export function downloadInvoicePdf(order, db) {
   doc.text('This is a computer-generated invoice and does not require a signature.', M, H - 34)
   doc.text(`For ${company.legalName || company.brand || 'RESHMAM'}`, W - M, H - 46, { align: 'right' })
 
-  doc.save(`Invoice-${order.number}.pdf`)
+  doc.save(`Invoice-${orderNo}.pdf`)
 }

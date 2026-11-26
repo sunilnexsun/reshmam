@@ -202,6 +202,11 @@ export function ImageUploader({
           const downloadUrl = await uploadProductImage(f, { pathPrefix: storagePath, maxSizeMB })
           urls.push(downloadUrl)
         } catch (storageErr) {
+          const msg = storageErr?.message || ''
+          // Surface explicit auth/permission/size errors rather than silently storing huge base64 strings
+          if (/rejected|forbidden|unauthorized|limit|unsupported|HTTP 40[013]/i.test(msg)) {
+            throw storageErr
+          }
           console.warn('Firebase Storage upload notice, falling back to optimized data URL:', storageErr)
           const localUrl = await fileToDataUrl(f, 900, 0.82)
           urls.push(localUrl)

@@ -45,6 +45,9 @@ export function gstBreakdown(o, settings) {
   return { intra, rows, totalTax: orderGst(o), gstEnabled: true }
 }
 
-export const addressLines = (a = {}) => [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(', ') + (a.pincode ? ` – ${a.pincode}` : '')].filter((x) => x && x.trim())
+export const itemLineTotal = (it = {}) =>
+  Number(it.total ?? it.subtotal ?? (Number(it.price || 0) * Number(it.qty || 1))) || 0
+
+export const addressLines = (a = {}) => [a.line1 || a.street, a.line2, [a.city, a.state].filter(Boolean).join(', ') + (a.pincode ? ` – ${a.pincode}` : '')].filter((x) => x && x.trim())
 
 export const companyLines = (c = {}) => [c.address, [c.city, c.state].filter(Boolean).join(', ') + (c.pincode ? ` – ${c.pincode}` : ''), [c.phone, c.mobile && `+91 ${c.mobile}`].filter(Boolean).join(' / '), c.email].filter((x) => x && x.trim())

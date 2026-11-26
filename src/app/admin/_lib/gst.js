@@ -15,10 +15,11 @@ export function gstByRate(o) {
   const f = discountFactor(o)
   const groups = {}
   let exact = 0
-  o.items.forEach((it) => {
+  ;(o.items || []).forEach((it) => {
     const rate = Number(it.gst) || 0
-    groups[rate] = (groups[rate] || 0) + it.total * f
-    exact += it.total * f
+    const lineTotal = Number(it.total ?? it.subtotal ?? (Number(it.price || 0) * Number(it.qty || 1))) || 0
+    groups[rate] = (groups[rate] || 0) + lineTotal * f
+    exact += lineTotal * f
   })
   const rows = Object.entries(groups).map(([rate, gross]) => ({ rate: Number(rate), gross: round2(gross) }))
   if (rows.length) {

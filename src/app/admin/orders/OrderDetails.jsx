@@ -9,7 +9,7 @@ import { productImage } from '@admin/_lib/selectors'
 import { useAuth } from '@admin/_lib/auth'
 import { cn, dateTime, inr } from '@admin/_lib/format'
 import NotFound from '@admin/_components/NotFound'
-import { addressLines, allowedNext, canRefund, gstBreakdown, isCod, willRestock } from './orderUtils'
+import { addressLines, allowedNext, canRefund, gstBreakdown, isCod, itemLineTotal, willRestock } from './orderUtils'
 import { downloadInvoicePdf } from './invoicePdf'
 import InvoicePrint from './InvoicePrint'
 import UpdateStatusModal from './UpdateStatusModal'
@@ -19,8 +19,6 @@ const FLOW = ['Pending', 'Processing', 'Shipped', 'Delivered']
 const TL_ICON = { Pending: Package, Processing: RefreshCw, Shipped: Truck, Delivered: Check, Cancelled: Ban, Returned: RotateCcw }
 const TL_TONE = { Pending: 'bg-amber-100 text-amber-700', Processing: 'bg-blue-100 text-blue-700', Shipped: 'bg-violet-100 text-violet-700', Delivered: 'bg-green-100 text-green-700', Cancelled: 'bg-red-100 text-red-700', Returned: 'bg-teal-100 text-teal-700' }
 const REFUND_TONE = { 'Pending gateway': 'amber', Processed: 'green', Manual: 'blue' }
-
-const NO_INVOICE = 'An invoice is issued when the order is confirmed (moved to Processing)'
 
 export default function OrderDetails() {
   const { id } = useParams()
@@ -40,7 +38,6 @@ export default function OrderDetails() {
   useEffect(() => {
     if (!autoPrint || !order) return
     setParams((p) => { p.delete('print'); return p }, { replace: true })
-    if (!order.invoice) return // nothing to print until the order is confirmed
     const t = setTimeout(() => window.print(), 350)
     return () => clearTimeout(t)
   }, [autoPrint, order, setParams])
@@ -55,7 +52,7 @@ export default function OrderDetails() {
   // The issued invoice's tax settings once confirmed; the current settings before that.
   const g = gstBreakdown(order, order.invoice || db.settings)
   const cod = isCod(order)
-  const phoneDigits = order.customerPhone.replace(/\D/g, '')
+  const phoneDigits = (order.customerPhone || '').replace(/\D/g, '')
   const stepIndex = FLOW.indexOf(order.status)
   const offFlow = !FLOW.includes(order.status)
   const lastFlow = offFlow ? Math.max(0, ...order.timeline.map((t) => FLOW.indexOf(t.status))) : stepIndex
@@ -82,8 +79,8 @@ export default function OrderDetails() {
         subtitle={<span className="flex flex-wrap items-center gap-2"><StatusBadge status={order.status} /><StatusBadge status={order.paymentStatus} /><span>Placed {dateTime(order.createdAt)} · {branch?.name}</span></span>}
         actions={<>
           {canManage && next.length > 0 && <Button icon={RefreshCw} onClick={() => setStatusOpen(true)}>Update Status</Button>}
-          <Button variant="outline" icon={Printer} onClick={() => window.print()} disabled={!order.invoice} title={order.invoice ? undefined : NO_INVOICE}>Print Invoice</Button>
-          <Button variant="outline" icon={FileDown} onClick={onDownload} disabled={!order.invoice} title={order.invoice ? undefined : NO_INVOICE}>Download Invoice</Button>
+          <Button variant="outline" icon={Printer} onClick={() => window.print()}>Print Invoice</Button>
+          <Button variant="outline" icon={FileDown} onClick={onDownload}>Download Invoice</Button>
           {canManage && canRefund(order) && <Button variant="outline" icon={Undo2} onClick={() => setRefundOpen(true)}>Refund</Button>}
           {canManage && next.includes('Cancelled') && <Button variant="danger-outline" icon={Ban} onClick={onCancel}>Cancel Order</Button>}
         </>} />
@@ -120,13 +117,13 @@ export default function OrderDetails() {
                           <Thumb src={productImage(db, it.productId)} alt={it.name} size={48} />
                           <div className="min-w-0">
                             <Link to={`/products/${it.productId}`} className="font-medium text-ink hover:text-primary">{it.name}</Link>
-                            <p className="text-xs text-muted">{it.size} · SKU {it.sku} · GST {it.gst}%</p>
+                            <p className="text-xs text-muted">{it.size}{it.sku ? ` · SKU ${it.sku}` : ''}{it.gst != null ? ` · GST ${it.gst}%` : ''}</p>
                           </div>
                         </div>
                       </td>
                       <td className="td text-center">{it.qty}</td>
                       <td className="td text-right whitespace-nowrap">{inr(it.price)}{it.mrp > it.price && <span className="block text-xs text-muted line-through">{inr(it.mrp)}</span>}</td>
-                      <td className="td text-right font-medium whitespace-nowrap">{inr(it.total)}</td>
+                      <td className="td text-right font-medium whitespace-nowrap">{inr(itemLineTotal(it))}</td>
                     </tr>
                   ))}
                 </tbody>

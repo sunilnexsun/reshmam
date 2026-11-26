@@ -72,7 +72,7 @@ export function Badge({ tone = 'gray', children, className, dot }) {
   )
 }
 const STATUS_TONE = {
-  Active: 'green', Inactive: 'gray', Approved: 'green', Rejected: 'red', Draft: 'gray', Scheduled: 'blue', Completed: 'green', Expired: 'gray',
+  Active: 'green', Published: 'green', Inactive: 'gray', Approved: 'green', Rejected: 'red', Draft: 'gray', Scheduled: 'blue', Completed: 'green', Expired: 'gray',
   Pending: 'amber', Processing: 'blue', Shipped: 'purple', Delivered: 'green', Cancelled: 'red', Returned: 'teal',
   Paid: 'green', Failed: 'red', Refunded: 'teal', 'Partially Refunded': 'teal',
   'In Stock': 'green', 'Low Stock': 'amber', 'Out of Stock': 'red',

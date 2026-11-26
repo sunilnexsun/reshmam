@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { BlogCard, Breadcrumbs } from "@storefront/_components/sections/Misc";
-import { Container } from "@storefront/_components/ui/primitives";
-import { posts } from "@storefront/_lib/blog";
+import { ButtonLink, Container } from "@storefront/_components/ui/primitives";
+import { fetchDynamicBlogs } from "@storefront/_lib/server/content";
 import { openGraphBase } from "@storefront/_lib/site";
+
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Blog — Recipes, Tips & Wellness",
@@ -13,7 +15,8 @@ export const metadata: Metadata = {
   openGraph: { ...openGraphBase, url: "/blog", images: ["/images/blog-banner.webp"] },
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await fetchDynamicBlogs();
   return (
     <>
       <BannerHero
@@ -48,13 +51,27 @@ export default function BlogPage() {
               Latest Articles
             </h2>
           </div>
-          <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((p) => (
-              <li key={p.slug}>
-                <BlogCard post={p} layout="stack" />
-              </li>
-            ))}
-          </ul>
+          {posts.length === 0 ? (
+            <div className="mt-8 rounded-2xl border border-beige-300/80 bg-white p-8 text-center shadow-card">
+              <p className="font-serif text-xl font-bold text-forest-800">No articles published yet</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                Publish articles from the admin panel to share cooking tips, oil education, and wellness notes here.
+              </p>
+              <div className="mt-5">
+                <ButtonLink href="/products" variant="primary">
+                  Browse Pure Oils
+                </ButtonLink>
+              </div>
+            </div>
+          ) : (
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((p) => (
+                <li key={p.slug}>
+                  <BlogCard post={p} layout="stack" />
+                </li>
+              ))}
+            </ul>
+          )}
         </Container>
       </section>
     </>

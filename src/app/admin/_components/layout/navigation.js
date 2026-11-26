@@ -1,4 +1,4 @@
-import { Award, BarChart3, Bot, Building2, FolderTree, LayoutDashboard, MessageCircle, Package, Settings, ShoppingCart, Tags, Ticket, Users, Warehouse } from 'lucide-react'
+import { Award, BarChart3, Bot, Building2, FileText, FolderTree, LayoutDashboard, MessageCircle, Package, Quote, Settings, ShoppingCart, Tags, Ticket, Users, Warehouse } from 'lucide-react'
 
 // Sidebar order is fixed by the spec. `module` maps to role permissions in settings.roles.
 export const NAV = [
@@ -12,6 +12,8 @@ export const NAV = [
   { to: '/branches', label: 'Branches', icon: Building2, module: 'branches' },
   { to: '/customers', label: 'Customers', icon: Users, module: 'customers' },
   { to: '/marketing', label: 'Coupons', icon: Ticket, module: 'marketing' },
+  { to: '/blogs', label: 'Blogs', icon: FileText, module: 'marketing' },
+  { to: '/testimonials', label: 'Testimonials', icon: Quote, module: 'marketing' },
   { to: '/whatsapp', label: 'WhatsApp Automation', icon: MessageCircle, module: 'whatsapp' },
   { to: '/ai-chatbot', label: 'AI Chatbot', icon: Bot, module: 'chatbot' },
   { to: '/reports', label: 'Reports', icon: BarChart3, module: 'reports' },

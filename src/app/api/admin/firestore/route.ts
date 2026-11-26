@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { requireStaff, withoutPasswords } from "@/lib/staff-auth";
@@ -26,6 +27,8 @@ const COLLECTIONS = [
   "coupons",
   "campaigns",
   "banners",
+  "blogs",
+  "testimonials",
   "activities",
 ] as const;
 const CONFIG_KEYS = ["settings", "whatsapp", "chatbot"];
@@ -141,6 +144,25 @@ export async function POST(req: Request) {
       else batch.set(ref, withoutPasswords(sanitize({ ...(op.data ?? {}), id: op.id, updatedAt: now })) as Data, { merge: op.merge !== false });
     }
     await batch.commit();
+    try {
+      const touched = new Set(ops.map((o) => o.col));
+      if (touched.has("blogs")) {
+        revalidatePath("/blog");
+        revalidatePath("/blog/[slug]", "page");
+        revalidatePath("/");
+      }
+      if (touched.has("testimonials")) {
+        revalidatePath("/testimonials");
+        revalidatePath("/");
+      }
+      if (touched.has("products") || touched.has("categories") || touched.has("branches") || touched.has("variants")) {
+        revalidatePath("/");
+        revalidatePath("/products");
+        revalidatePath("/products/[slug]", "page");
+      }
+    } catch {
+      // Outside Next.js request context (e.g. unit tests)
+    }
     return NextResponse.json({ ok: true, count: ops.length });
   } catch (err: unknown) {
     console.error("[admin/firestore] write failed", err);

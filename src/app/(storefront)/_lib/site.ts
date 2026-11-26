@@ -117,6 +117,7 @@ export const navLinks = [
   { href: "/products", label: "Products" },
   { href: "/our-story", label: "Our Story" },
   { href: "/health-benefits", label: "Health Benefits" },
+  { href: "/testimonials", label: "Testimonials" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
 ] as const;
@@ -125,6 +126,8 @@ export const footerQuickLinks = [
   { href: "/", label: "Home" },
   { href: "/our-story", label: "About Us" },
   { href: "/products", label: "Shop" },
+  { href: "/testimonials", label: "Testimonials" },
+  { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact Us" },
 ] as const;
 

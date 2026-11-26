@@ -21,10 +21,11 @@ describe("proxy", () => {
     expect(rewritesTo404("/products/mwp4imchxuzgq")).toBe(false);
   });
 
-  it("returns 404 for malformed product paths and unknown or malformed blog slugs", () => {
+  it("returns 404 for deeper/malformed product and blog paths while allowing dynamic slugs", () => {
     expect(rewritesTo404("/products/%E0")).toBe(true);
     expect(rewritesTo404("/products/gingelly-oil/extra")).toBe(true);
-    expect(rewritesTo404("/blog/no-such-post")).toBe(true);
+    expect(rewritesTo404("/blog/any-dynamic-slug")).toBe(false);
+    expect(rewritesTo404("/blog/any-dynamic-slug/extra")).toBe(true);
     expect(rewritesTo404("/blog/%E0")).toBe(true);
   });
 

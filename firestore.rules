@@ -96,6 +96,16 @@ service cloud.firestore {
       allow write: if canManage('marketing');
     }
 
+    match /blogs/{id} {
+      allow read: if true;
+      allow write: if canManage('marketing');
+    }
+
+    match /testimonials/{id} {
+      allow read: if true;
+      allow write: if canManage('marketing');
+    }
+
     match /campaigns/{id} {
       allow read: if canView('marketing');
       allow write: if canManage('marketing');

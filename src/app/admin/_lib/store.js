@@ -34,9 +34,18 @@ const MIGRATIONS = {
       brands: Array.isArray(db.brands) && db.brands.length ? db.brands : seed.brands,
     }
   },
+  // v6: add blogs & testimonials collections
+  6: (db) => {
+    const seed = buildSeed()
+    return {
+      ...db,
+      blogs: Array.isArray(db.blogs) ? db.blogs : seed.blogs,
+      testimonials: Array.isArray(db.testimonials) ? db.testimonials : seed.testimonials,
+    }
+  },
 }
 
-const LISTS = ['branches', 'products', 'variants', 'categories', 'brands', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'activities']
+const LISTS = ['branches', 'products', 'variants', 'categories', 'brands', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'blogs', 'testimonials', 'activities']
 const OBJECTS = ['whatsapp', 'chatbot', 'settings']
 /** True when `data` has core collections the screens read, so an older snapshot can be upgraded. */
 const hasDbShape = (data) =>
@@ -150,13 +159,13 @@ const now = () => new Date().toISOString()
 // ---------------------------------------------------------------------------
 // Firestore Real-Time Cloud Synchronization
 // ---------------------------------------------------------------------------
-const FIRESTORE_LISTS = ['adminUsers', 'categories', 'brands', 'branches', 'products', 'variants', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'activities']
+const FIRESTORE_LISTS = ['adminUsers', 'categories', 'brands', 'branches', 'products', 'variants', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'blogs', 'testimonials', 'activities']
 
 /** Sync whole database seed to Firestore */
 export async function syncSeedToFirestore(data = getState()) {
   try {
     const seed = buildSeed()
-    const collectionsToSync = ['categories', 'brands', 'branches', 'products', 'variants', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'activities']
+    const collectionsToSync = ['categories', 'brands', 'branches', 'products', 'variants', 'customers', 'orders', 'stockMovements', 'priceHistory', 'coupons', 'campaigns', 'banners', 'blogs', 'testimonials', 'activities']
     for (const col of collectionsToSync) {
       const items = Array.isArray(data[col]) && data[col].length ? data[col] : seed[col]
       if (Array.isArray(items)) {
@@ -699,7 +708,7 @@ export function updateOrderStatus(orderId, status, note = '', extra = {}) {
     if (status === 'Delivered' && o.paymentMethod === 'Cash on Delivery') paymentStatus = 'Paid'
     const stockDeducted = deduct ? true : restock ? false : !!o.stockDeducted
     const at = now()
-    const invoice = o.invoice || (deduct ? issueInvoice(o, s.settings, at) : undefined)
+    const invoice = o.invoice || (FULFIL.includes(status) ? issueInvoice(o, s.settings, at) : undefined)
     return {
       ...s, variants,
       stockMovements: [...moves, ...s.stockMovements],

@@ -59,6 +59,18 @@ service firebase.storage {
       allow delete: if canManage('marketing');
     }
 
+    match /blogs/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if canUpload('marketing');
+      allow delete: if canManage('marketing');
+    }
+
+    match /testimonials/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if canUpload('marketing');
+      allow delete: if canManage('marketing');
+    }
+
     // Staff profile pictures: any active staff member.
     match /avatars/{allPaths=**} {
       allow read: if true;

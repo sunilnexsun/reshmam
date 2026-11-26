@@ -133,7 +133,7 @@ export default function OrderList() {
         <IconButton icon={Eye} label={`View ${o.number}`} size="sm" onClick={() => navigate(`/orders/${o.id}`)} />
         {canManage && <RowMenu icon={RefreshCw} label={allowedNext(o).length ? `Change status of ${o.number}` : `${o.number} status is final`} heading="Move to" disabled={!allowedNext(o).length}
           items={allowedNext(o).map((s) => ({ label: s, danger: ['Cancelled', 'Returned'].includes(s), hint: s === 'Shipped' ? 'Needs courier & tracking no.' : willRestock(o, s) ? 'Restocks items' : undefined, onClick: () => quickChange(o, s) }))} />}
-        <IconButton icon={Printer} label={o.invoice ? `Print invoice for ${o.number}` : `${o.number} has no invoice yet (issued when confirmed)`} size="sm" disabled={!o.invoice} onClick={() => navigate(`/orders/${o.id}?print=1`)} />
+        <IconButton icon={Printer} label={`Print invoice for ${o.number}`} size="sm" onClick={() => navigate(`/orders/${o.id}?print=1`)} />
       </div>
     ) },
   ]

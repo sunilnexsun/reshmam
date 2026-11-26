@@ -13,7 +13,7 @@ import mayil from '@admin/_assets/products/mayil.webp'
 import jothi from '@admin/_assets/products/jothi.webp'
 import sesame from '@admin/_assets/products/reshmam-sesame.webp'
 
-export const SEED_VERSION = 5
+export const SEED_VERSION = 6
 // Static image imports resolve to { src, width, height }; the store keeps plain URL strings.
 export const productImages = Object.fromEntries(
   Object.entries({ coconut, gingelly, groundnut, castor, combo, mayil, jothi, sesame }).map(([k, img]) => [k, img.src]),
@@ -275,6 +275,36 @@ export function buildSeed(now = Date.now()) {
     { id: 'bn_1', title: 'Traditional Cold Pressed Oils', subtitle: 'Pure. Traditional. Trusted.', link: '/products', position: 'Home – Hero', status: 'Active', image: productImages.combo, order: 1 },
     { id: 'bn_2', title: 'Cattle Feed – Oil Cakes', subtitle: 'Mayil & Jothi rotary gingelly oil cake', link: '/products?category=cattle-feed', position: 'Products – Top', status: 'Inactive', image: productImages.mayil, order: 2 },
   ]
+  const blogs = [
+    {
+      id: 'bl_1',
+      slug: 'why-wooden-chekku-cold-pressed-oils-matter',
+      title: 'Why Traditional Wooden Chekku Cold-Pressed Oils Matter',
+      category: 'Oil Education',
+      date: iso(ago(5)).slice(0, 10),
+      author: 'RESHMAM Editorial',
+      excerpt: 'How slow wooden chekku pressing keeps natural aroma, antioxidants, and nutrients intact without chemical solvents.',
+      image: '/images/story-hero.webp',
+      imageAlt: 'Traditional wooden chekku oil press filled with sesame seeds',
+      content: 'Cold-pressed oils are extracted mechanically at low temperatures rather than with high heat or chemical solvents.\n\n## The Wooden Chekku Method\nIn a traditional wooden chekku, a slow-turning pestle presses select sesame seeds, groundnuts, or sun-dried copra gently so friction heat stays low.\n\n## Everyday Kitchen Benefits\n- Retains the natural aroma and colour of the seed\n- Free from hexane, bleaching agents, and artificial preservatives\n- Ideal for South Indian tempering, sautéing, and daily nutrition',
+      status: 'Published',
+      createdAt: iso(ago(5)),
+    },
+  ]
+  const testimonials = [
+    {
+      id: 'ts_1',
+      name: 'Meenakshi Sundaram',
+      place: 'Madurai, Tamil Nadu',
+      rating: 5,
+      product: 'Traditional Cold Pressed Gingelly Oil',
+      text: 'The rich aroma and authentic taste remind me of traditional home-pressed gingelly oil. Delivery to Madurai was quick and the bottles arrived securely packed.',
+      avatar: '',
+      order: 1,
+      status: 'Active',
+      createdAt: iso(ago(7)),
+    },
+  ]
 
   // ---------- WhatsApp ----------
   const whatsapp = {
@@ -375,7 +405,7 @@ export function buildSeed(now = Date.now()) {
   return withIssuedInvoices({
     meta: { version: SEED_VERSION, seededAt: iso(now) },
     branches, products, variants, categories, brands, customers, orders, stockMovements, priceHistory,
-    coupons, campaigns, banners, whatsapp, chatbot, settings, activities,
+    coupons, campaigns, banners, blogs, testimonials, whatsapp, chatbot, settings, activities,
     readNotifications: [],
   })
 }

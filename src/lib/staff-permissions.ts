@@ -77,6 +77,8 @@ const COLLECTION_MODULE: Record<string, Module> = {
   coupons: "marketing",
   campaigns: "marketing",
   banners: "marketing",
+  blogs: "marketing",
+  testimonials: "marketing",
 };
 
 /** Fields each module may change on a variant (products: manage may change any field). */

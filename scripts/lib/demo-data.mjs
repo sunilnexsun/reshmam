@@ -6,7 +6,7 @@ import { withoutPasswords } from "./admin-migration.mjs";
 /** The collections the admin panel reads from Firestore (src/app/admin/_lib/store.js), minus adminUsers. */
 export const DEMO_COLLECTIONS = [
   "branches", "products", "variants", "categories", "brands", "customers", "orders",
-  "stockMovements", "priceHistory", "coupons", "campaigns", "banners", "activities",
+  "stockMovements", "priceHistory", "coupons", "campaigns", "banners", "blogs", "testimonials", "activities",
 ];
 const CONFIGS = ["whatsapp", "chatbot", "settings"];
 const STAFF_FIELDS = ["name", "email", "phone", "role", "branchId", "status", "avatar"];

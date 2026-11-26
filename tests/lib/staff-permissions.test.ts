@@ -24,6 +24,10 @@ describe("Staff role", () => {
   });
   it("can't see marketing data", () => {
     expect(can("Staff", "coupons", "read")).toBe(false);
+    expect(can("Staff", "blogs", "read")).toBe(false);
+    expect(can("Staff", "testimonials", "read")).toBe(false);
+    expect(can("Manager", "blogs", "write")).toBe(true);
+    expect(can("Manager", "testimonials", "write")).toBe(true);
   });
   it("can change a variant's stock but not its price", () => {
     expect(can("Staff", "variants", "write", { changedFields: ["stock", "updatedAt"] })).toBe(true);

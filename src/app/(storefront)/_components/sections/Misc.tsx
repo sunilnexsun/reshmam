@@ -1,65 +1,127 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Quote } from "lucide-react";
+import { ArrowRight, ChevronRight, Quote, Star } from "lucide-react";
 import type { BlogPost } from "@storefront/_lib/blog";
 import { formatDate } from "@storefront/_lib/blog";
+import type { Testimonial } from "@storefront/_lib/server/content";
 import { absoluteUrl } from "@storefront/_lib/site";
 import { ButtonLink, SampleBadge } from "@storefront/_components/ui/primitives";
 
+const isExternalOrData = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+
 /**
- * Testimonials — SAMPLE placeholders, clearly labelled until the business
- * supplies genuine customer reviews (with permission to publish them).
+ * Fallback sample placeholders when no `items` prop is provided.
  */
-const sampleTestimonials = [
+const sampleTestimonials: Testimonial[] = [
   {
+    id: "sample-a",
     name: "Sample Customer A",
-    place: "Tamil Nadu",
-    text: "Placeholder review: describe the taste and aroma the customer noticed in their everyday cooking.",
+    city: "Tamil Nadu",
+    rating: 5,
+    quote: "Placeholder review: describe the taste and aroma the customer noticed in their everyday cooking.",
   },
   {
+    id: "sample-b",
     name: "Sample Customer B",
-    place: "Tamil Nadu",
-    text: "Placeholder review: describe what made the customer choose traditionally extracted oils.",
+    city: "Tamil Nadu",
+    rating: 5,
+    quote: "Placeholder review: describe what made the customer choose traditionally extracted oils.",
   },
   {
+    id: "sample-c",
     name: "Sample Customer C",
-    place: "Tamil Nadu",
-    text: "Placeholder review: describe the packaging and delivery experience.",
+    city: "Tamil Nadu",
+    rating: 5,
+    quote: "Placeholder review: describe the packaging and delivery experience.",
   },
 ];
 
-export function Testimonials() {
+export function Testimonials({
+  items,
+  emptyText = "No customer testimonials have been published yet.",
+}: {
+  items?: Testimonial[];
+  emptyText?: string;
+}) {
+  const isFallback = items === undefined;
+  const list = isFallback ? sampleTestimonials : items;
+
+  if (!list.length) {
+    return (
+      <div className="rounded-xl border border-beige-300/80 bg-white p-8 text-center text-sm text-ink-soft shadow-card">
+        {emptyText}
+      </div>
+    );
+  }
+
   return (
     <div>
-      <p className="mb-5 text-center">
-        <SampleBadge>
-          Sample testimonials — not verified customer reviews
-        </SampleBadge>
-      </p>
+      {isFallback && (
+        <p className="mb-5 text-center">
+          <SampleBadge>
+            Sample testimonials — not verified customer reviews
+          </SampleBadge>
+        </p>
+      )}
       <ul className="grid gap-5 md:grid-cols-3">
-        {sampleTestimonials.map((t) => (
-          <li
-            key={t.name}
-            className="relative flex gap-4 rounded-xl border border-beige-300/80 bg-white p-5 shadow-card"
-          >
-            <span
-              aria-hidden
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-beige font-serif text-xl font-bold text-forest-800"
+        {list.map((t) => {
+          const rating = Math.min(5, Math.max(1, Number(t.rating || 5)));
+          const initial = (t.name || "C").trim().charAt(0).toUpperCase() || "C";
+          return (
+            <li
+              key={t.id || t.name}
+              className="relative flex gap-4 rounded-xl border border-beige-300/80 bg-white p-5 shadow-card"
             >
-              {t.name.slice(-1)}
-            </span>
-            <figure>
-              <Quote className="h-5 w-5 text-gold" aria-hidden />
-              <blockquote className="mt-1 text-sm italic leading-relaxed text-ink-soft">
-                {t.text}
-              </blockquote>
-              <figcaption className="mt-3 text-sm font-semibold text-forest-900">
-                {t.name}{" "}
-                <span className="font-normal text-ink-soft">· {t.place}</span>
-              </figcaption>
-            </figure>
-          </li>
-        ))}
+              {t.avatar ? (
+                <Image
+                  src={t.avatar}
+                  alt={t.name}
+                  width={56}
+                  height={56}
+                  unoptimized={isExternalOrData(t.avatar)}
+                  className="h-14 w-14 shrink-0 rounded-full border border-beige-300 object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-beige font-serif text-xl font-bold text-forest-800"
+                >
+                  {initial}
+                </span>
+              )}
+              <figure className="flex min-w-0 flex-1 flex-col">
+                <div className="flex items-center justify-between gap-2">
+                  <Quote className="h-5 w-5 text-gold" aria-hidden />
+                  <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-3.5 w-3.5 ${
+                          star <= rating ? "fill-gold text-gold" : "text-beige-300"
+                        }`}
+                        aria-hidden
+                      />
+                    ))}
+                  </div>
+                </div>
+                <blockquote className="mt-2 text-sm italic leading-relaxed text-ink-soft">
+                  {t.quote}
+                </blockquote>
+                <figcaption className="mt-auto pt-3 text-sm font-semibold text-forest-900">
+                  {t.name}
+                  {t.city && (
+                    <span className="font-normal text-ink-soft"> · {t.city}</span>
+                  )}
+                  {t.product && (
+                    <span className="mt-1 block text-xs font-medium text-rust">
+                      {t.product}
+                    </span>
+                  )}
+                </figcaption>
+              </figure>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -85,6 +147,7 @@ export function BlogCard({
         alt={post.imageAlt}
         width={376}
         height={124}
+        unoptimized={isExternalOrData(post.image)}
         sizes={layout === "row" ? "160px" : "(min-width:1024px) 33vw, 100vw"}
         className={
           layout === "row"

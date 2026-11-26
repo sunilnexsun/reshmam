@@ -3,32 +3,38 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { BlogCard, Breadcrumbs, JsonLd } from "@storefront/_components/sections/Misc";
 import { Container, SampleBadge } from "@storefront/_components/ui/primitives";
-import { formatDate, getPost, posts } from "@storefront/_lib/blog";
+import { formatDate } from "@storefront/_lib/blog";
+import { fetchDynamicBlogBySlug, fetchDynamicBlogs } from "@storefront/_lib/server/content";
 import { absoluteUrl, openGraphBase } from "@storefront/_lib/site";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const posts = await fetchDynamicBlogs();
   return posts.map((p) => ({ slug: p.slug }));
 }
 
+export const instant = false;
+
 export async function generateMetadata({ params }: PageProps<"/blog/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await fetchDynamicBlogBySlug(slug);
   if (!post) return {};
   return {
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: { ...openGraphBase, type: "article", url: `/blog/${post.slug}`, images: [post.image], publishedTime: post.date },
-    // Sample articles shouldn't be indexed until replaced with approved content.
     robots: post.sample ? { index: false, follow: true } : undefined,
   };
 }
 
 export default async function BlogArticle({ params }: PageProps<"/blog/[slug]">) {
   const { slug } = await params;
-  const post = getPost(slug);
+  const [post, allPosts] = await Promise.all([
+    fetchDynamicBlogBySlug(slug),
+    fetchDynamicBlogs(),
+  ]);
   if (!post) notFound();
-  const related = posts.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const related = allPosts.filter((p) => p.slug !== post.slug).slice(0, 3);
 
   return (
     <>
@@ -50,6 +56,7 @@ export default async function BlogArticle({ params }: PageProps<"/blog/[slug]">)
             alt={post.imageAlt}
             width={984}
             height={364}
+            unoptimized={post.image.startsWith("data:") || post.image.startsWith("http")}
             priority
             className="mt-8 aspect-[21/9] w-full rounded-2xl object-cover"
           />

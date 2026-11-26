@@ -1,18 +1,24 @@
 /**
- * Blog articles. These are SAMPLE articles written as placeholders and are
- * labelled as such on the site. Replace them with approved content (or load
- * from the `blog_articles` table) before launch.
+ * Blog article types, content parsing helper, and date formatting.
+ * Dynamic articles are loaded from Firestore (`blogs` collection).
  */
+export type BlogSection = {
+  heading?: string;
+  paragraphs?: string[];
+  list?: string[];
+};
+
 export type BlogPost = {
   slug: string;
   title: string;
-  category: "Cooking Tips" | "Oil Education" | "Wellness";
-  date: string; // ISO
+  category: string;
+  date: string; // ISO YYYY-MM-DD or full ISO timestamp
   excerpt: string;
   image: string;
   imageAlt: string;
-  body: { heading?: string; paragraphs?: string[]; list?: string[] }[];
-  sample: true;
+  author?: string;
+  body: BlogSection[];
+  sample?: boolean;
 };
 
 export const posts: BlogPost[] = [
@@ -142,5 +148,61 @@ export const posts: BlogPost[] = [
 ];
 
 export const getPost = (slug: string) => posts.find((p) => p.slug === slug);
-export const formatDate = (iso: string) =>
-  new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+/**
+ * Parses Admin plain/markdown-like content text into structured storefront sections.
+ * Headings start with `## `, bullet lists start with `- ` or `* `.
+ */
+export function parseBlogContent(raw: string): BlogSection[] {
+  const text = String(raw || "").trim();
+  if (!text) return [];
+  const blocks = text.split(/\n{2,}/);
+  const sections: BlogSection[] = [];
+  let current: BlogSection = {};
+
+  const flush = () => {
+    if (current.heading || current.paragraphs?.length || current.list?.length) {
+      sections.push(current);
+      current = {};
+    }
+  };
+
+  for (const block of blocks) {
+    const lines = block
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (!lines.length) continue;
+
+    if (lines[0].startsWith("## ")) {
+      flush();
+      current.heading = lines[0].slice(3).trim();
+      const rest = lines.slice(1);
+      if (rest.length) {
+        const bullets = rest.filter((l) => /^[-*]\s+/.test(l)).map((l) => l.replace(/^[-*]\s+/, ""));
+        const paras = rest.filter((l) => !/^[-*]\s+/.test(l));
+        if (paras.length) current.paragraphs = [...(current.paragraphs || []), paras.join(" ")];
+        if (bullets.length) current.list = [...(current.list || []), ...bullets];
+      }
+      continue;
+    }
+
+    const allBullets = lines.every((l) => /^[-*]\s+/.test(l));
+    if (allBullets) {
+      current.list = [...(current.list || []), ...lines.map((l) => l.replace(/^[-*]\s+/, ""))];
+    } else {
+      current.paragraphs = [...(current.paragraphs || []), lines.join(" ")];
+    }
+  }
+  flush();
+  return sections;
+}
+
+export const formatDate = (iso: string) => {
+  const raw = String(iso || "").trim();
+  if (!raw) return "";
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00` : raw;
+  const dt = new Date(normalized);
+  if (Number.isNaN(dt.getTime())) return raw;
+  return dt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+};

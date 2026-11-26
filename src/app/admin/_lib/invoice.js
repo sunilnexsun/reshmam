@@ -3,7 +3,7 @@
 // changes — reproduces the same document instead of renumbering or re-splitting it.
 
 /** Invoice number for an order number with the configured prefix: RSH-10001 → INV-10001. */
-export const invoiceNumberFor = (orderNumber, settings) => `${settings?.tax?.invoicePrefix || 'INV-'}${orderNumber.replace(/^[A-Za-z]+-?/, '')}`
+export const invoiceNumberFor = (orderNumber, settings) => `${settings?.tax?.invoicePrefix || 'INV-'}${String(orderNumber || '').replace(/^[A-Za-z]+-?/, '')}`
 
 /** The invoice details to store on an order confirmed at `at` (ISO string). */
 export function issueInvoice(order, settings, at) {
@@ -11,8 +11,8 @@ export function issueInvoice(order, settings, at) {
   delete company.logo // a large data URL that the invoice doesn't print
   const tax = settings?.tax || {}
   return {
-    number: invoiceNumberFor(order.number, settings),
-    date: at,
+    number: invoiceNumberFor(order.number || order.order_number || order.id, settings),
+    date: at || order.createdAt || new Date().toISOString(),
     company,
     tax: {
       gstEnabled: tax.gstEnabled !== false,
@@ -24,6 +24,25 @@ export function issueInvoice(order, settings, at) {
 }
 
 const CONFIRMED = ['Processing', 'Shipped', 'Delivered']
+
+/**
+ * Returns the stored invoice when present, or synthesises one from current settings so confirmed orders
+ * (including storefront orders placed before invoice issuance) and pending/proforma orders can always
+ * be printed or downloaded as PDF.
+ */
+export function resolveOrderInvoice(order, settings) {
+  if (!order) return null
+  if (order.invoice) return { invoice: order.invoice, isProforma: false }
+  const confirmedAt =
+    order.timeline?.find((t) => CONFIRMED.includes(t.status))?.at ||
+    (CONFIRMED.includes(order.status) || order.status === 'Returned' || order.stockDeducted || order.paymentStatus === 'Paid'
+      ? order.updatedAt || order.createdAt
+      : null)
+  if (confirmedAt) {
+    return { invoice: issueInvoice(order, settings, confirmedAt), isProforma: false }
+  }
+  return { invoice: issueInvoice(order, settings, order.createdAt), isProforma: true }
+}
 
 /**
  * Adds an invoice to every confirmed order that doesn't have one, dated when it was first confirmed (or when

@@ -2,8 +2,9 @@
 // everything else on the page is hidden so only the invoice is printed (window.print()).
 import { createPortal } from 'react-dom'
 import { date, inr } from '@admin/_lib/format'
+import { resolveOrderInvoice } from '@admin/_lib/invoice'
 import { refundedAmount } from '@admin/_lib/orderActions'
-import { addressLines, companyLines, gstBreakdown } from './orderUtils'
+import { addressLines, companyLines, gstBreakdown, itemLineTotal } from './orderUtils'
 
 const PRINT_CSS = `
 .invoice-print { display: none; }
@@ -18,17 +19,21 @@ const PRINT_CSS = `
   .invoice-print .c { text-align: center; }
 }`
 
-/** Prints the invoice issued when the order was confirmed (order.invoice); renders nothing before that. */
+/** Prints the invoice for an order (issued invoice when confirmed, or proforma before that). */
 export default function InvoicePrint({ order, db }) {
-  const invoice = order.invoice
-  if (!invoice) return null
-  const { company, tax } = invoice
+  const resolved = resolveOrderInvoice(order, db?.settings)
+  if (!resolved) return null
+  const { invoice, isProforma } = resolved
+  const company = invoice.company || db?.settings?.company || {}
+  const tax = invoice.tax || db?.settings?.tax || {}
   const gstin = tax.gstin
-  const showHsn = tax.gstEnabled && tax.hsnOnInvoice
-  const branch = db.branches.find((b) => b.id === order.branchId)
-  const hsn = Object.fromEntries(db.products.map((p) => [p.id, p.hsn]))
+  const showHsn = tax.gstEnabled !== false && tax.hsnOnInvoice !== false
+  const branch = (db?.branches || []).find((b) => b.id === order.branchId)
+  const hsn = Object.fromEntries((db?.products || []).map((p) => [p.id, p.hsn]))
   const g = gstBreakdown(order, invoice)
   const refunded = refundedAmount(order)
+  const orderNo = order.number || order.order_number || order.id
+  const items = order.items || []
   return createPortal(
     <div className="invoice-print" aria-hidden>
       <style>{PRINT_CSS}</style>
@@ -41,10 +46,10 @@ export default function InvoicePrint({ order, db }) {
           {company.fssai && <div><b>FSSAI:</b> {company.fssai}</div>}
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{tax.gstEnabled ? 'TAX INVOICE' : 'BILL OF SUPPLY'}</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{isProforma ? 'PROFORMA INVOICE' : tax.gstEnabled !== false ? 'TAX INVOICE' : 'BILL OF SUPPLY'}</div>
           {['Cancelled', 'Returned'].includes(order.status) && <div style={{ fontWeight: 700, color: '#b91c1c' }}>ORDER {order.status.toUpperCase()}</div>}
           <div>Invoice No: <b>{invoice.number}</b></div>
-          <div>Order No: <b>{order.number}</b></div>
+          <div>Order No: <b>{orderNo}</b></div>
           <div>Order Date: {date(order.createdAt)}</div>
           <div>Invoice Date: {date(invoice.date)}</div>
           <div>Branch: {branch?.name || '—'}</div>
@@ -55,21 +60,21 @@ export default function InvoicePrint({ order, db }) {
           <div style={{ fontWeight: 700, color: '#064e3b', fontSize: 10, letterSpacing: 0.5 }}>BILL TO / SHIP TO</div>
           <div style={{ fontWeight: 600 }}>{order.customerName}</div>
           {addressLines(order.shippingAddress).map((l) => <div key={l}>{l}</div>)}
-          <div>Phone: {order.customerPhone}</div>
+          {order.customerPhone && <div>Phone: {order.customerPhone}</div>}
           {order.customerEmail && <div>Email: {order.customerEmail}</div>}
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div>Payment: {order.paymentMethod}</div>
-          <div>Status: {order.paymentStatus}</div>
+          <div>Payment: {order.paymentMethod || '—'}</div>
+          <div>Status: {order.paymentStatus || '—'}</div>
           {order.paymentId && <div>Payment ID: {order.paymentId}</div>}
-          <div>Place of supply: {order.shippingAddress?.state || tax.placeOfSupply}</div>
+          <div>Place of supply: {order.shippingAddress?.state || tax.placeOfSupply || '—'}</div>
         </div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Item</th>{showHsn && <th>HSN</th>}<th className="c">Qty</th><th className="r">Rate</th>{tax.gstEnabled && <th className="c">GST</th>}<th className="r">Amount</th></tr></thead>
+        <thead><tr><th>#</th><th>Item</th>{showHsn && <th>HSN</th>}<th className="c">Qty</th><th className="r">Rate</th>{tax.gstEnabled !== false && <th className="c">GST</th>}<th className="r">Amount</th></tr></thead>
         <tbody>
-          {order.items.map((it, i) => (
-            <tr key={it.variantId + i}><td>{i + 1}</td><td>{it.name} – {it.size}<div style={{ color: '#64716c', fontSize: 9 }}>SKU: {it.sku}</div></td>{showHsn && <td>{hsn[it.productId] || '—'}</td>}<td className="c">{it.qty}</td><td className="r">{inr(it.price, true)}</td>{tax.gstEnabled && <td className="c">{it.gst}%</td>}<td className="r">{inr(it.total, true)}</td></tr>
+          {items.map((it, i) => (
+            <tr key={(it.variantId || it.productId || i) + '_' + i}><td>{i + 1}</td><td>{it.name} – {it.size}<div style={{ color: '#64716c', fontSize: 9 }}>SKU: {it.sku || '—'}</div></td>{showHsn && <td>{hsn[it.productId] || '—'}</td>}<td className="c">{it.qty}</td><td className="r">{inr(it.price, true)}</td>{tax.gstEnabled !== false && <td className="c">{it.gst ?? tax.defaultGst ?? 0}%</td>}<td className="r">{inr(itemLineTotal(it), true)}</td></tr>
           ))}
         </tbody>
       </table>

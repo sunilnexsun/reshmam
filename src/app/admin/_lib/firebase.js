@@ -48,7 +48,9 @@ export async function authHeader() {
 }
 
 /**
- * Validates and uploads an image file directly to Firebase Storage.
+ * Validates and uploads an image file to Firebase Storage.
+ * Uses the authenticated admin upload API in browser runtime (guaranteed Storage upload
+ * even if client rules lag), falling back to client Storage SDK in demo/offline mode.
  * @param {File} file
  * @param {Object} options
  * @param {string} [options.pathPrefix='products'] - Storage path prefix
@@ -64,6 +66,26 @@ export async function uploadProductImage(file, { pathPrefix = 'products', maxSiz
   const maxSizeBytes = maxSizeMB * 1024 * 1024
   if (file.size > maxSizeBytes) {
     throw new Error(`File "${file.name}" exceeds the ${maxSizeMB} MB size limit (${(file.size / (1024 * 1024)).toFixed(1)} MB).`)
+  }
+
+  if (isBrowserRuntime() && !demoMode) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('pathPrefix', pathPrefix)
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: await authHeader(),
+      body: formData,
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.ok && json.url) {
+      return json.url
+    }
+    // Surface validation / permission errors directly instead of masking them
+    if (res.status >= 400 && res.status < 500) {
+      throw new Error(json.error || `Upload rejected (HTTP ${res.status})`)
+    }
+    console.warn('[Storage] Server upload proxy returned', res.status, json.error || '', '— trying client Storage SDK')
   }
 
   const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')

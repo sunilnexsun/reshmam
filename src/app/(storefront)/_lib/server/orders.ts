@@ -87,6 +87,7 @@ export async function createOrder(
       qty: l.quantity,
       size: l.variantLabel,
       subtotal: l.lineTotal,
+      total: l.lineTotal,
       variantId: l.variantId,
     })),
     number: orderNumber,
@@ -96,6 +97,7 @@ export async function createOrder(
     shipping: pricing.shipping,
     shippingAddress: {
       city: input.address.city,
+      line1: street,
       pincode: input.address.pincode,
       state: input.address.state,
       street,
