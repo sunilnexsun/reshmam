@@ -341,7 +341,7 @@ export function CheckoutForm() {
 
         {/* Remounts once the account loads, so the prefilled values appear in these uncontrolled fields. */}
         <fieldset key={profile?.id ?? "guest"} className="rounded-xl border border-beige-300/80 bg-white p-6">
-          <legend className="px-1 font-serif text-xl font-bold text-forest-800">Customer details</legend>
+          <legend className="float-left mb-2 w-full font-serif text-xl font-bold text-forest-800 [&+*]:clear-both">Customer details</legend>
           {!user && (
             <p className="mt-1 text-sm text-ink-soft">
               Have an account?{" "}
@@ -386,7 +386,7 @@ export function CheckoutForm() {
         </fieldset>
 
         <fieldset className="rounded-xl border border-beige-300/80 bg-white p-6">
-          <legend className="px-1 font-serif text-xl font-bold text-forest-800">Shipping address</legend>
+          <legend className="float-left mb-2 w-full font-serif text-xl font-bold text-forest-800 [&+*]:clear-both">Shipping address</legend>
           <div className="mt-2 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="a-line1" className="text-sm font-medium">Address line 1 *</label>
@@ -427,7 +427,7 @@ export function CheckoutForm() {
         </fieldset>
 
         <fieldset className="rounded-xl border border-beige-300/80 bg-white p-6">
-          <legend className="px-1 font-serif text-xl font-bold text-forest-800">Payment method</legend>
+          <legend className="float-left mb-2 w-full font-serif text-xl font-bold text-forest-800 [&+*]:clear-both">Payment method</legend>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {[
               {
