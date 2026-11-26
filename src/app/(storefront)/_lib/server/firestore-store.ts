@@ -35,28 +35,28 @@ function tryAdminDb() {
 export async function getDocData(
   col: string,
   id: string,
-): Promise<{ exists: boolean; id: string; data: Record<string, any> | undefined }> {
+): Promise<{ exists: boolean; id: string; data: Record<string, unknown> | undefined }> {
   const admin = tryAdminDb();
   if (admin) {
     const snap = await admin.collection(col).doc(id).get();
     return {
       exists: snap.exists,
       id: snap.id,
-      data: snap.data() as Record<string, any> | undefined,
+      data: snap.data() as Record<string, unknown> | undefined,
     };
   }
   const snap = await getDoc(doc(clientDb, col, id));
   return {
     exists: snap.exists(),
     id: snap.id,
-    data: snap.exists() ? (snap.data() as Record<string, any>) : undefined,
+    data: snap.exists() ? (snap.data() as Record<string, unknown>) : undefined,
   };
 }
 
 export async function setDocData(
   col: string,
   id: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   opts?: { merge?: boolean },
 ): Promise<void> {
   const admin = tryAdminDb();
@@ -78,7 +78,7 @@ export async function setDocData(
 export async function updateDocData(
   col: string,
   id: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
 ): Promise<void> {
   const admin = tryAdminDb();
   if (admin) {
@@ -92,16 +92,16 @@ export async function findDocByField(
   col: string,
   field: string,
   value: string,
-): Promise<{ id: string; data: Record<string, any> } | null> {
+): Promise<{ id: string; data: Record<string, unknown> } | null> {
   const admin = tryAdminDb();
   if (admin) {
     const snap = await admin.collection(col).where(field, "==", value).limit(1).get();
     if (snap.empty) return null;
     const d = snap.docs[0];
-    return { id: d.id, data: d.data() as Record<string, any> };
+    return { id: d.id, data: d.data() as Record<string, unknown> };
   }
   const snap = await getDocs(query(collection(clientDb, col), where(field, "==", value), limit(1)));
   if (snap.empty) return null;
   const d = snap.docs[0];
-  return { id: d.id, data: d.data() as Record<string, any> };
+  return { id: d.id, data: d.data() as Record<string, unknown> };
 }

@@ -68,13 +68,13 @@ export async function GET(req: Request) {
       ...COLLECTIONS.map(async (col) => {
         if (col === "adminUsers") {
           const snap = await db.collection(col).get();
-          const rows = snap.docs.filter((d: any) => may(col, d.id)).map((d: any) => ({ ...(d.data() as Data), id: d.id }));
+          const rows = snap.docs.filter((d) => may(col, d.id)).map((d) => ({ ...(d.data() as Data), id: d.id }));
           if (rows.length) data[col] = rows;
           return;
         }
         if (!may(col)) return;
         const snap = await db.collection(col).get();
-        data[col] = snap.docs.map((d: any) => ({ ...(d.data() as Data), id: d.id }));
+        data[col] = snap.docs.map((d) => ({ ...(d.data() as Data), id: d.id }));
       }),
       (async () => {
         const snap = await db.collection("configs").get();

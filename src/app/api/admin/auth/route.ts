@@ -18,8 +18,8 @@ export async function GET(req: Request) {
   }
   const snap = await adminDb().collection("adminUsers").get();
   const users = snap.docs
-    .map((d: any) => withoutPasswords({ ...(d.data() as Record<string, unknown>), id: d.id }) as { id: string; role?: string; name?: string })
-    .sort((a: any, b: any) => (ROLE_ORDER[a.role ?? ""] ?? 99) - (ROLE_ORDER[b.role ?? ""] ?? 99) || (a.name ?? "").localeCompare(b.name ?? ""));
+    .map((d) => withoutPasswords({ ...(d.data() as Record<string, unknown>), id: d.id }) as { id: string; role?: string; name?: string })
+    .sort((a, b) => (ROLE_ORDER[a.role ?? ""] ?? 99) - (ROLE_ORDER[b.role ?? ""] ?? 99) || (a.name ?? "").localeCompare(b.name ?? ""));
   return NextResponse.json({ ok: true, users }, { headers: { "Cache-Control": "no-store" } });
 }
 
