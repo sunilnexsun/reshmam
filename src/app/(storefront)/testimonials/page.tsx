@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Star } from "lucide-react";
-import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { Breadcrumbs, Testimonials } from "@storefront/_components/sections/Misc";
 import { Container } from "@storefront/_components/ui/primitives";
@@ -40,24 +39,6 @@ export default async function TestimonialsPage() {
         eyebrow="Customer Stories"
         title="What Our Customers Say"
         description="Real experiences from home kitchens and families who cook daily with Reshmam cold-pressed coconut, groundnut and gingelly oils."
-        fallback={
-          <PageHero
-            eyebrow="Customer Stories"
-            title={
-              <>
-                What Our <Gold>Customers Say</Gold>
-              </>
-            }
-            description={
-              <p>
-                Honest experiences from home kitchens and families cooking daily with
-                our cold wood-pressed gingelly, groundnut, and coconut oils.
-              </p>
-            }
-            image="/images/blog-hero.webp"
-            imageAlt="Cold wood-pressed oils prepared for traditional home cooking"
-          />
-        }
       />
 
       <section aria-labelledby="testimonials-list-heading" className="bg-paper py-12">

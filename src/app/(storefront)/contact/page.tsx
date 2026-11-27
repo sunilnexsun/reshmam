@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ArrowRight, Clock, Mail, MapPin, Phone } from "lucide-react";
-import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { ContactForm, ContactFormFromUrl } from "@storefront/_components/contact/ContactForm";
 import { JsonLd } from "@storefront/_components/sections/Misc";
@@ -125,25 +124,6 @@ export default function ContactPage() {
         title="We're Here for You"
         description="Have a question about our products, need help with an order, or just want to say hello? We'd love to hear from you."
         cta={{ href: "#enquiry", label: "Get in Touch", box: { left: "6.6%", top: "74.1%", width: "16.9%", height: "10.7%" } }}
-        fallback={
-          <PageHero
-            eyebrow="Contact Us"
-            title={
-              <>
-                We&apos;re Here <br />
-                <Gold>for You</Gold>
-              </>
-            }
-            description={
-              <p>
-                Have a question about our products, need help with an order, or just want to say hello? We&apos;d love to
-                hear from you.
-              </p>
-            }
-            image="/images/contact-hero.webp"
-            imageAlt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
-          />
-        }
       />
 
       <section aria-label="Contact details" className="relative bg-paper">

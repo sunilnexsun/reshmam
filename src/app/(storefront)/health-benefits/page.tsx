@@ -17,12 +17,10 @@ import {
   Wheat,
   Flower2,
 } from "lucide-react";
-import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { FeatureGrid, TrustStrip } from "@storefront/_components/sections/FeatureGrid";
 import { ClosingBanner } from "@storefront/_components/sections/Misc";
 import {
-  ButtonLink,
   Container,
   IconBadge,
   SectionHeading,
@@ -90,29 +88,6 @@ export default function HealthBenefitsPage() {
         title="Pure Oils for a Healthier You"
         description="Our cold-pressed oils are rich in natural nutrients, helping you and your family live a healthier, happier life."
         cta={{ href: "#benefits", label: "Explore Health Benefits", box: { left: "4.1%", top: "75.7%", width: "19.6%", height: "9.6%" } }}
-        fallback={
-          <PageHero
-            eyebrow="Health Benefits"
-            title={
-              <>
-                Pure Oils <br />
-                <Gold>for a Healthier You</Gold>
-              </>
-            }
-            description={
-              <p>
-                Our cold-pressed oils are rich in natural nutrients, helping you and
-                your family live a healthier, happier life.
-              </p>
-            }
-            image="/images/health-hero.webp"
-            imageAlt="RESHMAM cold pressed groundnut, gingelly and coconut oil bottles with peanuts, sesame and coconut"
-          >
-            <ButtonLink href="#benefits">
-              Explore Health Benefits <ArrowRight className="h-4 w-4" aria-hidden />
-            </ButtonLink>
-          </PageHero>
-        }
       />
 
       <TrustStrip
