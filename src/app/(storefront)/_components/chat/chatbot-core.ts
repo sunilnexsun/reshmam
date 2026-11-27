@@ -129,7 +129,7 @@ const CSS = `
 .rc-tip{background:#fff;border:1px solid var(--b3);border-radius:14px 14px 4px 14px;padding:10px 14px;box-shadow:0 6px 20px -8px rgb(0 0 0/.25);font-size:13px;max-width:190px;position:relative}
 .rc-tip strong{display:block;color:var(--g9)} .rc-tip button{position:absolute;top:-8px;left:-8px;width:22px;height:22px;border-radius:50%;border:1px solid var(--b3);background:#fff;cursor:pointer;display:grid;place-items:center;padding:0;color:var(--soft)}
 .rc-tip button svg{width:12px;height:12px}
-.rc-panel{position:fixed;z-index:56;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(390px,calc(100vw - 32px));height:min(640px,calc(100vh - 110px));background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px -12px rgb(0 30 15/.45);border:1px solid var(--b3)}
+.rc-panel{position:fixed;z-index:56;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(390px,calc(100vw - 32px));height:min(640px,calc(100vh - 110px));height:min(640px,calc(100dvh - 110px));background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px -12px rgb(0 30 15/.45);border:1px solid var(--b3)}
 @media (max-width:520px){.rc-panel{inset:0;width:auto;height:auto;border-radius:0;border:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:var(--g8)}.rc-panel>*{background:#fff}.rc-head{background:var(--g8)!important}}
 .rc-head{background:var(--g8);color:#fff;display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px}
 .rc-head .rc-av{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
@@ -219,6 +219,9 @@ const CSS = `
 @keyframes rc-b{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .rc-foot{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--b3);background:#fff}
 .rc-foot input{flex:1;min-width:0;border:1px solid var(--b3);border-radius:999px;padding:10px 14px;font:inherit;background:var(--cream)}
+.rc-panel:focus{outline:none}
+/* 16px or more stops iPhone Safari zooming the page in when the box is tapped. */
+.rc-foot input{font-size:16px}
 .rc-foot input:focus{outline:2px solid var(--g8);outline-offset:0}
 .rc-foot button{width:42px;height:42px;border-radius:50%;border:0;background:var(--g8);color:#fff;cursor:pointer;display:grid;place-items:center;flex:none}
 .rc-foot button svg{width:18px;height:18px}
@@ -275,7 +278,7 @@ export function mountChatbot(host: HTMLElement, cfg: ChatConfig) {
   });
 
   /* ---------- panel ---------- */
-  const panel = h(`<section id="rc-panel" class="rc-panel" role="dialog" aria-modal="false" aria-labelledby="rc-title" hidden>
+  const panel = h(`<section id="rc-panel" class="rc-panel" tabindex="-1" role="dialog" aria-modal="false" aria-labelledby="rc-title" hidden>
       <header class="rc-head">
         <span class="rc-av">${ICON.bot}</span>
         <div><h2 id="rc-title">Reshmam Assistant</h2><p>Online – Ready to help</p></div>
@@ -305,7 +308,9 @@ export function mountChatbot(host: HTMLElement, cfg: ChatConfig) {
       started = true;
       welcome();
     }
-    input.focus();
+    // On touch screens, focusing the box would pop the keyboard up over the options, so focus the panel instead.
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) input.focus();
+    else panel.focus();
   }
   function close() {
     panel.hidden = true;
