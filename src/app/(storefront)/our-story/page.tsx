@@ -12,7 +12,6 @@ import {
   Users,
   Wheat,
 } from "lucide-react";
-import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { VideoPlayer, VideoSection } from "@storefront/_components/sections/VideoSection";
 import {
@@ -49,27 +48,6 @@ export default function OurStoryPage() {
         eyebrow="Our Story"
         title="Rooted in Tradition, Nourishing Generations."
         description="At RESHMAM, we bring you the goodness of traditionally extracted cold-pressed oils, crafted with care, purity, and a deep respect for nature."
-        fallback={
-          <PageHero
-            eyebrow="Our Story"
-            title={
-              <>
-                Rooted in Tradition, <br className="hidden sm:block" />
-                <Gold>Nourishing Generations.</Gold>
-              </>
-            }
-            description={
-              <p>
-                At RESHMAM, we bring you the goodness of traditionally extracted
-                cold-pressed oils, crafted with care, purity and a deep respect for
-                nature.
-              </p>
-            }
-            image="/images/story-banner-mobile.webp"
-            imageAlt="A smiling oil maker pours cold pressed oil into a bottle beside a wooden chekku press, with seeds, palms and a bullock"
-            size="lg"
-          />
-        }
       />
 
       <div className="relative overflow-hidden bg-paper">

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PageHero, Gold } from "@storefront/_components/sections/PageHero";
 import { BannerHero } from "@storefront/_components/sections/BannerHero";
 import { BlogCard, Breadcrumbs } from "@storefront/_components/sections/Misc";
 import { ButtonLink, Container } from "@storefront/_components/ui/primitives";
@@ -28,20 +27,6 @@ export default async function BlogPage() {
         title="Recipes, Tips & Wellness"
         description="Ideas for cooking with traditional oils, how cold pressing works, and simple wellness habits."
         cta={{ href: "#posts-heading", label: "Explore Our Blog", box: { left: "6.6%", top: "76.4%", width: "16.8%", height: "9.6%" } }}
-        fallback={
-          <PageHero
-            eyebrow="From Our Blog"
-            title={
-              <>
-                Recipes, Tips <br />
-                <Gold>&amp; Wellness</Gold>
-              </>
-            }
-            description={<p>Ideas for cooking with traditional oils, how cold pressing works, and simple wellness habits.</p>}
-            image="/images/blog-hero.webp"
-            imageAlt="Cold pressed oil poured from a wooden spoon over a bowl of sautéed vegetables"
-          />
-        }
       />
       <section aria-labelledby="posts-heading" className="bg-paper py-12">
         <Container>

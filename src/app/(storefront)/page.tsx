@@ -15,7 +15,6 @@ import {
   Truck,
   Wheat,
 } from "lucide-react";
-import { PageHero, Gold } from "./_components/sections/PageHero";
 import { BannerHero } from "./_components/sections/BannerHero";
 import { TrustStrip } from "./_components/sections/FeatureGrid";
 import { ProductGrid } from "./_components/products/ProductCatalog";
@@ -57,42 +56,11 @@ export default async function HomePage() {
         description="Pure. Natural. Chemical Free. Traditionally extracted cold-pressed oils for your family's better health and well-being."
         overlay={
           // The banner has no drawn button, so a real one sits in the clear space under its icon row.
-          <div className="absolute left-[32.3%] top-[78%] -translate-x-1/2">
+          <div className="absolute left-[32.3%] top-[78%] origin-top -translate-x-1/2 scale-[0.45] sm:scale-[0.65] md:scale-[0.8] lg:scale-100">
             <ButtonLink href="/products" className="shadow-md">
               Shop Our Oils <ArrowRight className="h-4 w-4" aria-hidden />
             </ButtonLink>
           </div>
-        }
-        fallback={
-          <PageHero
-            eyebrow="Traditional | Natural | Pure"
-            title={
-              <>
-                Tradition in <br />
-                <Gold>Every Drop</Gold>
-              </>
-            }
-            description={
-              <>
-                <p className="font-serif text-xl font-semibold text-forest-900 sm:text-2xl">Pure. Natural. Chemical Free.</p>
-                <p className="mt-2 text-ink-soft">
-                  Traditionally extracted cold-pressed oils for your family&apos;s better health and well-being.
-                </p>
-              </>
-            }
-            image="/images/home-banner-mobile.webp"
-            imageAlt="Bottles of RESHMAM groundnut, coconut and gingelly oil on a wooden board with groundnuts, sesame and coconut"
-            size="lg"
-          >
-            <div className="flex flex-wrap gap-3">
-              <ButtonLink href="/products">
-                Shop Our Oils <ArrowRight className="h-4 w-4" aria-hidden />
-              </ButtonLink>
-              <ButtonLink href="/our-story" variant="outline">
-                Explore Our Story
-              </ButtonLink>
-            </div>
-          </PageHero>
         }
       />
 
