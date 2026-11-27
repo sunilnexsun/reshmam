@@ -83,11 +83,11 @@ export function CartView() {
       <div>
         <ul className="divide-y divide-beige-300 rounded-xl border border-beige-300/80 bg-white">
           {lines.map(({ product, variant, quantity, lineTotal, variantId }) => (
-            <li key={variantId} className="flex gap-4 p-4 sm:p-5">
+            <li key={variantId} className="flex gap-3 p-4 sm:gap-4 sm:p-5">
               <Link href={`/products/${product.slug}`} className="shrink-0">
-                <Image src={variantImage(product, variant)} alt={`${product.imageAlt}, ${variant.label}`} width={120} height={84} className={product.imageFit === "contain" ? "h-20 w-28 rounded-lg bg-white object-contain" : "h-20 w-28 rounded-lg object-cover"} />
+                <Image src={variantImage(product, variant)} alt={`${product.imageAlt}, ${variant.label}`} width={120} height={84} className={product.imageFit === "contain" ? "h-16 w-16 rounded-lg bg-white object-contain sm:h-20 sm:w-28" : "h-16 w-16 rounded-lg object-cover sm:h-20 sm:w-28"} />
               </Link>
-              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-sans text-base font-semibold text-forest-900">
                     <Link href={`/products/${product.slug}`} className="hover:underline">
@@ -101,13 +101,13 @@ export function CartView() {
                     <p className="text-xs font-medium text-red-700">Only {variant.stock} available</p>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   <div className="inline-flex items-center rounded-md border border-beige-300">
                     <button
                       type="button"
                       aria-label={`Decrease quantity of ${product.shortName} ${variant.label}`}
                       onClick={() => cart.setQuantity(variantId, quantity - 1)}
-                      className="inline-flex h-10 w-10 items-center justify-center text-forest-800"
+                      className="inline-flex h-9 w-9 items-center justify-center sm:h-10 sm:w-10 text-forest-800"
                     >
                       <Minus className="h-4 w-4" aria-hidden />
                     </button>
@@ -120,17 +120,17 @@ export function CartView() {
                       aria-label={`Increase quantity of ${product.shortName} ${variant.label}`}
                       disabled={quantity >= Math.min(50, variant.stock)}
                       onClick={() => cart.setQuantity(variantId, quantity + 1)}
-                      className="inline-flex h-10 w-10 items-center justify-center text-forest-800 disabled:opacity-40"
+                      className="inline-flex h-9 w-9 items-center justify-center sm:h-10 sm:w-10 text-forest-800 disabled:opacity-40"
                     >
                       <Plus className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
-                  <p className="w-20 text-right font-semibold">{formatINR(lineTotal)}</p>
+                  <p className="ml-auto text-right font-semibold sm:ml-0 sm:w-20">{formatINR(lineTotal)}</p>
                   <button
                     type="button"
                     aria-label={`Remove ${product.shortName} ${variant.label} from cart`}
                     onClick={() => cart.remove(variantId)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-red-50 hover:text-red-700"
+                    className="inline-flex h-9 w-9 items-center justify-center sm:h-10 sm:w-10 rounded-full text-ink-soft hover:bg-red-50 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </button>
