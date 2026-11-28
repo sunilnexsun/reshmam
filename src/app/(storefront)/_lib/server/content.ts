@@ -2,7 +2,7 @@ import "server-only";
 import { cacheLife } from "next/cache";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { parseBlogContent, type BlogPost, type BlogSection } from "../blog";
+import { parseBlogContent, sanitizeBlogHtml, type BlogPost, type BlogSection } from "../blog";
 
 export type Testimonial = {
   id: string;
@@ -75,16 +75,33 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
       const dateRaw = String(d.date || d.createdAt || new Date().toISOString().slice(0, 10));
       const date = dateRaw.length >= 10 ? dateRaw.slice(0, 10) : dateRaw;
 
+      const tags = Array.isArray(d.tags)
+        ? d.tags.map((t) => String(t || "").trim()).filter(Boolean)
+        : [];
+      const rawHtml = typeof d.htmlContent === "string" ? sanitizeBlogHtml(d.htmlContent) : "";
+      const seoObj = d.seo && typeof d.seo === "object" ? (d.seo as Record<string, unknown>) : null;
+
       items.push({
         slug,
         title,
         category: String(d.category || "Oil Education"),
+        ...(tags.length ? { tags } : {}),
         date,
         excerpt,
         image: normalizeBlogImage(d.image || d.coverImage),
         imageAlt: String(d.imageAlt || title),
         author: d.author ? String(d.author) : undefined,
+        ...(rawHtml ? { htmlContent: rawHtml } : {}),
         body: normalizeBody(d.body, d.content, excerpt),
+        ...(seoObj
+          ? {
+              seo: {
+                metaTitle: seoObj.metaTitle ? String(seoObj.metaTitle) : undefined,
+                metaDescription: seoObj.metaDescription ? String(seoObj.metaDescription) : undefined,
+                focusKeyword: seoObj.focusKeyword ? String(seoObj.focusKeyword) : undefined,
+              },
+            }
+          : {}),
         sample: d.sample === true ? true : undefined,
       });
     }

@@ -4,23 +4,23 @@ import { BookOpen, CheckCircle2, Download, ExternalLink, FileText, Pencil, Plus,
 import { Button, Card, DataTable, EmptyState, FilterSelect, IconButton, PageHeader, SearchInput, StatCard, StatusBadge, useConfirm, useToast } from '@admin/_components/ui'
 import { useDb, removeItem, updateItem } from '@admin/_lib/store'
 import { useAuth } from '@admin/_lib/auth'
+import { useNavigate } from '@admin/_lib/navigation'
 import { date as formatDate, num } from '@admin/_lib/format'
 import { exportCSV } from '@admin/_lib/export'
-import BlogModal from './BlogModal'
 
-const CATEGORIES = ['Cooking Tips', 'Oil Education', 'Wellness', 'Recipes', 'News']
+const CATEGORIES = ['Cooking Tips', 'Oil Education', 'Wellness', 'Recipes', 'News', 'Skin Care']
 
 export default function BlogList() {
   const db = useDb()
   const toast = useToast()
   const confirm = useConfirm()
+  const navigate = useNavigate()
   const { can } = useAuth()
   const canManage = can('marketing', 'manage')
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [editing, setEditing] = useState(undefined) // undefined = closed, null = new, object = edit
 
   const blogs = useMemo(() => {
     const list = Array.isArray(db.blogs) ? db.blogs : []
@@ -163,7 +163,7 @@ export default function BlogList() {
           )}
           {canManage && (
             <>
-              <IconButton icon={Pencil} label={`Edit ${b.title}`} size="sm" variant="primary" onClick={() => setEditing(b)} />
+              <IconButton icon={Pencil} label={`Edit ${b.title}`} size="sm" variant="primary" onClick={() => navigate(`/blogs/${b.id}`)} />
               <IconButton
                 icon={Power}
                 label={(b.status || 'Published') === 'Published' ? `Move ${b.title} to Draft` : `Publish ${b.title}`}
@@ -190,7 +190,7 @@ export default function BlogList() {
               Export CSV
             </Button>
             {canManage && (
-              <Button icon={Plus} onClick={() => setEditing(null)}>
+              <Button icon={Plus} onClick={() => navigate('/blogs/new')}>
                 New Article
               </Button>
             )}
@@ -231,7 +231,7 @@ export default function BlogList() {
             text={search ? 'Try adjusting your search or filters.' : 'Create your first article to publish it on the storefront Blog page.'}
             action={
               canManage && !search ? (
-                <Button icon={Plus} onClick={() => setEditing(null)}>
+                <Button icon={Plus} onClick={() => navigate('/blogs/new')}>
                   New Article
                 </Button>
               ) : null
@@ -241,8 +241,6 @@ export default function BlogList() {
           <DataTable columns={columns} rows={filtered} />
         )}
       </Card>
-
-      {editing !== undefined && <BlogModal blog={editing} onClose={() => setEditing(undefined)} />}
     </>
   )
 }
