@@ -99,7 +99,7 @@ export const site = {
    * labelled placeholder. Accepts an .mp4/.webm URL or a YouTube embed URL.
    */
   videos: {
-    process: null as string | null,
+    process: "/videos/our-process.mp4" as string | null,
     story: null as string | null,
   },
 
