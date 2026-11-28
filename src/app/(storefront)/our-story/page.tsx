@@ -71,7 +71,7 @@ export default function OurStoryPage() {
           video={
             <VideoPlayer
               url={site.videos.process}
-              poster="/images/video-process.webp"
+              poster="/images/video-process-poster.webp"
               title="Our traditional extraction process"
               playAt={{ x: 49.2, y: 56.6 }}
             />

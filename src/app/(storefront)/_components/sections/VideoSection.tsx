@@ -31,7 +31,7 @@ export function VideoPlayer({
             allowFullScreen
           />
         ) : (
-          <video controls preload="metadata" poster={poster} className="h-full w-full object-cover">
+          <video controls playsInline preload="metadata" poster={poster} className="h-full w-full object-cover">
             <source src={url} />
             Your browser does not support embedded video.
           </video>
