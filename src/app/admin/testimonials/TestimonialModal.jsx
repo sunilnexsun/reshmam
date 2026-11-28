@@ -19,7 +19,6 @@ export default function TestimonialModal({ testimonial, onClose }) {
   } = useForm({
     defaultValues: {
       name: testimonial?.name || '',
-      place: testimonial?.place || testimonial?.city || '',
       rating: String(testimonial?.rating ?? 5),
       product: testimonial?.product || '',
       text: testimonial?.text || testimonial?.quote || '',
@@ -30,12 +29,9 @@ export default function TestimonialModal({ testimonial, onClose }) {
 
   const onSubmit = async (values) => {
     try {
-      const place = values.place.trim() || 'Tamil Nadu'
       const text = values.text.trim()
       const payload = {
         name: values.name.trim(),
-        place,
-        city: place,
         rating: Math.min(5, Math.max(1, Number(values.rating) || 5)),
         product: values.product?.trim() || '',
         text,
@@ -67,24 +63,14 @@ export default function TestimonialModal({ testimonial, onClose }) {
       size="md"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Customer Name" required error={errors.name} htmlFor="ts-name">
-            <Input
-              id="ts-name"
-              placeholder="e.g. Meenakshi Sundaram"
-              error={errors.name}
-              {...register('name', { required: 'Customer name is required' })}
-            />
-          </Field>
-          <Field label="City / Location" required error={errors.place} htmlFor="ts-place">
-            <Input
-              id="ts-place"
-              placeholder="e.g. Madurai, Tamil Nadu"
-              error={errors.place}
-              {...register('place', { required: 'Location is required' })}
-            />
-          </Field>
-        </div>
+        <Field label="Customer Name" required error={errors.name} htmlFor="ts-name">
+          <Input
+            id="ts-name"
+            placeholder="e.g. Meenakshi Sundaram"
+            error={errors.name}
+            {...register('name', { required: 'Customer name is required' })}
+          />
+        </Field>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Rating" htmlFor="ts-rating">

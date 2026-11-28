@@ -295,7 +295,6 @@ export function buildSeed(now = Date.now()) {
     {
       id: 'ts_1',
       name: 'Meenakshi Sundaram',
-      place: 'Madurai, Tamil Nadu',
       rating: 5,
       product: 'Traditional Cold Pressed Gingelly Oil',
       text: 'The rich aroma and authentic taste remind me of traditional home-pressed gingelly oil. Delivery to Madurai was quick and the bottles arrived securely packed.',

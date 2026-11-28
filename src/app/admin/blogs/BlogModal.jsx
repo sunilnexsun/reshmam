@@ -2,9 +2,10 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button, Field, ImageUploader, Input, Modal, Select, Textarea, useToast } from '@admin/_components/ui'
-import { createItem, updateItem } from '@admin/_lib/store'
+import { createItem, updateItem, useDb } from '@admin/_lib/store'
 
 const BLOG_CATEGORIES = ['Cooking Tips', 'Oil Education', 'Wellness', 'Recipes', 'News']
+const CUSTOM_CATEGORY_VALUE = '__custom__'
 
 function slugify(value) {
   return String(value || '')
@@ -55,9 +56,15 @@ function textToBody(content) {
 
 export default function BlogModal({ blog, onClose }) {
   const isEdit = Boolean(blog?.id)
+  const db = useDb()
   const toast = useToast()
   const [image, setImage] = useState(blog?.image || '/images/blog-hero.webp')
   const [slugTouched, setSlugTouched] = useState(isEdit)
+
+  const existingCategories = (db.blogs || []).map((b) => String(b.category || '').trim()).filter(Boolean)
+  const initialCategory = blog?.category?.trim() || 'Oil Education'
+  const categoryOptions = Array.from(new Set([...BLOG_CATEGORIES, ...existingCategories, initialCategory]))
+  const [isCustomCategory, setIsCustomCategory] = useState(false)
 
   const initialContent = blog?.content || bodyToText(blog?.body) || ''
   const today = new Date().toISOString().slice(0, 10)
@@ -71,7 +78,8 @@ export default function BlogModal({ blog, onClose }) {
     defaultValues: {
       title: blog?.title || '',
       slug: blog?.slug || '',
-      category: blog?.category || 'Oil Education',
+      category: initialCategory,
+      customCategory: '',
       date: blog?.date || today,
       author: blog?.author || 'RESHMAM Editorial',
       status: blog?.status || 'Published',
@@ -102,11 +110,18 @@ export default function BlogModal({ blog, onClose }) {
         toast.error('Please enter a valid title or slug')
         return
       }
+      const chosenCategory = isCustomCategory
+        ? String(values.customCategory || '').trim()
+        : String(values.category || '').trim()
+      if (!chosenCategory) {
+        toast.error('Please enter a category name')
+        return
+      }
       const content = values.content?.trim() || ''
       const payload = {
         title: values.title.trim(),
         slug: cleanSlug,
-        category: values.category || 'Oil Education',
+        category: chosenCategory,
         date: values.date || today,
         author: values.author?.trim() || 'RESHMAM Editorial',
         status: values.status || 'Published',
@@ -149,8 +164,52 @@ export default function BlogModal({ blog, onClose }) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-4">
-          <Field label="Category" htmlFor="blog-category">
-            <Select id="blog-category" options={BLOG_CATEGORIES} {...register('category')} />
+          <Field
+            label="Category"
+            required={isCustomCategory}
+            error={errors.customCategory}
+            htmlFor={isCustomCategory ? 'blog-custom-category' : 'blog-category'}
+          >
+            {isCustomCategory ? (
+              <div className="flex gap-1.5">
+                <Input
+                  id="blog-custom-category"
+                  placeholder="Enter category..."
+                  autoFocus
+                  error={errors.customCategory}
+                  {...register('customCategory', {
+                    validate: (v) => !isCustomCategory || Boolean(String(v || '').trim()) || 'Category is required',
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(false)
+                    setValue('category', initialCategory)
+                    setValue('customCategory', '')
+                  }}
+                  title="Choose from existing categories"
+                  className="shrink-0 rounded-lg border border-line px-2.5 text-xs font-medium text-muted transition hover:bg-surface hover:text-ink"
+                >
+                  List
+                </button>
+              </div>
+            ) : (
+              <Select
+                id="blog-category"
+                options={[
+                  ...categoryOptions.map((c) => ({ value: c, label: c })),
+                  { value: CUSTOM_CATEGORY_VALUE, label: '+ Add custom category...' },
+                ]}
+                {...register('category', {
+                  onChange: (e) => {
+                    if (e.target.value === CUSTOM_CATEGORY_VALUE) {
+                      setIsCustomCategory(true)
+                    }
+                  },
+                })}
+              />
+            )}
           </Field>
           <Field label="Publish Date" htmlFor="blog-date">
             <Input id="blog-date" type="date" {...register('date')} />

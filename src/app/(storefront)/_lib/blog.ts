@@ -12,12 +12,19 @@ export type BlogPost = {
   slug: string;
   title: string;
   category: string;
+  tags?: string[];
   date: string; // ISO YYYY-MM-DD or full ISO timestamp
   excerpt: string;
   image: string;
   imageAlt: string;
   author?: string;
+  htmlContent?: string;
   body: BlogSection[];
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    focusKeyword?: string;
+  };
   sample?: boolean;
 };
 
@@ -206,3 +213,76 @@ export const formatDate = (iso: string) => {
   if (Number.isNaN(dt.getTime())) return raw;
   return dt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 };
+
+/**
+ * Sanitizes rich-text blog HTML by stripping executable tags, event handlers,
+ * unsafe protocols, and arbitrary inline styles while preserving formatting.
+ */
+export function sanitizeBlogHtml(rawHtml: string): string {
+  const input = String(rawHtml || "").trim();
+  if (!input) return "";
+
+  let cleaned = input
+    // Strip dangerous container elements completely
+    .replace(/<(script|style|iframe|object|embed|form|noscript|svg|math)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(script|style|iframe|object|embed|form|meta|link|base)[^>]*\/?>/gi, "")
+    // Strip inline event handlers like onclick="..."
+    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    // Strip dangerous href/src protocols
+    .replace(/\b(href|src)\s*=\s*(?:"\s*(?:javascript|vbscript|data:text\/html)[^"]*"|'\s*(?:javascript|vbscript|data:text\/html)[^']*')/gi, '$1="#"');
+
+  // Keep only safe text-align inside style="..." attributes
+  cleaned = cleaned.replace(/\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi, (_m, dbl, sgl) => {
+    const styleVal = String(dbl ?? sgl ?? "");
+    const alignMatch = styleVal.match(/text-align\s*:\s*(left|center|right|justify)/i);
+    return alignMatch ? ` style="text-align: ${alignMatch[1].toLowerCase()}"` : "";
+  });
+
+  return cleaned;
+}
+
+const escapeHtml = (str: string) =>
+  str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Converts legacy structured `body` sections into clean HTML for the rich editor. */
+export function bodyToHtml(body?: BlogSection[]): string {
+  if (!Array.isArray(body) || !body.length) return "";
+  return body
+    .map((block) => {
+      const parts: string[] = [];
+      if (block.heading) parts.push(`<h2>${escapeHtml(block.heading)}</h2>`);
+      if (Array.isArray(block.paragraphs)) {
+        for (const p of block.paragraphs) {
+          if (p) parts.push(`<p>${escapeHtml(p)}</p>`);
+        }
+      }
+      if (Array.isArray(block.list) && block.list.length) {
+        parts.push(
+          `<ul>${block.list.map((li) => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
+        );
+      }
+      return parts.join("");
+    })
+    .filter(Boolean)
+    .join("");
+}
+
+/** Extracts plain readable text from rich HTML (for excerpts, word count, CSV). */
+export function htmlToPlainText(html: string): string {
+  return String(html || "")
+    .replace(/<(br|\/p|\/div|\/h[1-6]|\/li|\/blockquote|\/figure)[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}

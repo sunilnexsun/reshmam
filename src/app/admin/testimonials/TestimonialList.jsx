@@ -32,7 +32,6 @@ export default function TestimonialList() {
       const matchSearch =
         !s ||
         t.name?.toLowerCase().includes(s) ||
-        (t.place || t.city)?.toLowerCase().includes(s) ||
         t.product?.toLowerCase().includes(s) ||
         (t.text || t.quote)?.toLowerCase().includes(s)
       return matchStatus && matchSearch
@@ -74,7 +73,6 @@ export default function TestimonialList() {
   const onExport = () => {
     exportCSV(`reshmam-testimonials-${new Date().toISOString().slice(0, 10)}`, filtered, [
       { label: 'Customer Name', key: 'name' },
-      { label: 'Location', key: 'place' },
       { label: 'Rating', key: 'rating' },
       { label: 'Product', key: 'product' },
       { label: 'Review', key: 'text' },
@@ -94,7 +92,7 @@ export default function TestimonialList() {
           <Avatar name={t.name} src={t.avatar} size={38} />
           <div className="min-w-0">
             <p className="font-semibold text-ink">{t.name}</p>
-            <p className="text-xs text-muted">{t.place || t.city || 'Tamil Nadu'}</p>
+            {t.product && <p className="text-xs text-muted">{t.product}</p>}
           </div>
         </div>
       ),
@@ -198,7 +196,7 @@ export default function TestimonialList() {
 
       <Card bodyClassName="p-0">
         <div className="flex flex-col gap-3 border-b border-line p-4 md:flex-row md:items-center">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search customer, city or review..." className="w-full md:max-w-xs" />
+          <SearchInput value={search} onChange={setSearch} placeholder="Search customer, product or review..." className="w-full md:max-w-xs" />
           <FilterSelect
             label="Status"
             value={statusFilter}

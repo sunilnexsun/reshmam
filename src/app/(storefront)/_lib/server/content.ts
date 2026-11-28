@@ -7,7 +7,6 @@ import { parseBlogContent, type BlogPost, type BlogSection } from "../blog";
 export type Testimonial = {
   id: string;
   name: string;
-  city: string;
   rating: number;
   quote: string;
   product?: string;
@@ -129,7 +128,6 @@ export async function fetchDynamicTestimonials(): Promise<Testimonial[]> {
       items.push({
         id: docSnap.id,
         name: String(d.name || "Customer").trim(),
-        city: String(d.city || d.place || "").trim(),
         rating,
         quote,
         product: d.product ? String(d.product).trim() : undefined,

@@ -16,21 +16,18 @@ const sampleTestimonials: Testimonial[] = [
   {
     id: "sample-a",
     name: "Sample Customer A",
-    city: "Tamil Nadu",
     rating: 5,
     quote: "Placeholder review: describe the taste and aroma the customer noticed in their everyday cooking.",
   },
   {
     id: "sample-b",
     name: "Sample Customer B",
-    city: "Tamil Nadu",
     rating: 5,
     quote: "Placeholder review: describe what made the customer choose traditionally extracted oils.",
   },
   {
     id: "sample-c",
     name: "Sample Customer C",
-    city: "Tamil Nadu",
     rating: 5,
     quote: "Placeholder review: describe the packaging and delivery experience.",
   },
@@ -109,9 +106,6 @@ export function Testimonials({
                 </blockquote>
                 <figcaption className="mt-auto pt-3 text-sm font-semibold text-forest-900">
                   {t.name}
-                  {t.city && (
-                    <span className="font-normal text-ink-soft"> · {t.city}</span>
-                  )}
                   {t.product && (
                     <span className="mt-1 block text-xs font-medium text-rust">
                       {t.product}

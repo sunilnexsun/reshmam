@@ -1,4 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@admin/_lib/firebase', () => ({
+  saveDocument: vi.fn(() => Promise.resolve()),
+  deleteDocument: vi.fn(() => Promise.resolve()),
+  batchFirestore: vi.fn(() => Promise.resolve()),
+  subscribeCollection: vi.fn(() => () => {}),
+  getPendingWrites: () => 0,
+  getWriteVersion: () => 0,
+}))
+
 import { gstByRate, orderGst } from '@admin/_lib/gst'
 import { resolveOrderInvoice } from '@admin/_lib/invoice'
 import { buildSeed } from '@admin/_lib/seed'
